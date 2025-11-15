@@ -1,0 +1,41 @@
+# Cal.com API v2 Environment Variables
+NODE_ENV: "production"
+API_PORT: "8080"
+API_URL: "https://api-v2.cal.mereka.io"
+DATABASE_READ_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable&connection_limit=2&pool_timeout=60"
+DATABASE_WRITE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable&connection_limit=2&pool_timeout=60"
+DATABASE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable&connection_limit=2&pool_timeout=60"
+DATABASE_DIRECT_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable&connection_limit=2&pool_timeout=60"
+LOG_LEVEL: "4"
+DEBUG: "prisma:*"
+NEXTAUTH_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
+JWT_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
+STRIPE_API_KEY: "sk_test_dummy"
+STRIPE_WEBHOOK_SECRET: "whsec_dummy"
+
+# Disable Sentry for API v2
+NEXT_PUBLIC_SENTRY_DSN: ""
+
+# Cal.com Configuration
+WEB_APP_URL: "https://calendar.mereka.io"
+CALCOM_LICENSE_KEY: "59c0bed7-8b21-4280-8514-e022fbfc24c7"
+API_KEY_PREFIX: "mereka_"
+GET_LICENSE_KEY_URL: "https://console.cal.com/api/license"
+IS_E2E: "false"
+CALCOM_DEPLOYMENT_KEY: "0a44d298f3ae16a1fe648b98171cf3f8cab9b544e4cb4882201bdc6d57420add"
+CAL_SIGNATURE_TOKEN: "0a44d298f3ae16a1fe648b98171cf3f8cab9b544e4cb4882201bdc6d57420add"
+CALENDSO_ENCRYPTION_KEY: "4e81f6ebdfe2891485a9c4cbe845e6ed"
+
+# API v2 Configuration
+REWRITE_API_V2_PREFIX: "1"
+DOCS_URL: "https://api-v2.cal.mereka.io/docs"
+
+# Logging
+LOGGER_BRIDGE_LOG_LEVEL: "4"
+
+# Web Push VAPID keys (required to start without errors)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY: "BNNLcD25UN1ANdLQMxHjSn9te4oG6EXmzEOqG4xcbOiS25l5NRoxmFfYG6FlxBE2Qusd-EYSrsVjpmYwUfFXf3k"
+VAPID_PRIVATE_KEY: "nwx6K9rYONVIgn3HOvMDe3WubolkRUOX0bYIjSazwps"
+
+# Redis (required by API v2 for rate limiting and queues)
+REDIS_URL: "redis://10.17.60.51:6379"
