@@ -6,7 +6,7 @@ Fork of [cal.com](https://github.com/calcom/cal.com) scheduling infrastructure w
 ## Upstream Sync
 - Upstream: https://github.com/calcom/cal.com
 - Sync frequency: Monthly
-- Last sync: {UPDATE_THIS}
+- Last sync: 2026-03-01
 
 ## Custom Modifications
 - Authentik SSO integration for authentication
