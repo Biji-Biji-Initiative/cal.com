@@ -83,6 +83,23 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 3. Restore DB only if schema/data corruption is confirmed.
 4. Capture incident notes and patch before retry.
 
+## Known Production Blocker Pattern
+1. Symptom:
+   - Deployment shows `ReplicaFailure=True` with Kyverno event:
+   - `require-drop-all-capabilities ... validation failure: Containers must drop ALL capabilities`
+2. Cause:
+   - Pod/container `securityContext` does not satisfy cluster policy.
+3. Fix at GitOps source (not runtime patch loop):
+   - Add container security context fields required by policy (for all app/init/sidecar containers):
+   - `allowPrivilegeEscalation: false`
+   - `capabilities.drop: ["ALL"]`
+   - `seccompProfile.type: RuntimeDefault`
+4. Validation:
+   - `kubectl -n <ns> describe deploy <name>` no longer shows policy violation events.
+   - Deployment reaches desired replica count (`updated=desired`, `available=desired`).
+5. Rollback:
+   - Revert the GitOps commit changing security context and resync application.
+
 ## Minimal-Maintenance Policy
 1. Keep custom fork changes small and isolated.
 2. Prefer config/infrastructure overrides over source-code divergence.
