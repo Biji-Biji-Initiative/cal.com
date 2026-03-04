@@ -100,6 +100,22 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 5. Rollback:
    - Revert the GitOps commit changing security context and resync application.
 
+## Known API v2 Edge Blocker Pattern
+1. Symptom:
+   - `scripts/smoke-check-calcom.sh --web-url https://cal.mereka.io --api-url https://api-v2.cal.mereka.io` fails with:
+   - `TLS connect error ... alert handshake failure` on `https://api-v2.cal.mereka.io/docs`.
+2. Cause:
+   - API v2 hostname is routed/proxied incorrectly at DNS/edge, or API v2 service/ingress is missing.
+3. Read-only triage sequence:
+   - `dig +short A api-v2.cal.mereka.io @1.1.1.1`
+   - `curl -I https://api-v2.cal.mereka.io`
+   - `kubectl -n prod-calcom get deploy,svc,ingress | grep -i api`
+4. Fix:
+   - Ensure API v2 runtime exists (service + ingress/domain mapping).
+   - Ensure DNS uses the intended origin path (DNS-only when required by ingress TLS strategy).
+5. Validation:
+   - `scripts/smoke-check-calcom.sh --web-url https://cal.mereka.io --api-url https://api-v2.cal.mereka.io` passes required checks.
+
 ## Minimal-Maintenance Policy
 1. Keep custom fork changes small and isolated.
 2. Prefer config/infrastructure overrides over source-code divergence.
