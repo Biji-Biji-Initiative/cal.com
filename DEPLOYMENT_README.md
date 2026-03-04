@@ -12,15 +12,15 @@ This directory contains comprehensive documentation and tools for deploying Cal.
 - Pre/post-deployment checklists
 - **Start here for any deployment**
 
-### 📋 [WORKING_CONFIG.md](./WORKING_CONFIG.md)
+### 📋 [WORKING_CONFIG.md](./Mereka%20Docs/WORKING_CONFIG.md)
 **Exact working configuration reference** - The proven setup that works.
 - Complete infrastructure configuration
-- All 14 required environment variables
+- Required environment variables and validation commands
 - Domain and DNS settings
 - Health check results
 - **Use this as your configuration template**
 
-### 🔧 [INTEGRATION_SETUP.md](./INTEGRATION_SETUP.md)
+### 🔧 [INTEGRATION_SETUP.md](./Mereka%20Docs/INTEGRATION_SETUP.md)
 **Integration configuration guide** - For setting up Google OAuth, Zoom, and 2FA.
 - Google Calendar integration
 - Google OAuth login setup
@@ -30,10 +30,10 @@ This directory contains comprehensive documentation and tools for deploying Cal.
 
 ## 🛠️ Deployment Tools
 
-### 🚀 [deploy-calcom.sh](./deploy-calcom.sh)
+### 🚀 [deploy-calcom.sh](./Mereka%20Docs/deploy-calcom.sh)
 **Automated deployment script** - One-command deployment.
 ```bash
-./deploy-calcom.sh
+./Mereka\ Docs/deploy-calcom.sh
 ```
 - Automated environment setup
 - Service deployment with proper configuration
@@ -51,20 +51,20 @@ This directory contains comprehensive documentation and tools for deploying Cal.
 
 ### For New Deployments
 1. **Read** [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) first
-2. **Run** `./deploy-calcom.sh` for automated deployment
+2. **Run** `./Mereka\ Docs/deploy-calcom.sh` for automated deployment
 3. **Configure DNS** in Cloudflare (gray cloud!)
 4. **Wait** for SSL certificate provisioning
 5. **Test** endpoints and Google OAuth
 
 ### For Troubleshooting
 1. **Check** [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) troubleshooting section
-2. **Compare** your config with [WORKING_CONFIG.md](./WORKING_CONFIG.md)
+2. **Compare** your config with [WORKING_CONFIG.md](./Mereka%20Docs/WORKING_CONFIG.md)
 3. **Run** debugging commands from the guide
 4. **Verify** all checklist items are completed
 
 ### For Integration Setup
 1. **Deploy** successfully first using guides above
-2. **Follow** [INTEGRATION_SETUP.md](./INTEGRATION_SETUP.md) for integrations
+2. **Follow** [INTEGRATION_SETUP.md](./Mereka%20Docs/INTEGRATION_SETUP.md) for integrations
 3. **Test** each integration individually
 
 ## ⚠️ Critical Success Factors
@@ -72,7 +72,8 @@ This directory contains comprehensive documentation and tools for deploying Cal.
 Based on previous deployment failures, these are the most important factors:
 
 ### 1. Environment Variables (Most Common Failure)
-- **Must have all 14 variables** set correctly
+- **Must have all required variables** set correctly
+- **Validate before deploy** with `./scripts/verify-calcom-env.sh <env-file> --profile web --require-google --require-sso`
 - **Both DATABASE_URL and DATABASE_DIRECT_URL** required
 - **Use env-vars.yaml file** for deployment (not individual --set-env-vars)
 - **Generate fresh secrets** for NEXTAUTH_SECRET and CALENDSO_ENCRYPTION_KEY
@@ -116,7 +117,7 @@ A successful deployment should show:
 - ✅ Root endpoint returns 307 redirect
 - ✅ `/auth/login` returns 200 OK
 - ✅ No errors in Cloud Run logs
-- ✅ All 14 environment variables present
+- ✅ All required environment variables present
 - ✅ 2048Mi memory allocation
 - ✅ Custom domain returns 200/307 (not 503)
 - ✅ SSL certificate provisioned
@@ -141,5 +142,3 @@ A successful deployment should show:
 ---
 
 **Remember**: These guides were created from real deployment failures. Following them exactly will prevent the same issues from happening again.
-
-

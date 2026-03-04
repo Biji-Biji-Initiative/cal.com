@@ -201,7 +201,8 @@ gcloud run services delete calcom-app --region=us-central1 --project=biji-biji-c
 - **Never use**: Public IP connection from Cloud Run
 
 ### 3. Environment Variables
-- **Must have**: All 14 variables set ✅
+- **Must have**: All required variables set ✅
+- **Validate with**: `./scripts/verify-calcom-env.sh <env-file> --profile web --require-google --require-sso`
 - **Critical**: Both DATABASE_URL and DATABASE_DIRECT_URL ✅
 - **Generate fresh**: NEXTAUTH_SECRET and CALENDSO_ENCRYPTION_KEY ✅
 
