@@ -52,6 +52,26 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 3. Keep backup + restore verification before every production schema change.
 4. If migration fails, stop rollout and restore from snapshot.
 
+## Release Gate (Definition Of Done)
+1. **Dev (RKE2)**:
+   - App is reachable on expected URL.
+   - Authentik login works for a test user.
+   - Google login works.
+   - Google Calendar connect + disconnect both succeed.
+2. **Staging**:
+   - All Dev checks pass on staging URL.
+   - Existing seeded users and historical bookings are still readable after migration.
+   - New booking creates expected calendar event.
+3. **Prod (GKE)**:
+   - All staging checks pass on production URL.
+   - Error rate and latency remain within baseline after rollout.
+   - No schema/data regression observed in first post-deploy smoke window.
+4. **Secrets (Infisical/Secret Manager)**:
+   - Required keys are present before deploy export.
+   - `scripts/verify-calcom-env.sh` and `scripts/check-rollout-readiness.sh` pass on deploy files.
+5. **Go/No-Go Rule**:
+   - Do not promote `dev -> staging` or `staging -> prod` until all checks for current environment are green.
+
 ## Rollback Plan
 1. Stop traffic increase to new revision.
 2. Route traffic back to previous known-good revision/image.
