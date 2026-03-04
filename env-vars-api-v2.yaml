@@ -1,0 +1,43 @@
+# Cal.com API v2 Environment Variables
+# TEMPLATE FILE ONLY.
+# Fill real values from Infisical/secret manager at deploy time and do not commit secrets.
+NODE_ENV: "production"
+API_PORT: "8080"
+API_URL: "https://api-v2.cal.mereka.io"
+DATABASE_READ_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable&connection_limit=2&pool_timeout=60"
+DATABASE_WRITE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable&connection_limit=2&pool_timeout=60"
+DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable&connection_limit=2&pool_timeout=60"
+DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable&connection_limit=2&pool_timeout=60"
+LOG_LEVEL: "4"
+DEBUG: "prisma:*"
+NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
+JWT_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
+STRIPE_API_KEY: "sk_test_dummy"
+STRIPE_WEBHOOK_SECRET: "whsec_dummy"
+
+# Disable Sentry for API v2
+NEXT_PUBLIC_SENTRY_DSN: ""
+
+# Cal.com Configuration
+WEB_APP_URL: "https://calendar.mereka.io"
+CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
+API_KEY_PREFIX: "mereka_"
+GET_LICENSE_KEY_URL: "https://console.cal.com/api/license"
+IS_E2E: "false"
+CALCOM_DEPLOYMENT_KEY: "REPLACE_WITH_CALCOM_DEPLOYMENT_KEY"
+CAL_SIGNATURE_TOKEN: "REPLACE_WITH_CALCOM_DEPLOYMENT_KEY"
+CALENDSO_ENCRYPTION_KEY: "REPLACE_WITH_CALENDSO_ENCRYPTION_KEY"
+
+# API v2 Configuration
+REWRITE_API_V2_PREFIX: "1"
+DOCS_URL: "https://api-v2.cal.mereka.io/docs"
+
+# Logging
+LOGGER_BRIDGE_LOG_LEVEL: "4"
+
+# Web Push VAPID keys (required to start without errors)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY: "REPLACE_WITH_NEXT_PUBLIC_VAPID_PUBLIC_KEY"
+VAPID_PRIVATE_KEY: "REPLACE_WITH_VAPID_PRIVATE_KEY"
+
+# Redis (required by API v2 for rate limiting and queues)
+REDIS_URL: "REPLACE_WITH_REDIS_URL"

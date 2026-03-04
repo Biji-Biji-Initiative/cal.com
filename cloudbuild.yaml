@@ -1,0 +1,15 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/calcom-api-v2', '-f', 'apps/api/v2/Dockerfile', '.']
+    dir: '.'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+      - 'DOCKER_CLI_EXPERIMENTAL=enabled'
+
+images:
+  - 'gcr.io/$PROJECT_ID/calcom-api-v2'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  diskSizeGb: '100'
+  logStreamingOption: 'STREAM_ON'
