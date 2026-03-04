@@ -14,8 +14,9 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
    - `git checkout main`
    - `git merge --ff-only upstream/main` (or rebase strategy used by your team)
 2. Validate env files without leaking secrets:
-   - `./scripts/verify-calcom-env.sh env-vars-production.example.yaml --profile web`
-   - `./scripts/verify-calcom-env.sh env-vars-api-v2.example.yaml --profile api-v2`
+   - Template sanity: `./scripts/verify-calcom-env.sh env-vars-production.example.yaml --profile web --allow-placeholders --require-google --require-sso`
+   - Template sanity: `./scripts/verify-calcom-env.sh env-vars-api-v2.example.yaml --profile api-v2 --allow-placeholders`
+   - Real deploy file (from secret manager export): `./scripts/verify-calcom-env.sh /path/to/prod.env.yaml --profile web --require-google --require-sso`
 3. Ensure no placeholders before deploy:
    - No `REPLACE_WITH_*` values
    - `NEXT_PUBLIC_IS_E2E` must be `false`

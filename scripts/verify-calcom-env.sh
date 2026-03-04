@@ -3,13 +3,15 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 <env-file> [--profile web|api-v2] [--allow-placeholders]" >&2
+  echo "Usage: $0 <env-file> [--profile web|api-v2] [--allow-placeholders] [--require-google] [--require-sso]" >&2
   exit 1
 fi
 
 ENV_FILE="$1"
 ALLOW_PLACEHOLDERS="false"
 PROFILE="web"
+REQUIRE_GOOGLE="false"
+REQUIRE_SSO="false"
 
 shift || true
 while [[ $# -gt 0 ]]; do
@@ -20,6 +22,12 @@ while [[ $# -gt 0 ]]; do
     --profile)
       PROFILE="${2:-}"
       shift
+      ;;
+    --require-google)
+      REQUIRE_GOOGLE="true"
+      ;;
+    --require-sso)
+      REQUIRE_SSO="true"
       ;;
     *)
       echo "Unknown option: $1" >&2
@@ -143,11 +151,45 @@ fi
 
 google_login_enabled="$(extract_value "GOOGLE_LOGIN_ENABLED")"
 google_api_credentials="$(extract_value "GOOGLE_API_CREDENTIALS")"
-if [[ "$google_login_enabled" == "true" || "$google_login_enabled" == "1" ]]; then
+if [[ "$REQUIRE_GOOGLE" == "true" && "$google_login_enabled" != "true" && "$google_login_enabled" != "1" ]]; then
+  invalid+=("GOOGLE_LOGIN_ENABLED (must be true/1 when --require-google is set)")
+fi
+
+if [[ "$google_login_enabled" == "true" || "$google_login_enabled" == "1" || "$REQUIRE_GOOGLE" == "true" ]]; then
   if [[ -z "$google_api_credentials" ]]; then
     invalid+=("GOOGLE_API_CREDENTIALS (required when GOOGLE_LOGIN_ENABLED is true)")
   elif [[ "$google_api_credentials" != *"\"client_id\""* || "$google_api_credentials" != *"\"client_secret\""* ]]; then
     invalid+=("GOOGLE_API_CREDENTIALS (must include web.client_id and web.client_secret JSON fields)")
+  fi
+
+  if [[ -n "$google_api_credentials" ]]; then
+    if [[ "$google_api_credentials" != *"/api/integrations/googlecalendar/callback"* ]]; then
+      invalid+=("GOOGLE_API_CREDENTIALS (redirect_uris should include /api/integrations/googlecalendar/callback)")
+    fi
+    if [[ "$google_api_credentials" != *"/api/auth/callback/google"* ]]; then
+      invalid+=("GOOGLE_API_CREDENTIALS (redirect_uris should include /api/auth/callback/google)")
+    fi
+  fi
+fi
+
+if [[ "$REQUIRE_SSO" == "true" ]]; then
+  saml_database_url="$(extract_value "SAML_DATABASE_URL")"
+  saml_admins="$(extract_value "SAML_ADMINS")"
+
+  if [[ -z "$saml_database_url" ]]; then
+    invalid+=("SAML_DATABASE_URL (required when --require-sso is set)")
+  elif [[ "$saml_database_url" != postgres://* && "$saml_database_url" != postgresql://* ]]; then
+    invalid+=("SAML_DATABASE_URL (must start with postgres:// or postgresql://)")
+  elif [[ "$ALLOW_PLACEHOLDERS" != "true" ]] && has_placeholder "$saml_database_url"; then
+    placeholder+=("SAML_DATABASE_URL")
+  fi
+
+  if [[ -z "$saml_admins" ]]; then
+    invalid+=("SAML_ADMINS (required when --require-sso is set)")
+  elif [[ "$saml_admins" != *"@"* ]]; then
+    invalid+=("SAML_ADMINS (must include at least one valid admin email)")
+  elif [[ "$ALLOW_PLACEHOLDERS" != "true" ]] && has_placeholder "$saml_admins"; then
+    placeholder+=("SAML_ADMINS")
   fi
 fi
 
