@@ -16,19 +16,15 @@ NEXTAUTH_URL: "https://your-domain.com"
 WEB_APP_URL: "https://your-domain.com"
 NEXT_PUBLIC_WEBAPP_URL: "https://your-domain.com"
 NEXT_PUBLIC_WEBSITE_URL: "https://your-domain.com"
-BASE_URL: "https://your-domain.com"
-NEXT_PUBLIC_BASE_URL: "https://your-domain.com"
 
 # Database Variables (BOTH required!)
 DATABASE_URL: "postgresql://user:pass@localhost:5432/db?host=/cloudsql/project:region:instance&sslmode=disable"
 DATABASE_DIRECT_URL: "postgresql://user:pass@localhost:5432/db?host=/cloudsql/project:region:instance&sslmode=disable"
 
 # Google OAuth (if using Google login)
-GOOGLE_CLIENT_ID: "your-google-client-id"
-GOOGLE_CLIENT_SECRET: "your-google-client-secret"
 GOOGLE_LOGIN_ENABLED: "true"
 GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"...","client_secret":"...","redirect_uris":["..."]}}'
-CALCOM_DEPLOYMENT_KEY: "generated-deployment-key"
+CAL_SIGNATURE_TOKEN: "generated-signature-token"
 CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
 
 # White-labeling Configuration
@@ -71,12 +67,8 @@ NEXTAUTH_URL: "https://calendar.mereka.io"
 WEB_APP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBAPP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBSITE_URL: "https://calendar.mereka.io"
-BASE_URL: "https://calendar.mereka.io"
-NEXT_PUBLIC_BASE_URL: "https://calendar.mereka.io"
 DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
 DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-GOOGLE_CLIENT_ID: "REPLACE_WITH_GOOGLE_CLIENT_ID"
-GOOGLE_CLIENT_SECRET: "REPLACE_WITH_GOOGLE_CLIENT_SECRET"
 GOOGLE_LOGIN_ENABLED: "true"
 GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"REPLACE_WITH_GOOGLE_CLIENT_ID","client_secret":"REPLACE_WITH_GOOGLE_CLIENT_SECRET","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
 EOF
@@ -108,7 +100,7 @@ gcloud run services update $SERVICE_NAME \
 # Get active revision
 REVISION=$(gcloud run services describe $SERVICE_NAME --region=$REGION --project=$PROJECT_ID --format="value(status.traffic[0].revisionName)")
 
-# Verify environment variables (should show 23 variables)
+# Verify environment variables (should show configured variables)
 gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="yaml(spec.containers[0].env)" | grep "name:" | wc -l
 
 # Verify memory allocation (should show 2048Mi)
@@ -194,7 +186,7 @@ gcloud run services update $SERVICE_NAME --region=$REGION --project=$PROJECT_ID 
 **Solution:** 
 ```bash
 # Add CAL_SIGNATURE_TOKEN to environment variables
-CAL_SIGNATURE_TOKEN: "same-value-as-CALCOM_DEPLOYMENT_KEY"
+CAL_SIGNATURE_TOKEN: "generated-signature-token"
 
 # Redeploy service
 gcloud run services update $SERVICE_NAME --region=$REGION --project=$PROJECT_ID --env-vars-file=env-vars.yaml
@@ -264,7 +256,7 @@ gcloud beta run domain-mappings describe --domain=calendar.mereka.io --region=$R
 ## 📋 POST-DEPLOYMENT CHECKLIST
 
 - [ ] Service shows as "Ready" in Cloud Run console
-- [ ] All 14 environment variables are present on active revision
+- [ ] All required environment variables are present on active revision
 - [ ] Memory allocation is 2048Mi
 - [ ] Root endpoint returns 307 redirect
 - [ ] /auth/login endpoint returns 200
