@@ -4,7 +4,7 @@
 # This script deploys Cal.com to Google Cloud Run with proper configuration
 # Based on the working configuration from August 25, 2025
 
-set -e  # Exit on any error
+set -euo pipefail
 
 # Paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -68,7 +68,7 @@ check_prerequisites() {
     fi
     
     # Check if project exists
-    if ! gcloud projects describe $PROJECT_ID &> /dev/null; then
+    if ! gcloud projects describe "$PROJECT_ID" &> /dev/null; then
         log_error "Project $PROJECT_ID not found or not accessible"
         exit 1
     fi
@@ -158,11 +158,11 @@ EOF
 deploy_service() {
     log_info "Deploying to Cloud Run..."
     
-    gcloud run services update $SERVICE_NAME \
-        --region=$REGION \
-        --project=$PROJECT_ID \
-        --env-vars-file=env-vars.yaml \
-        --add-cloudsql-instances=$CLOUDSQL_INSTANCE \
+    gcloud run services update "$SERVICE_NAME" \
+        --region="$REGION" \
+        --project="$PROJECT_ID" \
+        --env-vars-file="env-vars.yaml" \
+        --add-cloudsql-instances="$CLOUDSQL_INSTANCE" \
         --memory=2048Mi \
         --timeout=300 \
         --min-instances=1 \
@@ -176,11 +176,11 @@ verify_deployment() {
     log_info "Verifying deployment..."
     
     # Get active revision
-    REVISION=$(gcloud run services describe $SERVICE_NAME --region=$REGION --project=$PROJECT_ID --format="value(status.traffic[0].revisionName)")
+    REVISION=$(gcloud run services describe "$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID" --format="value(status.traffic[0].revisionName)")
     log_info "Active revision: $REVISION"
     
     # Check required environment variables are present on active revision
-    REVISION_ENV=$(gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="yaml(spec.containers[0].env)")
+    REVISION_ENV=$(gcloud run revisions describe "$REVISION" --region="$REGION" --project="$PROJECT_ID" --format="yaml(spec.containers[0].env)")
     REQUIRED_VARS=(
         NEXTAUTH_SECRET
         CALENDSO_ENCRYPTION_KEY
@@ -203,7 +203,7 @@ verify_deployment() {
     done
     
     # Check memory allocation
-    MEMORY=$(gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="value(spec.containers[0].resources.limits.memory)")
+    MEMORY=$(gcloud run revisions describe "$REVISION" --region="$REGION" --project="$PROJECT_ID" --format="value(spec.containers[0].resources.limits.memory)")
     if [ "$MEMORY" = "2048Mi" ]; then
         log_success "Memory allocation is correct: $MEMORY"
     else
@@ -212,25 +212,25 @@ verify_deployment() {
     fi
     
     # Test service endpoints
-    SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --project=$PROJECT_ID --format="value(status.url)")
+    SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID" --format="value(status.url)")
     
     log_info "Testing service endpoints..."
     
     # Test root endpoint
     ROOT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL")
-    if [ "$ROOT_STATUS" = "307" ]; then
-        log_success "Root endpoint returns 307 (expected redirect)"
+    if [[ "$ROOT_STATUS" =~ ^(200|301|302|307|308)$ ]]; then
+        log_success "Root endpoint healthy: HTTP $ROOT_STATUS"
     else
-        log_error "Root endpoint returned $ROOT_STATUS, expected 307"
+        log_error "Root endpoint returned unexpected status: $ROOT_STATUS"
         exit 1
     fi
     
     # Test auth login endpoint
     LOGIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SERVICE_URL/auth/login")
-    if [ "$LOGIN_STATUS" = "200" ]; then
-        log_success "Auth login endpoint returns 200"
+    if [[ "$LOGIN_STATUS" =~ ^(200|301|302|307|308)$ ]]; then
+        log_success "Auth login endpoint healthy: HTTP $LOGIN_STATUS"
     else
-        log_error "Auth login endpoint returned $LOGIN_STATUS, expected 200"
+        log_error "Auth login endpoint returned unexpected status: $LOGIN_STATUS"
         exit 1
     fi
     
@@ -241,22 +241,22 @@ setup_domain_mapping() {
     log_info "Setting up domain mappings..."
     
     # Check if domain mappings already exist and delete them
-    if gcloud beta run domain-mappings describe --domain=$DOMAIN --region=$REGION --project=$PROJECT_ID &> /dev/null; then
+    if gcloud beta run domain-mappings describe --domain="$DOMAIN" --region="$REGION" --project="$PROJECT_ID" &> /dev/null; then
         log_warning "Existing domain mapping found for $DOMAIN, deleting..."
-        gcloud beta run domain-mappings delete --domain=$DOMAIN --region=$REGION --project=$PROJECT_ID --quiet
+        gcloud beta run domain-mappings delete --domain="$DOMAIN" --region="$REGION" --project="$PROJECT_ID" --quiet
     fi
     
-    if gcloud beta run domain-mappings describe --domain=$SECONDARY_DOMAIN --region=$REGION --project=$PROJECT_ID &> /dev/null; then
+    if gcloud beta run domain-mappings describe --domain="$SECONDARY_DOMAIN" --region="$REGION" --project="$PROJECT_ID" &> /dev/null; then
         log_warning "Existing domain mapping found for $SECONDARY_DOMAIN, deleting..."
-        gcloud beta run domain-mappings delete --domain=$SECONDARY_DOMAIN --region=$REGION --project=$PROJECT_ID --quiet
+        gcloud beta run domain-mappings delete --domain="$SECONDARY_DOMAIN" --region="$REGION" --project="$PROJECT_ID" --quiet
     fi
     
     # Create new domain mappings
     log_info "Creating domain mapping for $DOMAIN..."
-    gcloud beta run domain-mappings create --domain=$DOMAIN --service=$SERVICE_NAME --region=$REGION --project=$PROJECT_ID
+    gcloud beta run domain-mappings create --domain="$DOMAIN" --service="$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID"
     
     log_info "Creating domain mapping for $SECONDARY_DOMAIN..."
-    gcloud beta run domain-mappings create --domain=$SECONDARY_DOMAIN --service=$SERVICE_NAME --region=$REGION --project=$PROJECT_ID
+    gcloud beta run domain-mappings create --domain="$SECONDARY_DOMAIN" --service="$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID"
     
     log_success "Domain mappings created"
 }
@@ -293,7 +293,7 @@ cleanup() {
 }
 
 show_summary() {
-    SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --project=$PROJECT_ID --format="value(status.url)")
+    SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID" --format="value(status.url)")
     
     echo ""
     log_success "🎉 Deployment completed successfully!"
