@@ -1,0 +1,220 @@
+[0;32m[INFO][0m Starting Cal.com API v2 deployment...
+[0;32m[INFO][0m Checking prerequisites...
+[0;32m[INFO][0m Prerequisites check passed ✅
+[0;32m[INFO][0m Building API v2 service...
+[0;32m[INFO][0m Installing dependencies...
+➤ YN0000: ┌ Resolution step
+➤ YN0002: │ @calcom/alby@workspace:packages/app-store/alby doesn't provide react (pa36bd), requested by react-qr-code
+➤ YN0002: │ @calcom/api-v2@workspace:apps/api/v2 doesn't provide @types/node (p66ab4), requested by ts-node
+➤ YN0002: │ @calcom/api-v2@workspace:apps/api/v2 doesn't provide axios (p7c2e6), requested by @nestjs/axios
+➤ YN0002: │ @calcom/api-v2@workspace:apps/api/v2 doesn't provide eslint (p6562a), requested by @typescript-eslint/eslint-plugin
+➤ YN0002: │ @calcom/api-v2@workspace:apps/api/v2 doesn't provide eslint (p16323), requested by @typescript-eslint/parser
+➤ YN0002: │ @calcom/api-v2@workspace:apps/api/v2 doesn't provide next (p54425), requested by next-auth
+➤ YN0002: │ @calcom/api-v2@workspace:apps/api/v2 doesn't provide react (p00113), requested by next-auth
+➤ YN0002: │ @calcom/api-v2@workspace:apps/api/v2 doesn't provide react-dom (p48532), requested by next-auth
+➤ YN0060: │ @calcom/api-v2@workspace:apps/api/v2 provides reflect-metadata (p62391) with version 0.1.14, which doesn't satisfy what @nest-lab/throttler-storage-redis requests
+➤ YN0002: │ @calcom/api-v2@workspace:apps/api/v2 doesn't provide webpack (p81271), requested by ts-loader
+➤ YN0060: │ @calcom/api@workspace:apps/api/v1 provides next (p0c967) with version 15.4.6, which doesn't satisfy what next-axiom requests
+➤ YN0002: │ @calcom/api@workspace:apps/api/v1 doesn't provide react (pe15bf), requested by next
+➤ YN0002: │ @calcom/api@workspace:apps/api/v1 doesn't provide react-dom (p5fba5), requested by next
+➤ YN0002: │ @calcom/app-store-cli@workspace:packages/app-store-cli doesn't provide @types/node (p36ca8), requested by ts-node
+➤ YN0002: │ @calcom/app-store-cli@workspace:packages/app-store-cli doesn't provide eslint (p254ce), requested by eslint-plugin-react-hooks
+➤ YN0002: │ @calcom/app-store-cli@workspace:packages/app-store-cli doesn't provide eslint (p8adb9), requested by eslint-plugin-react
+➤ YN0060: │ @calcom/app-store-cli@workspace:packages/app-store-cli provides react (p16111) with version 18.2.0, which doesn't satisfy what ink-select-input requests
+➤ YN0060: │ @calcom/app-store-cli@workspace:packages/app-store-cli provides react (pa8f9f) with version 18.2.0, which doesn't satisfy what ink-text-input requests
+➤ YN0060: │ @calcom/app-store-cli@workspace:packages/app-store-cli provides react (p116af) with version 18.2.0, which doesn't satisfy what ink and some of its descendants request
+➤ YN0002: │ @calcom/app-store@workspace:packages/app-store doesn't provide i18next (p73558), requested by react-i18next
+➤ YN0002: │ @calcom/app-store@workspace:packages/app-store doesn't provide react (p5ae52), requested by react-i18next
+➤ YN0002: │ @calcom/applecalendar@workspace:packages/app-store/applecalendar doesn't provide react (pe83f8), requested by react-hook-form
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms doesn't provide react-dom (p764da), requested by @radix-ui/react-dialog
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms doesn't provide react-dom (pfd4cd), requested by @radix-ui/react-switch
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms doesn't provide react-dom (p5f14f), requested by @radix-ui/react-toast
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms doesn't provide react-dom (p5c8ef), requested by @radix-ui/react-tooltip
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms doesn't provide react-dom (p95324), requested by react-use
+➤ YN0060: │ @calcom/atoms@workspace:packages/platform/atoms provides vite (pcccda) with version 5.1.6, which doesn't satisfy what @vitejs/plugin-react requests
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [26d8b] doesn't provide react-dom (pa864e), requested by @radix-ui/react-dialog
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [26d8b] doesn't provide react-dom (p62538), requested by @radix-ui/react-switch
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [26d8b] doesn't provide react-dom (pdfa94), requested by @radix-ui/react-toast
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [26d8b] doesn't provide react-dom (p58419), requested by @radix-ui/react-tooltip
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [26d8b] doesn't provide react-dom (p929ef), requested by react-use
+➤ YN0060: │ @calcom/atoms@workspace:packages/platform/atoms [26d8b] provides typescript (pd1743) with version 5.9.2, which doesn't satisfy what class-variance-authority requests
+➤ YN0060: │ @calcom/atoms@workspace:packages/platform/atoms [26d8b] provides vite (p3a77b) with version 5.1.6, which doesn't satisfy what @vitejs/plugin-react requests
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [5d0b5] doesn't provide react-dom (p24a2c), requested by @radix-ui/react-dialog
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [5d0b5] doesn't provide react-dom (p8146b), requested by @radix-ui/react-switch
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [5d0b5] doesn't provide react-dom (peba34), requested by @radix-ui/react-toast
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [5d0b5] doesn't provide react-dom (pc234c), requested by @radix-ui/react-tooltip
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [5d0b5] doesn't provide react-dom (p6edad), requested by react-use
+➤ YN0060: │ @calcom/atoms@workspace:packages/platform/atoms [5d0b5] provides vite (pd2968) with version 5.1.6, which doesn't satisfy what @vitejs/plugin-react requests
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [65b34] doesn't provide react-dom (p01495), requested by @radix-ui/react-dialog
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [65b34] doesn't provide react-dom (pe6907), requested by @radix-ui/react-switch
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [65b34] doesn't provide react-dom (pe085a), requested by @radix-ui/react-toast
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [65b34] doesn't provide react-dom (p2a9cc), requested by @radix-ui/react-tooltip
+➤ YN0002: │ @calcom/atoms@workspace:packages/platform/atoms [65b34] doesn't provide react-dom (pc6132), requested by react-use
+➤ YN0060: │ @calcom/atoms@workspace:packages/platform/atoms [65b34] provides vite (pd2ee3) with version 5.1.6, which doesn't satisfy what @vitejs/plugin-react requests
+➤ YN0002: │ @calcom/caldavcalendar@workspace:packages/app-store/caldavcalendar doesn't provide react (p64772), requested by react-hook-form
+➤ YN0060: │ @calcom/config@workspace:packages/config provides tailwindcss (p357c3) with version 3.3.3, which doesn't satisfy what @todesktop/tailwind-variants requests
+➤ YN0002: │ @calcom/dub@workspace:packages/app-store/dub doesn't provide zod (p53f41), requested by dub
+➤ YN0002: │ @calcom/ee@workspace:packages/features/ee doesn't provide react (p8fe64), requested by @hookform/error-message
+➤ YN0002: │ @calcom/ee@workspace:packages/features/ee doesn't provide react-dom (p0eda1), requested by @hookform/error-message
+➤ YN0002: │ @calcom/ee@workspace:packages/features/ee doesn't provide react-hook-form (pb317e), requested by @hookform/error-message
+➤ YN0002: │ @calcom/ee@workspace:packages/features/ee doesn't provide react-hook-form (p265f7), requested by @hookform/resolvers
+➤ YN0002: │ @calcom/emails@workspace:packages/emails doesn't provide i18next (pf5a2a), requested by next-i18next
+➤ YN0002: │ @calcom/emails@workspace:packages/emails doesn't provide next (pac5f5), requested by next-i18next
+➤ YN0002: │ @calcom/emails@workspace:packages/emails doesn't provide react-i18next (pd396a), requested by next-i18next
+➤ YN0060: │ @calcom/embed-react@workspace:packages/embeds/embed-react provides vite (p43cfc) with version 4.5.3, which doesn't satisfy what @vitejs/plugin-react requests
+➤ YN0060: │ @calcom/embed-react@workspace:packages/embeds/embed-react [6d903] provides vite (p3d8f2) with version 4.5.3, which doesn't satisfy what @vitejs/plugin-react requests
+➤ YN0002: │ @calcom/eslint-plugin-eslint@workspace:packages/eslint-plugin doesn't provide @types/node (p3f96f), requested by ts-node-maintained
+➤ YN0002: │ @calcom/eslint-plugin-eslint@workspace:packages/eslint-plugin doesn't provide eslint (p3b8be), requested by @typescript-eslint/parser
+➤ YN0002: │ @calcom/eslint-plugin-eslint@workspace:packages/eslint-plugin doesn't provide eslint (pb262b), requested by @typescript-eslint/utils
+➤ YN0060: │ @calcom/example-app-credential-sync@workspace:example-apps/credential-sync provides typescript (p37d00) with version 4.9.5, which doesn't satisfy what @calcom/atoms and some of its descendants request
+➤ YN0002: │ @calcom/exchange2013calendar@workspace:packages/app-store/exchange2013calendar doesn't provide react (pa41c8), requested by react-hook-form
+➤ YN0002: │ @calcom/exchange2016calendar@workspace:packages/app-store/exchange2016calendar doesn't provide react (p69b74), requested by react-hook-form
+➤ YN0002: │ @calcom/feature-auth@workspace:packages/features/auth doesn't provide next (p25d2b), requested by next-auth
+➤ YN0002: │ @calcom/feature-auth@workspace:packages/features/auth doesn't provide react (p103e3), requested by next-auth
+➤ YN0002: │ @calcom/feature-auth@workspace:packages/features/auth doesn't provide react-dom (ped165), requested by next-auth
+➤ YN0002: │ @calcom/feature-auth@workspace:packages/features/auth doesn't provide zod (p9c0f9), requested by dub
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react (p2268a), requested by @calcom/atoms
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react (p99fd3), requested by @lexical/react
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react (pb4e10), requested by @tanstack/react-table
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react (p0e3e6), requested by @tanstack/react-virtual
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react (p71d54), requested by @testing-library/react-hooks
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react (p64f83), requested by react-select
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react (p95726), requested by react-sticky-box
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react (pbaa16), requested by recharts
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react-dom (p8c8fb), requested by @lexical/react
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react-dom (pd0fb4), requested by @tanstack/react-table
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react-dom (pdea62), requested by @tanstack/react-virtual
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react-dom (pebb71), requested by react-select
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react-dom (p54971), requested by recharts
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide react-is (pb9393), requested by recharts
+➤ YN0002: │ @calcom/features@workspace:packages/features doesn't provide stripe (pe3709), requested by stripe-event-types
+➤ YN0002: │ @calcom/ics-feed@workspace:packages/app-store/ics-feedcalendar doesn't provide react (p0ec62), requested by react-hook-form
+➤ YN0060: │ @calcom/lib@workspace:packages/lib provides i18next (p878d1) with version 23.2.3, which doesn't satisfy what next-i18next requests
+➤ YN0002: │ @calcom/lib@workspace:packages/lib doesn't provide next (p9e31f), requested by next-collect
+➤ YN0002: │ @calcom/lib@workspace:packages/lib doesn't provide next (p7bb26), requested by next-i18next
+➤ YN0002: │ @calcom/lib@workspace:packages/lib doesn't provide react (pc65f3), requested by next-collect
+➤ YN0002: │ @calcom/lib@workspace:packages/lib doesn't provide react (pb4ff4), requested by next-i18next
+➤ YN0002: │ @calcom/lib@workspace:packages/lib doesn't provide react (p869d1), requested by sonner
+➤ YN0002: │ @calcom/lib@workspace:packages/lib doesn't provide react-dom (p79f70), requested by next-collect
+➤ YN0002: │ @calcom/lib@workspace:packages/lib doesn't provide react-dom (pc8ba8), requested by sonner
+➤ YN0002: │ @calcom/lib@workspace:packages/lib doesn't provide react-i18next (p89a83), requested by next-i18next
+➤ YN0002: │ @calcom/platform-utils@workspace:packages/platform/utils doesn't provide typescript (p5cbaf), requested by ts-jest
+➤ YN0002: │ @calcom/prisma@workspace:packages/prisma doesn't provide @types/node (p158fa), requested by ts-node
+➤ YN0060: │ @calcom/prisma@workspace:packages/prisma provides prisma (p4fed6) with version 5.4.2, which doesn't satisfy what zod-prisma requests
+➤ YN0002: │ @calcom/prisma@workspace:packages/prisma doesn't provide typescript (pe36e0), requested by ts-node
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @ant-design/icons (p907c0), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @emotion/react (p89397), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @emotion/styled (p35005), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @fortawesome/fontawesome-svg-core (pf8913), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @fortawesome/free-solid-svg-icons (p791ff), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @fortawesome/react-fontawesome (pb8d43), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @material-ui/core (p54271), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @material-ui/icons (pbd269), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @material-ui/lab (p692e4), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @material-ui/pickers (p79153), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @mui/icons-material (p20450), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @mui/lab (p3467d), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide @mui/material (p974b0), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide antd (p1895b), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide bootstrap (peee3a), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide material-ui-confirm (pa1635), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide react (pbd9d8), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide react-dom (pdd7f5), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/routing-forms@workspace:packages/app-store/routing-forms doesn't provide reactstrap (p36e16), requested by react-awesome-query-builder
+➤ YN0002: │ @calcom/salesforce@workspace:packages/app-store/salesforce doesn't provide graphql (p2e601), requested by graphql-config
+➤ YN0002: │ @calcom/salesforce@workspace:packages/app-store/salesforce doesn't provide graphql (p64623), requested by @graphql-codegen/cli
+➤ YN0002: │ @calcom/stripepayment@workspace:packages/app-store/stripepayment doesn't provide @types/node (p0b3f9), requested by ts-node
+➤ YN0002: │ @calcom/stripepayment@workspace:packages/app-store/stripepayment doesn't provide react (p8f614), requested by @stripe/react-stripe-js
+➤ YN0002: │ @calcom/stripepayment@workspace:packages/app-store/stripepayment doesn't provide react-dom (pfe0b4), requested by @stripe/react-stripe-js
+➤ YN0002: │ @calcom/stripepayment@workspace:packages/app-store/stripepayment doesn't provide typescript (p3e8c1), requested by ts-node
+➤ YN0060: │ @calcom/timeless-ui-docs@workspace:apps/ui-playground provides eslint (pbb9f6) with version 8.34.0, which doesn't satisfy what eslint-config-next and some of its descendants request
+➤ YN0060: │ @calcom/timeless-ui-docs@workspace:apps/ui-playground provides typescript (pd684a) with version 5.9.2, which doesn't satisfy what eslint-config-next and some of its descendants request
+➤ YN0002: │ @calcom/trpc@workspace:packages/trpc doesn't provide next (p4488a), requested by @trpc/next
+➤ YN0002: │ @calcom/trpc@workspace:packages/trpc doesn't provide react (pe99ca), requested by @tanstack/react-query
+➤ YN0002: │ @calcom/trpc@workspace:packages/trpc doesn't provide react (p36b75), requested by @trpc/next
+➤ YN0002: │ @calcom/trpc@workspace:packages/trpc doesn't provide react (p52c80), requested by @trpc/react-query
+➤ YN0002: │ @calcom/trpc@workspace:packages/trpc doesn't provide react-dom (p616d8), requested by @trpc/next
+➤ YN0002: │ @calcom/trpc@workspace:packages/trpc doesn't provide react-dom (p399db), requested by @trpc/react-query
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide @testing-library/dom (pa1353), requested by @testing-library/user-event
+➤ YN0060: │ @calcom/ui@workspace:packages/ui provides @types/react (p49a33) with version 18.0.26, which doesn't satisfy what @radix-ui/react-select and some of its descendants request
+➤ YN0060: │ @calcom/ui@workspace:packages/ui provides react (p1bb39) with version 18.2.0, which doesn't satisfy what @radix-ui/react-select and some of its descendants request
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p83ebd), requested by @radix-ui/react-portal
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p5dfe0), requested by @radix-ui/react-avatar
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p706cb), requested by @radix-ui/react-checkbox
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p0e114), requested by @radix-ui/react-dialog
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p1fc34), requested by @radix-ui/react-popover
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p5892e), requested by @radix-ui/react-select
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p00b87), requested by @radix-ui/react-slider
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (pa5608), requested by @storybook/blocks
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p10f93), requested by @storybook/react
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (pdc471), requested by @tanstack/react-table
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (pd107c), requested by @wojtekmaj/react-daterange-picker
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p7555b), requested by cmdk
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p996a7), requested by next-seo
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p324e6), requested by next
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (p2a55c), requested by react-colorful
+➤ YN0002: │ @calcom/ui@workspace:packages/ui doesn't provide react-dom (pd58fb), requested by react-select
+➤ YN0060: │ @calcom/ui@workspace:packages/ui provides typescript (p60d57) with version 5.9.2, which doesn't satisfy what class-variance-authority requests
+➤ YN0060: │ @calcom/web@workspace:apps/web provides @playwright/test (pa9563) with version 1.45.3, which doesn't satisfy what next requests
+➤ YN0002: │ @calcom/web@workspace:apps/web doesn't provide @prisma/client (p99762), requested by @next-auth/prisma-adapter
+➤ YN0002: │ @calcom/web@workspace:apps/web doesn't provide @types/node (p3ed7f), requested by ts-node
+➤ YN0002: │ @calcom/web@workspace:apps/web doesn't provide i18next (pd4ffd), requested by next-i18next
+➤ YN0060: │ @calcom/web@workspace:apps/web provides next (p1fabe) with version 15.4.6, which doesn't satisfy what @vercel/edge-functions-ui requests
+➤ YN0060: │ @calcom/web@workspace:apps/web provides next (p70f39) with version 15.4.6, which doesn't satisfy what next-auth requests
+➤ YN0060: │ @calcom/web@workspace:apps/web provides next (pcfc3f) with version 15.4.6, which doesn't satisfy what next-axiom requests
+➤ YN0060: │ @calcom/web@workspace:apps/web provides next (p212fe) with version 15.4.6, which doesn't satisfy what next-collect requests
+➤ YN0060: │ @calcom/web@workspace:apps/web provides next (p1bb5f) with version 15.4.6, which doesn't satisfy what nuqs requests
+➤ YN0060: │ @calcom/web@workspace:apps/web provides react (p629de) with version 18.2.0, which doesn't satisfy what @vercel/edge-functions-ui requests
+➤ YN0060: │ @calcom/web@workspace:apps/web provides react (p263ce) with version 18.2.0, which doesn't satisfy what kbar and some of its descendants request
+➤ YN0060: │ @calcom/web@workspace:apps/web provides react (p96bcd) with version 18.2.0, which doesn't satisfy what react-multi-email requests
+➤ YN0060: │ @calcom/web@workspace:apps/web provides react-dom (pff497) with version 18.2.0, which doesn't satisfy what @vercel/edge-functions-ui requests
+➤ YN0060: │ @calcom/web@workspace:apps/web provides react-dom (pe7a1f) with version 18.2.0, which doesn't satisfy what kbar and some of its descendants request
+➤ YN0060: │ @calcom/web@workspace:apps/web provides react-dom (p7f807) with version 18.2.0, which doesn't satisfy what react-multi-email requests
+➤ YN0002: │ @calcom/web@workspace:apps/web doesn't provide react-i18next (p08832), requested by next-i18next
+➤ YN0060: │ @calcom/web@workspace:apps/web provides typescript (pb45e3) with version 5.9.2, which doesn't satisfy what msw requests
+➤ YN0002: │ @graphql-codegen/cli@npm:5.0.5 [e5166] doesn't provide graphql-sock (p56791), requested by @graphql-codegen/client-preset
+➤ YN0002: │ @lexical/markdown@npm:0.9.1 [7f103] doesn't provide @lexical/clipboard (pd1722), requested by @lexical/rich-text
+➤ YN0002: │ @lexical/markdown@npm:0.9.1 [7f103] doesn't provide @lexical/selection (p07e96), requested by @lexical/rich-text
+➤ YN0002: │ @lexical/react@npm:0.9.1 [26d8b] doesn't provide yjs (pe002c), requested by @lexical/yjs
+➤ YN0002: │ @oclif/core@npm:2.15.0 doesn't provide @types/node (pe3996), requested by ts-node
+➤ YN0002: │ @oclif/core@npm:2.15.0 doesn't provide typescript (p43d2e), requested by ts-node
+➤ YN0002: │ @oclif/core@npm:2.8.11 doesn't provide @types/node (p4832c), requested by ts-node
+➤ YN0002: │ @oclif/core@npm:2.8.11 doesn't provide typescript (p7ff8b), requested by ts-node
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [6d903] doesn't provide @opentelemetry/context-async-hooks (p3eb0a), requested by @sentry/opentelemetry
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [6d903] doesn't provide @opentelemetry/core (pba94d), requested by @sentry/opentelemetry
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [6d903] doesn't provide @opentelemetry/instrumentation (pa436f), requested by @sentry/opentelemetry
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [6d903] doesn't provide @opentelemetry/sdk-trace-base (pef35d), requested by @sentry/opentelemetry
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [6d903] doesn't provide react (pa6957), requested by @sentry/react
+➤ YN0060: │ @sentry/nextjs@npm:9.15.0 [6d903] provides rollup (pb2390) with version 4.35.0, which doesn't satisfy what @rollup/plugin-commonjs and some of its descendants request
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [6d903] doesn't provide webpack (pcb08d), requested by @sentry/webpack-plugin
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [dc1d6] doesn't provide @opentelemetry/context-async-hooks (p8783b), requested by @sentry/opentelemetry
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [dc1d6] doesn't provide @opentelemetry/core (pd5204), requested by @sentry/opentelemetry
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [dc1d6] doesn't provide @opentelemetry/instrumentation (p965c1), requested by @sentry/opentelemetry
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [dc1d6] doesn't provide @opentelemetry/sdk-trace-base (p64f74), requested by @sentry/opentelemetry
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [dc1d6] doesn't provide react (pca4e1), requested by @sentry/react
+➤ YN0060: │ @sentry/nextjs@npm:9.15.0 [dc1d6] provides rollup (p3d27e) with version 4.35.0, which doesn't satisfy what @rollup/plugin-commonjs and some of its descendants request
+➤ YN0002: │ @sentry/nextjs@npm:9.15.0 [dc1d6] doesn't provide webpack (pce2e7), requested by @sentry/webpack-plugin
+➤ YN0002: │ @storybook/manager-api@npm:7.6.3 doesn't provide react (pc38dd), requested by @storybook/theming
+➤ YN0002: │ @storybook/manager-api@npm:7.6.3 doesn't provide react-dom (p3655f), requested by @storybook/theming
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide @prisma/client (pc624e), requested by prismock
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide @testing-library/dom (pb8ba9), requested by @testing-library/react
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide date-fns (p83c68), requested by date-fns-tz
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide next (p251e8), requested by @next/third-parties
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide next (pc2952), requested by next-router-mock
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide prisma (p0c73b), requested by prismock
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide react (pffde9), requested by @next/third-parties
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide react (p4ba0a), requested by @testing-library/react
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide react (pb9d89), requested by next-router-mock
+➤ YN0002: │ calcom-monorepo@workspace:. doesn't provide react-dom (p91182), requested by @testing-library/react
+➤ YN0002: │ recma-jsx@npm:1.0.0 doesn't provide acorn (p608e6), requested by acorn-jsx
+➤ YN0002: │ swagger-parser@npm:10.0.2 doesn't provide openapi-types (p8111f), requested by @apidevtools/swagger-parser
+➤ YN0000: │ Some peer dependencies are incorrectly met; run yarn explain peer-requirements <hash> for details, where <hash> is the six-letter p-prefixed code
+➤ YN0000: └ Completed in 0s 649ms
+➤ YN0000: ┌ Fetch step
+➤ YN0000: └ Completed in 1s 118ms
+➤ YN0000: ┌ Link step
+➤ YN0000: └ Completed in 2s 88ms
+➤ YN0000: Done with warnings in 4s 59ms
+[0;32m[INFO][0m Building service...
+[0;32m[INFO][0m API v2 build completed ✅
+[0;32m[INFO][0m Building Docker image...

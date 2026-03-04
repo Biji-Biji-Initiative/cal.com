@@ -11,14 +11,14 @@ This document contains the exact configuration that successfully deployed Cal.co
 ### Google Cloud Project
 - **Project ID**: `biji-biji-calcom-250825084322`
 - **Region**: `us-central1`
-- **Service Account**: `REPLACE_WITH_SERVICE_ACCOUNT_EMAIL`
+- **Service Account**: `840643300842-compute@developer.gserviceaccount.com`
 
 ### Cloud SQL Database
 - **Instance**: `calcom-sql-250825084517`
 - **Zone**: `us-central1-c`
 - **Database**: `calendso`
 - **User**: `caluser`
-- **Password**: `REPLACE_WITH_DB_PASSWORD`
+- **Password**: `DWVdkG9MhMWu24HPCv0Gv0n`
 - **Public IP**: `34.136.95.136`
 - **Connection Name**: `biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517`
 
@@ -38,24 +38,29 @@ This document contains the exact configuration that successfully deployed Cal.co
 
 ```yaml
 # Core Authentication
-NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
-CALENDSO_ENCRYPTION_KEY: "REPLACE_WITH_CALENDSO_ENCRYPTION_KEY_BASE64"
+NEXTAUTH_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
+CALENDSO_ENCRYPTION_KEY: "/+xwwLq2TKP0I8G9dkN2//ko30WRIczS2DGw/8osMtk="
 
 # URL Configuration
 NEXTAUTH_URL: "https://calendar.mereka.io"
 WEB_APP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBAPP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBSITE_URL: "https://calendar.mereka.io"
+BASE_URL: "https://calendar.mereka.io"
+NEXT_PUBLIC_BASE_URL: "https://calendar.mereka.io"
 
 # Database Configuration (Socket Connection)
-DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_DIRECT_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
 
 # Google OAuth Configuration
+GOOGLE_CLIENT_ID: "840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET: "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"
 GOOGLE_LOGIN_ENABLED: "true"
-GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"REPLACE_WITH_GOOGLE_CLIENT_ID","client_secret":"REPLACE_WITH_GOOGLE_CLIENT_SECRET","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
-CAL_SIGNATURE_TOKEN: "REPLACE_WITH_CAL_SIGNATURE_TOKEN"
-CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
+GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com","client_secret":"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","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
+CALCOM_DEPLOYMENT_KEY: "0a44d298f3ae16a1fe648b98171cf3f8cab9b544e4cb4882201bdc6d57420add"
+CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"
+CAL_SIGNATURE_TOKEN: "0a44d298f3ae16a1fe648b98171cf3f8cab9b544e4cb4882201bdc6d57420add"
 
 # White-labeling Configuration
 NEXT_PUBLIC_APP_NAME: "Mereka Calendar"
@@ -65,7 +70,7 @@ NEXT_PUBLIC_SENDER_ID: "Mereka"
 NEXT_PUBLIC_SENDGRID_SENDER_NAME: "Mereka Calendar"
 ```
 
-**Total Environment Variables**: 19
+**Total Environment Variables**: 22
 
 ---
 
@@ -119,8 +124,8 @@ curl -I https://calendar.mereka.io
 ## 🔐 Google OAuth Setup
 
 ### OAuth 2.0 Client
-- **Client ID**: `REPLACE_WITH_GOOGLE_CLIENT_ID`
-- **Client Secret**: `REPLACE_WITH_GOOGLE_CLIENT_SECRET`
+- **Client ID**: `840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com`
+- **Client Secret**: `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`
 - **Application Type**: Web application
 
 ### Authorized Redirect URIs
@@ -143,16 +148,20 @@ https://cal.mereka.io/api/auth/callback/google
 ### 1. Environment Variables File Creation
 ```bash
 cat > env-vars.yaml << 'EOF'
-NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
-CALENDSO_ENCRYPTION_KEY: "REPLACE_WITH_CALENDSO_ENCRYPTION_KEY_BASE64"
+NEXTAUTH_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
+CALENDSO_ENCRYPTION_KEY: "/+xwwLq2TKP0I8G9dkN2//ko30WRIczS2DGw/8osMtk="
 NEXTAUTH_URL: "https://calendar.mereka.io"
 WEB_APP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBAPP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBSITE_URL: "https://calendar.mereka.io"
-DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+BASE_URL: "https://calendar.mereka.io"
+NEXT_PUBLIC_BASE_URL: "https://calendar.mereka.io"
+DATABASE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_DIRECT_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+GOOGLE_CLIENT_ID: "840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET: "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"
 GOOGLE_LOGIN_ENABLED: "true"
-GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"REPLACE_WITH_GOOGLE_CLIENT_ID","client_secret":"REPLACE_WITH_GOOGLE_CLIENT_SECRET","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
+GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com","client_secret":"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","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
 EOF
 ```
 
@@ -201,7 +210,7 @@ gcloud run services delete calcom-app --region=us-central1 --project=biji-biji-c
 - **Never use**: Public IP connection from Cloud Run
 
 ### 3. Environment Variables
-- **Must have**: All required variables set ✅
+- **Must have**: All 14 variables set ✅
 - **Critical**: Both DATABASE_URL and DATABASE_DIRECT_URL ✅
 - **Generate fresh**: NEXTAUTH_SECRET and CALENDSO_ENCRYPTION_KEY ✅
 

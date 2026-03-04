@@ -16,16 +16,20 @@ NEXTAUTH_URL: "https://your-domain.com"
 WEB_APP_URL: "https://your-domain.com"
 NEXT_PUBLIC_WEBAPP_URL: "https://your-domain.com"
 NEXT_PUBLIC_WEBSITE_URL: "https://your-domain.com"
+BASE_URL: "https://your-domain.com"
+NEXT_PUBLIC_BASE_URL: "https://your-domain.com"
 
 # Database Variables (BOTH required!)
 DATABASE_URL: "postgresql://user:pass@localhost:5432/db?host=/cloudsql/project:region:instance&sslmode=disable"
 DATABASE_DIRECT_URL: "postgresql://user:pass@localhost:5432/db?host=/cloudsql/project:region:instance&sslmode=disable"
 
 # Google OAuth (if using Google login)
+GOOGLE_CLIENT_ID: "your-google-client-id"
+GOOGLE_CLIENT_SECRET: "your-google-client-secret"
 GOOGLE_LOGIN_ENABLED: "true"
 GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"...","client_secret":"...","redirect_uris":["..."]}}'
-CAL_SIGNATURE_TOKEN: "generated-signature-token"
-CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
+CALCOM_DEPLOYMENT_KEY: "generated-deployment-key"
+CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"
 
 # White-labeling Configuration
 NEXT_PUBLIC_APP_NAME: "Mereka Calendar"
@@ -64,10 +68,14 @@ NEXTAUTH_URL: "https://calendar.mereka.io"
 WEB_APP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBAPP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBSITE_URL: "https://calendar.mereka.io"
-DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+BASE_URL: "https://calendar.mereka.io"
+NEXT_PUBLIC_BASE_URL: "https://calendar.mereka.io"
+DATABASE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_DIRECT_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+GOOGLE_CLIENT_ID: "840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET: "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"
 GOOGLE_LOGIN_ENABLED: "true"
-GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"REPLACE_WITH_GOOGLE_CLIENT_ID","client_secret":"REPLACE_WITH_GOOGLE_CLIENT_SECRET","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
+GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com","client_secret":"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","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
 EOF
 ```
 
@@ -97,7 +105,7 @@ gcloud run services update $SERVICE_NAME \
 # Get active revision
 REVISION=$(gcloud run services describe $SERVICE_NAME --region=$REGION --project=$PROJECT_ID --format="value(status.traffic[0].revisionName)")
 
-# Verify environment variables (should show configured variables)
+# Verify environment variables (should show 22 variables)
 gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="yaml(spec.containers[0].env)" | grep "name:" | wc -l
 
 # Verify memory allocation (should show 2048Mi)
@@ -183,7 +191,7 @@ gcloud run services update $SERVICE_NAME --region=$REGION --project=$PROJECT_ID 
 **Solution:** 
 ```bash
 # Add CAL_SIGNATURE_TOKEN to environment variables
-CAL_SIGNATURE_TOKEN: "generated-signature-token"
+CAL_SIGNATURE_TOKEN: "same-value-as-CALCOM_DEPLOYMENT_KEY"
 
 # Redeploy service
 gcloud run services update $SERVICE_NAME --region=$REGION --project=$PROJECT_ID --env-vars-file=env-vars.yaml
@@ -237,7 +245,7 @@ gcloud beta run domain-mappings describe --domain=calendar.mereka.io --region=$R
 ## 📋 POST-DEPLOYMENT CHECKLIST
 
 - [ ] Service shows as "Ready" in Cloud Run console
-- [ ] All required environment variables are present on active revision
+- [ ] All 14 environment variables are present on active revision
 - [ ] Memory allocation is 2048Mi
 - [ ] Root endpoint returns 307 redirect
 - [ ] /auth/login endpoint returns 200

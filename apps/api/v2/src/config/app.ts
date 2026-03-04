@@ -15,9 +15,13 @@ const loadConfig = (): AppConfig => {
       type: env,
     },
     api: {
-      port: apiPort,
-      path: apiUrl,
-      url: `${apiUrl}${portSuffix}/v2`,
+      port: Number(process.env.PORT || getEnv("API_PORT", "5555")),
+      path: getEnv("API_URL", "http://localhost"),
+      url: `${getEnv("API_URL", "http://localhost")}${
+        process.env.API_PORT && getEnv("NODE_ENV", "development") === "development"
+          ? `:${Number(getEnv("API_PORT", "5555"))}`
+          : ""
+      }/v2`,
       keyPrefix: getEnv("API_KEY_PREFIX", "cal_"),
       licenseKey: getEnv("CALCOM_LICENSE_KEY", ""),
       licenseKeyUrl: getEnv("GET_LICENSE_KEY_URL", "https://console.cal.com/api/license"),

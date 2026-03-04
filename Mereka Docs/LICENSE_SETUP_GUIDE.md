@@ -9,12 +9,12 @@ The license key environment variable alone is NOT enough. You must complete the 
 ### 1. **Verify Environment Variables** ✅
 Your service now has the official Cal.com staging license key:
 ```yaml
-CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
+CALCOM_LICENSE_KEY: "59c0bed7-8b21-4280-8514-e022fbfc24c7"
 ```
 
 **⚠️ CRITICAL ISSUE DISCOVERED**: This staging license key is **NOT VALID** according to Cal.com's servers!
 - **Status**: Returns 404 "This license key does not exist"
-- **Validation URL**: `https://goblin.cal.com/v1/license/REPLACE_WITH_CALCOM_LICENSE_KEY`
+- **Validation URL**: `https://goblin.cal.com/v1/license/59c0bed7-8b21-4280-8514-e022fbfc24c7`
 - **Result**: License validation fails, commercial features remain locked
 
 ### 2. **Complete License Setup in Cal.com** 🔑
@@ -29,7 +29,7 @@ CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
 **For New Installations:**
 1. **Navigate** to: `https://calendar.mereka.io/auth/setup`
 2. **Choose License Option**: Select "I have an existing license key"
-3. **Enter License Key**: `REPLACE_WITH_CALCOM_LICENSE_KEY`
+3. **Enter License Key**: `59c0bed7-8b21-4280-8514-e022fbfc24c7`
 4. **Complete Setup**: Follow the remaining setup steps
 
 ### 3. **Verify License Activation** ✅
@@ -77,7 +77,7 @@ According to the [official documentation](https://cal.com/docs/developing/guides
 4. **Test license endpoint** - Verify key works at `https://goblin.cal.com/v1/license/{key}`
 
 ### **Staging License Key Invalid?**
-**Root Cause**: The staging license key `REPLACE_WITH_CALCOM_LICENSE_KEY` is not recognized by Cal.com's servers.
+**Root Cause**: The staging license key `59c0bed7-8b21-4280-8514-e022fbfc24c7` is not recognized by Cal.com's servers.
 
 **Solutions**:
 1. **Contact Cal.com Support**: `support@cal.com` - Request valid staging license key

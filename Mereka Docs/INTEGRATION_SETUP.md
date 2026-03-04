@@ -121,7 +121,8 @@ Cal.com requires **Two-Factor Authentication (2FA) to be enabled** for users to 
 Add these to your Cloud Run service:
 ```bash
 GOOGLE_LOGIN_ENABLED=true
-GOOGLE_API_CREDENTIALS='{"web":{"client_id":"your_google_client_id","client_secret":"your_google_client_secret","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google"]}}'
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
 ### Step 3: Test Google Login

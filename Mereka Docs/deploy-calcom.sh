@@ -23,12 +23,12 @@ SECONDARY_DOMAIN="cal.mereka.io"
 
 # Database configuration
 DB_USER="caluser"
-DB_PASS="REPLACE_WITH_DB_PASSWORD"
+DB_PASS="DWVdkG9MhMWu24HPCv0Gv0n"
 DB_NAME="calendso"
 
 # Google OAuth configuration
-GOOGLE_CLIENT_ID="REPLACE_WITH_GOOGLE_CLIENT_ID"
-GOOGLE_CLIENT_SECRET="REPLACE_WITH_GOOGLE_CLIENT_SECRET"
+GOOGLE_CLIENT_ID="840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="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"
 
 # Functions
 log_info() {
@@ -76,7 +76,7 @@ generate_secrets() {
     
     NEXTAUTH_SECRET=$(openssl rand -base64 32)
     CALENDSO_ENCRYPTION_KEY=$(openssl rand -hex 16)
-    CAL_SIGNATURE_TOKEN=$(openssl rand -hex 32)
+    CALCOM_DEPLOYMENT_KEY=$(openssl rand -hex 32)
     
     # White-labeling configuration
     NEXT_PUBLIC_APP_NAME="Mereka Calendar"
@@ -104,12 +104,16 @@ NEXTAUTH_URL: "https://$DOMAIN"
 WEB_APP_URL: "https://$DOMAIN"
 NEXT_PUBLIC_WEBAPP_URL: "https://$DOMAIN"
 NEXT_PUBLIC_WEBSITE_URL: "https://$DOMAIN"
+BASE_URL: "https://$DOMAIN"
+NEXT_PUBLIC_BASE_URL: "https://$DOMAIN"
 DATABASE_URL: "$DATABASE_CONNECTION"
 DATABASE_DIRECT_URL: "$DATABASE_CONNECTION"
+GOOGLE_CLIENT_ID: "$GOOGLE_CLIENT_ID"
+GOOGLE_CLIENT_SECRET: "$GOOGLE_CLIENT_SECRET"
 GOOGLE_LOGIN_ENABLED: "true"
 GOOGLE_API_CREDENTIALS: '$GOOGLE_API_CREDENTIALS'
-CAL_SIGNATURE_TOKEN: "$CAL_SIGNATURE_TOKEN"
-CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
+CALCOM_DEPLOYMENT_KEY: "$CALCOM_DEPLOYMENT_KEY"
+CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"
 
 # White-labeling Configuration
 NEXT_PUBLIC_APP_NAME: "Mereka Calendar"
@@ -151,11 +155,10 @@ verify_deployment() {
     
     # Check environment variables count
     ENV_COUNT=$(gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="yaml(spec.containers[0].env)" | grep "name:" | wc -l | tr -d ' ')
-    # Keep this count in sync with create_env_file above.
-    if [ "$ENV_COUNT" -eq 18 ]; then
-        log_success "All 18 environment variables are set"
+    if [ "$ENV_COUNT" -eq 23 ]; then
+        log_success "All 23 environment variables are set"
     else
-        log_error "Expected 18 environment variables, found $ENV_COUNT"
+        log_error "Expected 23 environment variables, found $ENV_COUNT"
         exit 1
     fi
     

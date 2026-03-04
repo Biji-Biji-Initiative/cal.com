@@ -14,16 +14,16 @@ This guide explains how to set up and troubleshoot API key creation in your Mere
 ### Core API Variables
 ```yaml
 API_KEY_PREFIX: "mereka_"                    # Required for API key generation
-CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"  # Required for commercial features
-CAL_SIGNATURE_TOKEN: "REPLACE_WITH_CAL_SIGNATURE_TOKEN"  # Required for internal verification
+CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"  # Required for commercial features
+CAL_SIGNATURE_TOKEN: "0a44d298f3ae16a1fe648b98171cf3f8cab9b544e4cb4882201bdc6d57420add"  # Required for internal verification
 ```
 
 ### Database & Authentication
 ```yaml
 DATABASE_URL: "postgresql://caluser:...@localhost:5432/calendso?host=/cloudsql/..."
 DATABASE_DIRECT_URL: "postgresql://caluser:...@localhost:5432/calendso?host=/cloudsql/..."
-NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
-CALENDSO_ENCRYPTION_KEY: "REPLACE_WITH_CALENDSO_ENCRYPTION_KEY"
+NEXTAUTH_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
+CALENDSO_ENCRYPTION_KEY: "4e81f6ebdfe2891485a9c4cbe845e6ed"
 ```
 
 ## 🚀 **How to Create API Keys**

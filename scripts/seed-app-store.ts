@@ -5,6 +5,7 @@
 import dotEnv from "dotenv";
 import path from "node:path"
 
+import { shouldEnableApp } from "@calcom/app-store/_utils/validateAppKeys";
 import { appStoreMetadata } from "@calcom/app-store/appStoreMetaData";
 import { shouldEnableApp } from "@calcom/app-store/_utils/validateAppKeys";
 import prisma from "@calcom/prisma";
@@ -49,16 +50,11 @@ async function createApp(
       },
     });
 
-    // Only enable apps if they have valid keys (or don't require keys)
-    const keysToValidate = (keys ?? foundApp?.keys) as Prisma.JsonValue | undefined;
-    const enabled = shouldEnableApp(dirName, keysToValidate);
-    const data = {
-      slug,
-      dirName,
-      categories,
-      ...(keys !== undefined && { keys }),
-      enabled,
-    };
+    // Preserve existing keys when a later seed pass doesn't provide keys (e.g. appStoreMetadata loop).
+    // Otherwise key-validated apps like google-calendar can be incorrectly disabled.
+    const keysForValidation = (keys ?? foundApp?.keys) as Prisma.JsonValue | undefined;
+    const enabled = shouldEnableApp(dirName, keysForValidation);
+    const data = { slug, dirName, categories, keys, enabled };
 
     if (!foundApp) {
       await prisma.app.create({

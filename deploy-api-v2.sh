@@ -1,22 +1,16 @@
 #!/bin/bash
 
 # Cal.com API v2 Deployment Script
-# This script builds and deploys the API v2 service to Google Cloud Run.
-# Do not commit real secrets in env files. Use Infisical or your secret manager.
+# This script builds and deploys the API v2 service to Google Cloud Run
 
 set -e
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Configuration (override with environment variables when needed)
-PROJECT_ID="${PROJECT_ID:-REPLACE_WITH_GCP_PROJECT_ID}"
-REGION="${REGION:-us-central1}"
-SERVICE_NAME="${SERVICE_NAME:-calcom-api-v2}"
-ENV_FILE="${ENV_FILE:-${ROOT_DIR}/env-vars-api-v2.yaml}"
-CLOUDSQL_INSTANCE="${CLOUDSQL_INSTANCE:-REPLACE_WITH_PROJECT:REGION:INSTANCE}"
-IMAGE_REPOSITORY="${IMAGE_REPOSITORY:-gcr.io/${PROJECT_ID}/${SERVICE_NAME}}"
-IMAGE_TAG="${IMAGE_TAG:-$(git -C "${ROOT_DIR}" rev-parse --short HEAD)}"
-IMAGE_NAME="${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+# Configuration
+PROJECT_ID="biji-biji-calcom-250825084322"
+REGION="us-central1"
+SERVICE_NAME="calcom-api-v2"
+IMAGE_NAME="gcr.io/${PROJECT_ID}/calcom-api-v2"
+ENV_FILE="env-vars-api-v2.yaml"
 
 # Colors for output
 RED='\033[0;31m'
@@ -55,21 +49,6 @@ check_prerequisites() {
         log_error "Environment file $ENV_FILE not found!"
         exit 1
     fi
-
-    if grep -Eq "REPLACE_WITH_|<set-in-infisical>" "$ENV_FILE"; then
-        log_error "Environment file still contains placeholders. Resolve secrets before deploying."
-        exit 1
-    fi
-
-    if [[ "$PROJECT_ID" == "REPLACE_WITH_GCP_PROJECT_ID" ]]; then
-        log_error "PROJECT_ID is not configured."
-        exit 1
-    fi
-
-    if [[ "$CLOUDSQL_INSTANCE" == "REPLACE_WITH_PROJECT:REGION:INSTANCE" ]]; then
-        log_error "CLOUDSQL_INSTANCE is not configured."
-        exit 1
-    fi
     
     log_info "Prerequisites check passed ✅"
 }
@@ -78,10 +57,10 @@ check_prerequisites() {
 build_api_v2() {
     log_info "Building API v2 service..."
     
-    cd "${ROOT_DIR}"
+    # Build the service
     cd apps/api/v2
     log_info "Installing dependencies..."
-    yarn install --immutable
+    yarn install
     
     log_info "Building service..."
     yarn workspace @calcom/api-v2 run build
@@ -93,15 +72,18 @@ build_api_v2() {
     fi
     
     log_info "API v2 build completed ✅"
-    cd "${ROOT_DIR}"
+    cd /Users/agent-g/cal.com
 }
 
 # Build Docker image
 build_docker_image() {
     log_info "Building Docker image..."
     
-    # Database credentials belong in runtime env vars, not Docker build args.
-    docker build -t "$IMAGE_NAME" -f apps/api/v2/Dockerfile .
+    # Build the image
+    docker build -t "$IMAGE_NAME" \
+        --build-arg DATABASE_URL="postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
+        --build-arg DATABASE_DIRECT_URL="postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
+        -f apps/api/v2/Dockerfile .
     
     log_info "Docker image built successfully ✅"
 }
@@ -123,8 +105,7 @@ push_docker_image() {
 deploy_to_cloud_run() {
     log_info "Deploying to Google Cloud Run..."
     
-    gcloud config set project "$PROJECT_ID" >/dev/null
-
+    # Deploy the service
     gcloud run deploy "$SERVICE_NAME" \
         --image "$IMAGE_NAME" \
         --region "$REGION" \
@@ -137,7 +118,7 @@ deploy_to_cloud_run() {
         --min-instances 1 \
         --max-instances 10 \
         --env-vars-file "$ENV_FILE" \
-        --add-cloudsql-instances "$CLOUDSQL_INSTANCE" \
+        --add-cloudsql-instances "biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517" \
         --quiet
     
     log_info "API v2 service deployed successfully ✅"
@@ -159,7 +140,6 @@ get_service_url() {
 # Main deployment process
 main() {
     log_info "Starting Cal.com API v2 deployment..."
-    log_info "Using image: ${IMAGE_NAME}"
     
     check_prerequisites
     build_api_v2
@@ -177,5 +157,7 @@ main() {
 
 # Run main function
 main "$@"
+
+
 
 

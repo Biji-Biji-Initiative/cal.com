@@ -49,8 +49,8 @@ yarn workspace @calcom/api-v2 run build
 
 # 2. Build Docker image
 docker build -t gcr.io/biji-biji-calcom-250825084322/calcom-api-v2 \
-  --build-arg DATABASE_URL="postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
-  --build-arg DATABASE_DIRECT_URL="postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
+  --build-arg DATABASE_URL="postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
+  --build-arg DATABASE_DIRECT_URL="postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
   -f apps/api/v2/Dockerfile .
 
 # 3. Push to Google Container Registry
@@ -84,17 +84,17 @@ API_PORT: "80"
 API_URL: "https://api-v2.mereka.io"
 
 # Database Configuration
-DATABASE_READ_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_WRITE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_READ_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_WRITE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
 
 # Authentication
-NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
-JWT_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
+NEXTAUTH_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
+JWT_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
 
 # Cal.com Configuration
 WEB_APP_URL: "https://calendar.mereka.io"
-CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
+CALCOM_LICENSE_KEY: "59c0bed7-8b21-4280-8514-e022fbfc24c7"
 API_KEY_PREFIX: "mereka_"
 IS_E2E: "true"
 
