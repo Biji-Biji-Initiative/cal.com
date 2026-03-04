@@ -1,8 +1,5 @@
 FROM node:20-alpine AS build
 
-ARG DATABASE_DIRECT_URL
-ARG DATABASE_URL
-
 WORKDIR /calcom
 
 RUN set -eux;
@@ -13,8 +10,6 @@ RUN corepack enable && corepack prepare yarn@3.4.1 --activate
 
 ENV NODE_ENV="production"
 ENV NODE_OPTIONS="--max-old-space-size=8192"
-ENV DATABASE_DIRECT_URL=${DATABASE_DIRECT_URL}
-ENV DATABASE_URL=${DATABASE_URL}
 ENV USE_POOL="true"
 
 COPY . .

@@ -23,12 +23,12 @@ SECONDARY_DOMAIN="cal.mereka.io"
 
 # Database configuration
 DB_USER="caluser"
-DB_PASS="DWVdkG9MhMWu24HPCv0Gv0n"
+DB_PASS="REPLACE_WITH_DB_PASSWORD"
 DB_NAME="calendso"
 
 # Google OAuth configuration
-GOOGLE_CLIENT_ID="840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET="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"
+GOOGLE_CLIENT_ID="REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="REPLACE_WITH_GOOGLE_CLIENT_SECRET"
 
 # Functions
 log_info() {

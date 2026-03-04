@@ -18,7 +18,7 @@ This document contains the exact configuration that successfully deployed Cal.co
 - **Zone**: `us-central1-c`
 - **Database**: `calendso`
 - **User**: `caluser`
-- **Password**: `DWVdkG9MhMWu24HPCv0Gv0n`
+- **Password**: `REPLACE_WITH_DB_PASSWORD`
 - **Public IP**: `34.136.95.136`
 - **Connection Name**: `biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517`
 
@@ -38,7 +38,7 @@ This document contains the exact configuration that successfully deployed Cal.co
 
 ```yaml
 # Core Authentication
-NEXTAUTH_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
+NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
 CALENDSO_ENCRYPTION_KEY: "/+xwwLq2TKP0I8G9dkN2//ko30WRIczS2DGw/8osMtk="
 
 # URL Configuration
@@ -50,17 +50,17 @@ BASE_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_BASE_URL: "https://calendar.mereka.io"
 
 # Database Configuration (Socket Connection)
-DATABASE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_DIRECT_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
 
 # Google OAuth Configuration
-GOOGLE_CLIENT_ID: "840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET: "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"
+GOOGLE_CLIENT_ID: "REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET: "REPLACE_WITH_GOOGLE_CLIENT_SECRET"
 GOOGLE_LOGIN_ENABLED: "true"
-GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com","client_secret":"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","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
-CALCOM_DEPLOYMENT_KEY: "0a44d298f3ae16a1fe648b98171cf3f8cab9b544e4cb4882201bdc6d57420add"
+GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com","client_secret":"REPLACE_WITH_GOOGLE_CLIENT_SECRET","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
+CALCOM_DEPLOYMENT_KEY: "REPLACE_WITH_CALCOM_DEPLOYMENT_KEY"
 CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"
-CAL_SIGNATURE_TOKEN: "0a44d298f3ae16a1fe648b98171cf3f8cab9b544e4cb4882201bdc6d57420add"
+CAL_SIGNATURE_TOKEN: "REPLACE_WITH_CALCOM_DEPLOYMENT_KEY"
 
 # White-labeling Configuration
 NEXT_PUBLIC_APP_NAME: "Mereka Calendar"
@@ -124,8 +124,8 @@ curl -I https://calendar.mereka.io
 ## 🔐 Google OAuth Setup
 
 ### OAuth 2.0 Client
-- **Client ID**: `840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com`
-- **Client Secret**: `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`
+- **Client ID**: `REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com`
+- **Client Secret**: `REPLACE_WITH_GOOGLE_CLIENT_SECRET`
 - **Application Type**: Web application
 
 ### Authorized Redirect URIs
@@ -148,7 +148,7 @@ https://cal.mereka.io/api/auth/callback/google
 ### 1. Environment Variables File Creation
 ```bash
 cat > env-vars.yaml << 'EOF'
-NEXTAUTH_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
+NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
 CALENDSO_ENCRYPTION_KEY: "/+xwwLq2TKP0I8G9dkN2//ko30WRIczS2DGw/8osMtk="
 NEXTAUTH_URL: "https://calendar.mereka.io"
 WEB_APP_URL: "https://calendar.mereka.io"
@@ -156,12 +156,12 @@ NEXT_PUBLIC_WEBAPP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBSITE_URL: "https://calendar.mereka.io"
 BASE_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_BASE_URL: "https://calendar.mereka.io"
-DATABASE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_DIRECT_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-GOOGLE_CLIENT_ID: "840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET: "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"
+DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+GOOGLE_CLIENT_ID: "REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET: "REPLACE_WITH_GOOGLE_CLIENT_SECRET"
 GOOGLE_LOGIN_ENABLED: "true"
-GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com","client_secret":"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","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
+GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com","client_secret":"REPLACE_WITH_GOOGLE_CLIENT_SECRET","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
 EOF
 ```
 

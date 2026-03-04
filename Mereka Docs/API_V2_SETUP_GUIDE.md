@@ -19,7 +19,7 @@ The **Cal.com API v2** is a **separate service** from the main web application. 
 - **CPU**: 2 (recommended)
 
 ### **2. Separate Environment Variables**
-- **File**: `env-vars-api-v2.yaml`
+- **File**: `env-vars-api-v2.example.yaml`
 - **Database**: Same connection strings
 - **License**: Same staging key
 - **API Configuration**: Specific to v2
@@ -49,8 +49,8 @@ yarn workspace @calcom/api-v2 run build
 
 # 2. Build Docker image
 docker build -t gcr.io/biji-biji-calcom-250825084322/calcom-api-v2 \
-  --build-arg DATABASE_URL="postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
-  --build-arg DATABASE_DIRECT_URL="postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
+  --build-arg DATABASE_URL="postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
+  --build-arg DATABASE_DIRECT_URL="postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
   -f apps/api/v2/Dockerfile .
 
 # 3. Push to Google Container Registry
@@ -69,7 +69,7 @@ gcloud run deploy calcom-api-v2 \
   --cpu 2 \
   --min-instances 1 \
   --max-instances 10 \
-  --env-vars-file env-vars-api-v2.yaml \
+  --env-vars-file env-vars-api-v2.example.yaml \
   --add-cloudsql-instances biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517 \
   --quiet
 ```
@@ -84,17 +84,17 @@ API_PORT: "80"
 API_URL: "https://api-v2.mereka.io"
 
 # Database Configuration
-DATABASE_READ_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_WRITE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_READ_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_WRITE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
 
 # Authentication
-NEXTAUTH_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
-JWT_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
+NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
+JWT_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
 
 # Cal.com Configuration
 WEB_APP_URL: "https://calendar.mereka.io"
-CALCOM_LICENSE_KEY: "59c0bed7-8b21-4280-8514-e022fbfc24c7"
+CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
 API_KEY_PREFIX: "mereka_"
 IS_E2E: "true"
 
@@ -152,7 +152,7 @@ gcloud logging read 'resource.type=cloud_run_revision AND resource.labels.servic
 
 ### **Update Web App Configuration:**
 ```yaml
-# Add to env-vars-production.yaml
+# Add to env-vars-production.example.yaml
 NEXT_PUBLIC_API_V2_URL: "https://api-v2.mereka.io"
 ```
 
@@ -229,7 +229,7 @@ gcloud run services describe calcom-api-v2 \
 
 **Status**: Ready for deployment ✅  
 **Script**: `deploy-api-v2.sh` ✅  
-**Configuration**: `env-vars-api-v2.yaml` ✅  
+**Configuration**: `env-vars-api-v2.example.yaml` ✅  
 **Expected Result**: Separate API v2 service running on Cloud Run ✅
 
 

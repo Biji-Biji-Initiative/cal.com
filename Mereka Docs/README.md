@@ -26,7 +26,7 @@ Welcome to the comprehensive documentation for your Mereka Calendar deployment o
 
 ## 🚨 **Critical Notes**
 
-- **Never delete** `env-vars-production.yaml` - it's essential for deployments
+- **Never delete** `env-vars-production.example.yaml` - it's essential for deployments
 - **Always use** 2048Mi memory allocation for Cloud Run
 - **Must include** `CAL_SIGNATURE_TOKEN` to avoid TRPC errors
 - **DNS must be** "DNS only" (gray cloud) in Cloudflare, not proxied

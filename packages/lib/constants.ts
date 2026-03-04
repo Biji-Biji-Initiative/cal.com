@@ -34,7 +34,7 @@ export const WEBAPP_URL_FOR_OAUTH = IS_PRODUCTION || IS_DEV ? WEBAPP_URL : "http
 
 /** @deprecated use `WEBAPP_URL` */
 export const BASE_URL = WEBAPP_URL;
-export const WEBSITE_URL = process.env.NEXT_PUBLIC_WEBSITE_URL || "https://cal.com";
+export const WEBSITE_URL = ensureProtocol(process.env.NEXT_PUBLIC_WEBSITE_URL) || "https://cal.com";
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Mereka Calendar";
 export const SUPPORT_MAIL_ADDRESS = process.env.NEXT_PUBLIC_SUPPORT_MAIL_ADDRESS || "support@mereka.io";
 export const COMPANY_NAME = process.env.NEXT_PUBLIC_COMPANY_NAME || "Mereka";
@@ -99,6 +99,7 @@ export const PUBLIC_QUICK_AVAILABILITY_ROLLOUT =
 /** @deprecated use `WEBAPP_URL` */
 export const NEXT_PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_WEBAPP_URL || `https://${process.env.VERCEL_URL}`;
 export const LOGO = "/mereka-logo.png";
+export const LOGO_DARK = "/mereka-logo.png";
 export const LOGO_ICON = "/mereka-logo.png";
 export const AVATAR_FALLBACK = "/avatar.svg";
 export const FAVICON_16 = "/favicon-16x16.png";

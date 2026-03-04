@@ -7,7 +7,7 @@
 - `CALENDSO_ENCRYPTION_KEY` - Application encryption key (32 bytes for AES256)
 - `CALCOM_DEPLOYMENT_KEY` - Internal signature verification key
 - `CAL_SIGNATURE_TOKEN` - Signature token for deployment verification
-- `CALCOM_LICENSE_KEY` - Cal.com license key (staging: 59c0bed7-8b21-4280-8514-e022fbfc24c7)
+- `CALCOM_LICENSE_KEY` - Cal.com license key (staging: REPLACE_WITH_CALCOM_LICENSE_KEY)
 - `NEXT_PUBLIC_IS_E2E` - Development mode flag (bypasses license validation)
 
 ### URLs & Base Configuration
@@ -39,23 +39,23 @@
 ## Current Values (Production)
 
 ```yaml
-NEXTAUTH_SECRET: "84T2YRb6IYGmzdn61ori7D1CMCUzHEnOjivvicWJVXk="
-CALENDSO_ENCRYPTION_KEY: "4e81f6ebdfe2891485a9c4cbe845e6ed"
+NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
+CALENDSO_ENCRYPTION_KEY: "REPLACE_WITH_CALENDSO_ENCRYPTION_KEY"
 NEXTAUTH_URL: "https://calendar.mereka.io"
 WEB_APP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBAPP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBSITE_URL: "https://calendar.mereka.io"
 BASE_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_BASE_URL: "https://calendar.mereka.io"
-DATABASE_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-DATABASE_DIRECT_URL: "postgresql://caluser:DWVdkG9MhMWu24HPCv0Gv0n@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-GOOGLE_CLIENT_ID: "840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET: "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"
+DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
+GOOGLE_CLIENT_ID: "REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET: "REPLACE_WITH_GOOGLE_CLIENT_SECRET"
 GOOGLE_LOGIN_ENABLED: "true"
-GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"840643300842-tkj3l0cfmkjspk34bpr68h70c9qf60f1.apps.googleusercontent.com","client_secret":"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","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
-CALCOM_DEPLOYMENT_KEY: "0a44d298f3ae16a1fe648b98171cf3f8cab9b544e4cb4882201bdc6d57420add"
+GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com","client_secret":"REPLACE_WITH_GOOGLE_CLIENT_SECRET","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
+CALCOM_DEPLOYMENT_KEY: "REPLACE_WITH_CALCOM_DEPLOYMENT_KEY"
 CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"
-CAL_SIGNATURE_TOKEN: "0a44d298f3ae16a1fe648b98171cf3f8cab9b544e4cb4882201bdc6d57420add"
+CAL_SIGNATURE_TOKEN: "REPLACE_WITH_CALCOM_DEPLOYMENT_KEY"
 NEXT_PUBLIC_APP_NAME: "Mereka Calendar"
 NEXT_PUBLIC_SUPPORT_MAIL_ADDRESS: "support@mereka.io"
 NEXT_PUBLIC_COMPANY_NAME: "Mereka"
@@ -76,13 +76,13 @@ API_KEY_PREFIX: "mereka_"
 
 ## Files
 
-- **Production Config**: `env-vars-production.yaml` ✅
+- **Production Config**: `env-vars-production.example.yaml` ✅
 - **Deployment Script**: `deploy-calcom.sh` ✅
 - **Documentation**: `WORKING_CONFIG.md`, `DEPLOYMENT_GUIDE.md` ✅
 
 ## Notes
 
-- The `env-vars-production.yaml` file contains all production values
+- The `env-vars-production.example.yaml` file contains all production values
 - Never delete this file - it's essential for deployments
 - All 22 environment variables are required for full functionality
 - White-labeling is now active with Mereka branding
