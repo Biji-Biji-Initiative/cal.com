@@ -6,6 +6,10 @@
 
 set -e  # Exit on any error
 
+# Paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -29,6 +33,7 @@ DB_NAME="calendso"
 # Google OAuth configuration
 GOOGLE_CLIENT_ID="REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="REPLACE_WITH_GOOGLE_CLIENT_SECRET"
+CALCOM_LICENSE_KEY="${CALCOM_LICENSE_KEY:-REPLACE_WITH_CALCOM_LICENSE_KEY}"
 
 # Functions
 log_info() {
@@ -65,6 +70,21 @@ check_prerequisites() {
     # Check if project exists
     if ! gcloud projects describe $PROJECT_ID &> /dev/null; then
         log_error "Project $PROJECT_ID not found or not accessible"
+        exit 1
+    fi
+
+    if [[ "$DB_PASS" == REPLACE_WITH_* ]]; then
+        log_error "Set DB_PASS before deploying."
+        exit 1
+    fi
+
+    if [[ "$GOOGLE_CLIENT_ID" == REPLACE_WITH_* || "$GOOGLE_CLIENT_SECRET" == REPLACE_WITH_* ]]; then
+        log_error "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET before deploying."
+        exit 1
+    fi
+
+    if [[ "$CALCOM_LICENSE_KEY" == REPLACE_WITH_* ]]; then
+        log_error "Set CALCOM_LICENSE_KEY before deploying."
         exit 1
     fi
     
@@ -108,7 +128,7 @@ DATABASE_URL: "$DATABASE_CONNECTION"
 DATABASE_DIRECT_URL: "$DATABASE_CONNECTION"
 GOOGLE_LOGIN_ENABLED: "true"
 GOOGLE_API_CREDENTIALS: '$GOOGLE_API_CREDENTIALS'
-CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
+CALCOM_LICENSE_KEY: "$CALCOM_LICENSE_KEY"
 CAL_SIGNATURE_TOKEN: "$CAL_SIGNATURE_TOKEN"
 
 # White-labeling Configuration
@@ -121,6 +141,16 @@ NEXT_PUBLIC_SENDGRID_SENDER_NAME: "Mereka Calendar"
 # API Configuration
 API_KEY_PREFIX: "mereka_"
 EOF
+
+    if [[ -x "$REPO_ROOT/scripts/verify-calcom-env.sh" ]]; then
+        log_info "Running environment preflight..."
+        if ! "$REPO_ROOT/scripts/verify-calcom-env.sh" env-vars.yaml --profile web --require-google; then
+            log_error "Environment preflight failed. Fix env-vars.yaml before deployment."
+            exit 1
+        fi
+    else
+        log_warning "verify-calcom-env.sh not found; skipping preflight."
+    fi
     
     log_success "Environment variables file created"
 }
@@ -149,14 +179,28 @@ verify_deployment() {
     REVISION=$(gcloud run services describe $SERVICE_NAME --region=$REGION --project=$PROJECT_ID --format="value(status.traffic[0].revisionName)")
     log_info "Active revision: $REVISION"
     
-    # Check environment variables count
-    ENV_COUNT=$(gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="yaml(spec.containers[0].env)" | grep "name:" | wc -l | tr -d ' ')
-    if [ "$ENV_COUNT" -eq 23 ]; then
-        log_success "All 23 environment variables are set"
-    else
-        log_error "Expected 23 environment variables, found $ENV_COUNT"
-        exit 1
-    fi
+    # Check required environment variables are present on active revision
+    REVISION_ENV=$(gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="yaml(spec.containers[0].env)")
+    REQUIRED_VARS=(
+        NEXTAUTH_SECRET
+        CALENDSO_ENCRYPTION_KEY
+        NEXTAUTH_URL
+        WEB_APP_URL
+        DATABASE_URL
+        DATABASE_DIRECT_URL
+        GOOGLE_LOGIN_ENABLED
+        GOOGLE_API_CREDENTIALS
+        CALCOM_LICENSE_KEY
+        CAL_SIGNATURE_TOKEN
+    )
+    for VAR in "${REQUIRED_VARS[@]}"; do
+        if echo "$REVISION_ENV" | grep -q "name: ${VAR}$"; then
+            log_success "Found required env var: $VAR"
+        else
+            log_error "Missing required env var on active revision: $VAR"
+            exit 1
+        fi
+    done
     
     # Check memory allocation
     MEMORY=$(gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="value(spec.containers[0].resources.limits.memory)")
@@ -258,7 +302,7 @@ show_summary() {
     echo "- Service Name: $SERVICE_NAME"
     echo "- Service URL: $SERVICE_URL"
     echo "- Memory: 2048Mi"
-    echo "- Environment Variables: 14"
+    echo "- Environment Variables: required keys verified"
     echo ""
     echo "Custom Domains (after DNS configuration):"
     echo "- Primary: https://$DOMAIN"
