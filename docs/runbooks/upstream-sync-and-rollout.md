@@ -48,7 +48,9 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 4. Booking creation works end-to-end and creates calendar event.
 5. Existing users/bookings remain accessible after migration.
 6. Baseline HTTP smoke checks pass:
-   - `./scripts/smoke-check-calcom.sh --web-url https://<web-domain> --api-url https://<api-domain>`
+   - `./scripts/smoke-check-calcom.sh --web-url https://<web-domain> --api-url https://<api-domain> --check-google --check-sso`
+   - Combined gate with live smoke:
+   - `./scripts/run-release-gate.sh --dev-web /secure/dev-web.yaml --staging-web /secure/staging-web.yaml --prod-web /secure/prod-web.yaml --api-v2 /secure/prod-api-v2.yaml --web-url https://<web-domain> --api-url https://<api-domain>`
    - Optional CI execution: trigger `.github/workflows/smoke-check.yml` with target URLs.
 
 ### Quick Probe Commands (Read-only)
@@ -60,6 +62,7 @@ curl -I https://calendar.mereka.io/api/auth/signin/google
 ```
 Expected signals:
 - Auth endpoints generally return redirect statuses (`302/307`) when auth flow is wired.
+- Google callback route should return redirect/auth-required status (`302/400/401`) instead of transport errors.
 - Outpost ping should return `204` when Authentik outpost routing is healthy.
 
 ## Data Preservation Rules

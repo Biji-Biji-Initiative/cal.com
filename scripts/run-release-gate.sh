@@ -17,6 +17,8 @@ ALLOW_PLACEHOLDERS="false"
 SKIP_GIT_CHECKS="false"
 SMOKE_TIMEOUT="${SMOKE_TIMEOUT:-20}"
 INSECURE_SMOKE="false"
+SMOKE_CHECK_GOOGLE="true"
+SMOKE_CHECK_SSO="true"
 
 usage() {
   cat >&2 <<'EOF'
@@ -32,6 +34,8 @@ Optional live smoke options:
   --web-url <url>         Run smoke checks against web URL
   --api-url <url>         Optional API URL for smoke checks
   --smoke-timeout <sec>   Curl timeout for smoke checks (default: 20)
+  --smoke-no-google       Skip Google login/callback smoke checks
+  --smoke-no-sso          Skip Authentik outpost smoke checks
   --smoke-insecure        Allow insecure TLS for smoke checks
 
 General options:
@@ -73,6 +77,14 @@ while [[ $# -gt 0 ]]; do
     --smoke-timeout)
       SMOKE_TIMEOUT="${2:-}"
       shift 2
+      ;;
+    --smoke-no-google)
+      SMOKE_CHECK_GOOGLE="false"
+      shift
+      ;;
+    --smoke-no-sso)
+      SMOKE_CHECK_SSO="false"
+      shift
       ;;
     --smoke-insecure)
       INSECURE_SMOKE="true"
@@ -130,6 +142,12 @@ if [[ -n "$WEB_URL" ]]; then
   smoke_args=(--web-url "$WEB_URL" --timeout "$SMOKE_TIMEOUT")
   if [[ -n "$API_URL" ]]; then
     smoke_args+=(--api-url "$API_URL")
+  fi
+  if [[ "$SMOKE_CHECK_GOOGLE" == "true" ]]; then
+    smoke_args+=(--check-google)
+  fi
+  if [[ "$SMOKE_CHECK_SSO" == "true" ]]; then
+    smoke_args+=(--check-sso)
   fi
   if [[ "$INSECURE_SMOKE" == "true" ]]; then
     smoke_args+=(--insecure)

@@ -16,6 +16,16 @@ on:
         required: false
         default: "20"
         type: string
+      check_google:
+        description: "Check Google login/callback smoke endpoints"
+        required: false
+        default: true
+        type: boolean
+      check_sso:
+        description: "Check Authentik outpost smoke endpoint"
+        required: false
+        default: true
+        type: boolean
       insecure_tls:
         description: "Allow insecure TLS certificates"
         required: false
@@ -37,6 +47,12 @@ jobs:
           args=(--web-url "${{ inputs.web_url }}" --timeout "${{ inputs.timeout_seconds }}")
           if [[ -n "${{ inputs.api_url }}" ]]; then
             args+=(--api-url "${{ inputs.api_url }}")
+          fi
+          if [[ "${{ inputs.check_google }}" == "true" ]]; then
+            args+=(--check-google)
+          fi
+          if [[ "${{ inputs.check_sso }}" == "true" ]]; then
+            args+=(--check-sso)
           fi
           if [[ "${{ inputs.insecure_tls }}" == "true" ]]; then
             args+=(--insecure)
