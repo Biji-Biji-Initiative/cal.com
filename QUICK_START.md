@@ -27,17 +27,17 @@
 ## ⚡ **Quick Commands**
 
 ```bash
-# Make script executable
-chmod +x setup-integrations.sh
-
-# Run integration setup
+# Run integration setup (Cloud Run env update)
 ./setup-integrations.sh
 
-# Check service status
-gcloud run services describe calcom-app --region=us-central1
+# Check service status (set these first)
+SERVICE_NAME="REPLACE_WITH_SERVICE_NAME"
+REGION="REPLACE_WITH_REGION"
+PROJECT_ID="REPLACE_WITH_PROJECT_ID"
+gcloud run services describe "$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID"
 
 # View logs
-gcloud run services logs read calcom-app --region=us-central1
+gcloud run services logs read "$SERVICE_NAME" --region="$REGION" --project="$PROJECT_ID"
 ```
 
 ---
@@ -55,7 +55,9 @@ gcloud run services logs read calcom-app --region=us-central1
 ---
 
 ## 📚 **Full Documentation**
-- **Complete Setup Guide**: `INTEGRATION_SETUP.md`
+- **Rollout Runbook**: `docs/runbooks/upstream-sync-and-rollout.md`
+- **Complete Integration Guide**: `Mereka Docs/INTEGRATION_SETUP.md`
+- **Deployment Guide**: `DEPLOYMENT_GUIDE.md`
 - **Automated Script**: `setup-integrations.sh`
 
 ---
@@ -68,4 +70,4 @@ gcloud run services logs read calcom-app --region=us-central1
 - [ ] Google Calendar integration installed
 - [ ] All OAuth flows working
 
-**Need help?** Check `INTEGRATION_SETUP.md` for detailed troubleshooting steps.
+**Need help?** Check `Mereka Docs/INTEGRATION_SETUP.md` for detailed troubleshooting steps.
