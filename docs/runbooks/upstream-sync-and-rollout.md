@@ -4,9 +4,9 @@
 Keep this fork close to `calcom/cal.com` while safely rolling updates through `dev (RKE2) -> staging -> prod (GKE)` with data preservation and integration validation.
 
 ## Source Of Truth
-- Upstream code updates: [`docs/self-hosting/upgrading.mdx`](/home/gurpreet/projects/k8s/cal.com/docs/self-hosting/upgrading.mdx)
-- Migration safety: [`docs/self-hosting/database-migrations.mdx`](/home/gurpreet/projects/k8s/cal.com/docs/self-hosting/database-migrations.mdx)
-- Local deployment references: [`DEPLOYMENT_GUIDE.md`](/home/gurpreet/projects/k8s/cal.com/DEPLOYMENT_GUIDE.md)
+- Upstream code updates: [`docs/self-hosting/upgrading.mdx`](../self-hosting/upgrading.mdx)
+- Migration safety: [`docs/self-hosting/database-migrations.mdx`](../self-hosting/database-migrations.mdx)
+- Local deployment references: [`DEPLOYMENT_GUIDE.md`](../../DEPLOYMENT_GUIDE.md)
 
 ## Pre-Flight (Always)
 1. Sync with upstream:
@@ -83,4 +83,4 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 2. Prefer config/infrastructure overrides over source-code divergence.
 3. Run upstream sync on a fixed cadence (weekly/biweekly).
 4. Treat secrets as external-only (Infisical/secret manager), never in git.
-5. Keep CI drift guard active: [`.github/workflows/upstream-drift.yml`](/home/gurpreet/projects/k8s/cal.com/.github/workflows/upstream-drift.yml).
+5. Keep CI drift guard active: [`.github/workflows/upstream-drift.yml`](../../.github/workflows/upstream-drift.yml).

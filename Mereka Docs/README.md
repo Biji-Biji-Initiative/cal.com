@@ -8,7 +8,7 @@ Welcome to the comprehensive documentation for your Mereka Calendar deployment o
 - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete deployment guide with troubleshooting
 - **[WORKING_CONFIG.md](WORKING_CONFIG.md)** - Working configuration reference
 - **[deploy-calcom.sh](deploy-calcom.sh)** - Automated deployment script
-- **[deploy-api-v2.sh](deploy-api-v2.sh)** - **NEW: API v2 service deployment script**
+- **[deploy-api-v2.sh](../deploy-api-v2.sh)** - **NEW: API v2 service deployment script**
 
 ### 🔧 **Configuration & Environment**
 - **[ENVIRONMENT_VARIABLES_REFERENCE.md](ENVIRONMENT_VARIABLES_REFERENCE.md)** - Complete environment variables reference
