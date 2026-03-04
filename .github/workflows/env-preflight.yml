@@ -5,6 +5,7 @@ on:
     paths:
       - "scripts/verify-calcom-env.sh"
       - "scripts/check-rollout-readiness.sh"
+      - "scripts/test-verify-calcom-env.sh"
       - "env-vars-production.example.yaml"
       - "env-vars-api-v2.example.yaml"
       - "calcom.env.example"
@@ -17,6 +18,7 @@ on:
     paths:
       - "scripts/verify-calcom-env.sh"
       - "scripts/check-rollout-readiness.sh"
+      - "scripts/test-verify-calcom-env.sh"
       - "env-vars-production.example.yaml"
       - "env-vars-api-v2.example.yaml"
       - "calcom.env.example"
@@ -34,6 +36,8 @@ jobs:
         run: |
           bash -n scripts/verify-calcom-env.sh
           bash -n scripts/check-rollout-readiness.sh
+          bash -n scripts/test-verify-calcom-env.sh
+          ./scripts/test-verify-calcom-env.sh
           ./scripts/verify-calcom-env.sh env-vars-production.example.yaml --profile web --allow-placeholders --require-google --require-sso
 
       - name: Verify API v2 Template
