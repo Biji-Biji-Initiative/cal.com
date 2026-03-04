@@ -3,11 +3,11 @@
 ## Overview
 This guide explains how to set up and troubleshoot API key creation in your Mereka Calendar deployment.
 
-## ✅ **Current Status**
-- **Service**: `calcom-app-prod` (revision 00009-jml)
-- **Environment Variables**: 23/23 ✅
-- **API_KEY_PREFIX**: `mereka_` ✅
-- **CALCOM_LICENSE_KEY**: Staging license active ✅
+## ✅ **Current Deployment Expectations**
+- **Service**: `calcom-app-prod` is healthy and reachable.
+- **API_KEY_PREFIX**: Set (for example `mereka_`).
+- **CAL_SIGNATURE_TOKEN**: Set.
+- **CALCOM_LICENSE_KEY**: Set when commercial features are required.
 
 ## 🔧 **Required Environment Variables for API Keys**
 
@@ -53,7 +53,8 @@ Your API keys will be generated with the prefix: `mereka_xxxxxxxxxxxxxxxx`
 **Solutions:**
 1. **Check Environment Variables:**
    ```bash
-   gcloud run revisions describe calcom-app-prod-00009-jml \
+   REVISION=$(gcloud run services describe calcom-app-prod --region=us-central1 --project=biji-biji-calcom-250825084322 --format="value(status.traffic[0].revisionName)")
+   gcloud run revisions describe "$REVISION" \
      --region=us-central1 \
      --project=biji-biji-calcom-250825084322 \
      --format="yaml(spec.containers[0].env)" | grep -A1 "API_KEY_PREFIX"
@@ -61,7 +62,8 @@ Your API keys will be generated with the prefix: `mereka_xxxxxxxxxxxxxxxx`
 
 2. **Verify License Key:**
    ```bash
-   gcloud run revisions describe calcom-app-prod-00009-jml \
+   REVISION=$(gcloud run services describe calcom-app-prod --region=us-central1 --project=biji-biji-calcom-250825084322 --format="value(status.traffic[0].revisionName)")
+   gcloud run revisions describe "$REVISION" \
      --region=us-central1 \
      --project=biji-biji-calcom-250825084322 \
      --format="yaml(spec.containers[0].env)" | grep -A1 "CALCOM_LICENSE_KEY"
@@ -115,4 +117,3 @@ curl -H "Authorization: Bearer mereka_xxxxxxxxxxxxxxxx" \
 **Last Updated**: August 25, 2025  
 **Status**: API Key Creation Enabled ✅  
 **Test**: Try creating an API key now - it should work!
-

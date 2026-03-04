@@ -1,6 +1,6 @@
 # Cal.com Environment Variables Reference
 
-## Complete List of All 21 Environment Variables
+## Deployment Environment Variable Reference
 
 ### Core Authentication & Security
 - `NEXTAUTH_SECRET` - NextAuth.js session encryption key
@@ -60,15 +60,14 @@ SAML_DATABASE_URL: "postgresql://REPLACE_WITH_SAML_DB_USER:REPLACE_WITH_SAML_DB_
 SAML_ADMINS: "admin@example.com"
 ```
 
-## Deployment Status
+## Expected Deployment Status
 
-- **Service**: `calcom-app-prod` (revision 00008-68c)
-- **Environment Variables**: 21/21 ✅
-- **Memory**: 2048Mi ✅
-- **Database**: Connected ✅
-- **Custom Domain**: `https://calendar.mereka.io` ✅
-- **White-labeling**: Active ✅
-- **TRPC API**: Working ✅
+- **Service**: `calcom-app-prod` is healthy and serving traffic.
+- **Environment Variables**: Required keys are present and pass `scripts/verify-calcom-env.sh`.
+- **Memory**: 2048Mi (or higher) configured.
+- **Database**: Connection and migrations healthy.
+- **Custom Domain**: `https://calendar.mereka.io` reachable.
+- **TRPC/API**: Core app flows and API endpoints healthy.
 
 ## Files
 
@@ -80,6 +79,6 @@ SAML_ADMINS: "admin@example.com"
 
 - The `env-vars-production.example.yaml` file contains all production values
 - Never delete this file - it's essential for deployments
-- All 21 environment variables are required for full functionality
+- All required environment variables should be validated before deploy using `scripts/verify-calcom-env.sh`
 - White-labeling is now active with Mereka branding
 - TRPC errors have been resolved

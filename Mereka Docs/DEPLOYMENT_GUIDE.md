@@ -101,8 +101,8 @@ gcloud run services update $SERVICE_NAME \
 # Get active revision
 REVISION=$(gcloud run services describe $SERVICE_NAME --region=$REGION --project=$PROJECT_ID --format="value(status.traffic[0].revisionName)")
 
-# Verify environment variables (should show 23 variables)
-gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="yaml(spec.containers[0].env)" | grep "name:" | wc -l
+# Inspect deployed environment variables (ensure required keys are present)
+gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="yaml(spec.containers[0].env)" | grep "name:"
 
 # Verify memory allocation (should show 2048Mi)
 gcloud run revisions describe $REVISION --region=$REGION --project=$PROJECT_ID --format="value(spec.containers[0].resources.limits.memory)"
@@ -257,7 +257,7 @@ gcloud beta run domain-mappings describe --domain=calendar.mereka.io --region=$R
 ## 📋 POST-DEPLOYMENT CHECKLIST
 
 - [ ] Service shows as "Ready" in Cloud Run console
-- [ ] All 14 environment variables are present on active revision
+- [ ] All required environment variables are present on active revision
 - [ ] Memory allocation is 2048Mi
 - [ ] Root endpoint returns 307 redirect
 - [ ] /auth/login endpoint returns 200
