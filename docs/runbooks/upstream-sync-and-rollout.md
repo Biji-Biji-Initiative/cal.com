@@ -48,6 +48,7 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 5. Existing users/bookings remain accessible after migration.
 6. Baseline HTTP smoke checks pass:
    - `./scripts/smoke-check-calcom.sh --web-url https://<web-domain> --api-url https://<api-domain>`
+   - Optional CI execution: trigger `.github/workflows/smoke-check.yml` with target URLs.
 
 ## Data Preservation Rules
 1. Never run destructive migration commands in production.
