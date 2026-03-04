@@ -59,6 +59,12 @@ check_prerequisites() {
         log_error "Set PROJECT_ID before deploying."
         exit 1
     fi
+
+    log_info "Validating environment file..."
+    if ! "$REPO_ROOT/scripts/verify-calcom-env.sh" "$env_file_path" --profile api-v2; then
+        log_error "Environment preflight failed. Fix $ENV_FILE before deployment."
+        exit 1
+    fi
     
     log_info "Prerequisites check passed ✅"
 }
@@ -167,5 +173,4 @@ main() {
 
 # Run main function
 main "$@"
-
 
