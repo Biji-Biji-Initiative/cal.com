@@ -91,7 +91,7 @@ export const createMockRetellRepository = (): RetellAIRepository & {
     getLLM: vi.fn(),
     updateLLM: vi.fn(),
     deleteLLM: vi.fn(),
-    createAgent: vi.fn(),
+    createOutboundAgent: vi.fn(),
     getAgent: vi.fn(),
     updateAgent: vi.fn(),
     deleteAgent: vi.fn(),
@@ -117,7 +117,7 @@ export const createMockAgentRepository = (): AgentRepositoryInterface & {
     findByIdWithAdminAccess: vi.fn(),
     findByIdWithCallAccess: vi.fn(),
     delete: vi.fn(),
-    linkToWorkflowStep: vi.fn(),
+    linkOutboundAgentToWorkflow: vi.fn(),
   };
 };
 
@@ -192,14 +192,20 @@ export const setupRateLimitMocks = () => {
 
 // Test Error Classes
 export class TestError extends Error {
-  constructor(message: string, public code?: string) {
+  constructor(
+    message: string,
+    public code?: string
+  ) {
     super(message);
     this.name = "TestError";
   }
 }
 
 export class TestRetellAPIError extends Error {
-  constructor(message: string, public statusCode: number = 500) {
+  constructor(
+    message: string,
+    public statusCode: number = 500
+  ) {
     super(message);
     this.name = "TestRetellAPIError";
   }

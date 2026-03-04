@@ -1,17 +1,9 @@
-import { bootstrap } from "@/app";
-import { AppModule } from "@/app.module";
-import { SchedulesModule_2024_06_11 } from "@/ee/schedules/schedules_2024_06_11/schedules.module";
-import { SchedulesService_2024_06_11 } from "@/ee/schedules/schedules_2024_06_11/services/schedules.service";
-import { PermissionsGuard } from "@/modules/auth/guards/permissions/permissions.guard";
-import { PrismaModule } from "@/modules/prisma/prisma.module";
-import { SlotsModule_2024_04_15 } from "@/modules/slots/slots-2024-04-15/slots.module";
-import { TokensModule } from "@/modules/tokens/tokens.module";
-import { UsersModule } from "@/modules/users/users.module";
+import { SUCCESS_STATUS } from "@calcom/platform-constants";
+import type { User } from "@calcom/prisma/client";
 import { INestApplication } from "@nestjs/common";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { Test } from "@nestjs/testing";
-import { User } from "@prisma/client";
-import * as request from "supertest";
+import request from "supertest";
 import { AttendeeRepositoryFixture } from "test/fixtures/repository/attendee.repository.fixture";
 import { BookingSeatRepositoryFixture } from "test/fixtures/repository/booking-seat.repository.fixture";
 import { BookingsRepositoryFixture } from "test/fixtures/repository/bookings.repository.fixture";
@@ -20,8 +12,15 @@ import { SelectedSlotRepositoryFixture } from "test/fixtures/repository/selected
 import { UserRepositoryFixture } from "test/fixtures/repository/users.repository.fixture";
 import { randomString } from "test/utils/randomString";
 import { withApiAuth } from "test/utils/withApiAuth";
-
-import { SUCCESS_STATUS } from "@calcom/platform-constants";
+import { AppModule } from "@/app.module";
+import { bootstrap } from "@/bootstrap";
+import { SchedulesModule_2024_06_11 } from "@/ee/schedules/schedules_2024_06_11/schedules.module";
+import { SchedulesService_2024_06_11 } from "@/ee/schedules/schedules_2024_06_11/services/schedules.service";
+import { PermissionsGuard } from "@/modules/auth/guards/permissions/permissions.guard";
+import { PrismaModule } from "@/modules/prisma/prisma.module";
+import { SlotsModule_2024_04_15 } from "@/modules/slots/slots-2024-04-15/slots.module";
+import { TokensModule } from "@/modules/tokens/tokens.module";
+import { UsersModule } from "@/modules/users/users.module";
 
 const expectedSlotsUTC = {
   slots: {
@@ -262,7 +261,6 @@ describe("Slots 2024-04-15 Endpoints", () => {
     let eventTypeSlug: string;
     let reservedSlotUid: string;
 
-    const seatedEventTypeSlug = "peer-coding-seated";
     let seatedEventTypeId: number;
 
     beforeAll(async () => {
@@ -517,7 +515,7 @@ describe("Slots 2024-04-15 Endpoints", () => {
     it("should do a booking for seated event and slot should show attendees count and bookingUid", async () => {
       const startTime = "2050-09-05T11:00:00.000Z";
       const booking = await bookingsRepositoryFixture.create({
-        uid: `booking-uid-${seatedEventTypeId}`,
+        uid: `booking-uid-seated-${seatedEventTypeId}-${randomString()}`,
         title: "booking title",
         startTime,
         endTime: "2050-09-05T12:00:00.000Z",
@@ -551,7 +549,7 @@ describe("Slots 2024-04-15 Endpoints", () => {
       });
 
       bookingSeatsRepositoryFixture.create({
-        referenceUid: "100",
+        referenceUid: `seat-${randomString()}`,
         data: {},
         booking: {
           connect: {
@@ -600,7 +598,7 @@ describe("Slots 2024-04-15 Endpoints", () => {
     it("should do a booking for seated event and slot should show attendees count and bookingUid in range format", async () => {
       const startTime = "2050-09-05T11:00:00.000Z";
       const booking = await bookingsRepositoryFixture.create({
-        uid: `booking-uid-${seatedEventTypeId}`,
+        uid: `booking-uid-seated-${seatedEventTypeId}-${randomString()}`,
         title: "booking title",
         startTime,
         endTime: "2050-09-05T12:00:00.000Z",
@@ -634,7 +632,7 @@ describe("Slots 2024-04-15 Endpoints", () => {
       });
 
       bookingSeatsRepositoryFixture.create({
-        referenceUid: "100",
+        referenceUid: `seat-${randomString()}`,
         data: {},
         booking: {
           connect: {

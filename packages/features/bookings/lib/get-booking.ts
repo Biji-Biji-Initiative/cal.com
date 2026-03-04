@@ -1,10 +1,10 @@
-import type { Prisma } from "@prisma/client";
-import type { z } from "zod";
-
 import { bookingResponsesDbSchema } from "@calcom/features/bookings/lib/getBookingResponsesSchema";
+import { PermissionCheckService } from "@calcom/features/pbac/services/permission-check.service";
 import slugify from "@calcom/lib/slugify";
 import type { PrismaClient } from "@calcom/prisma";
 import prisma from "@calcom/prisma";
+import type { Prisma } from "@calcom/prisma/client";
+import { MembershipRole } from "@calcom/prisma/enums";
 
 type BookingSelect = {
   description: true;
@@ -62,9 +62,11 @@ async function getBooking(prisma: PrismaClient, uid: string, isSeatedEvent?: boo
       location: true,
       eventTypeId: true,
       status: true,
+      userId: true,
       eventType: {
         select: {
           disableRescheduling: true,
+          minimumRescheduleNotice: true,
         },
       },
       attendees: {
@@ -80,6 +82,7 @@ async function getBooking(prisma: PrismaClient, uid: string, isSeatedEvent?: boo
       user: {
         select: {
           id: true,
+          username: true,
         },
       },
     },
@@ -101,24 +104,22 @@ async function getBooking(prisma: PrismaClient, uid: string, isSeatedEvent?: boo
   return booking;
 }
 
-export type GetBookingType = Prisma.PromiseReturnType<typeof getBooking>;
+export type GetBookingType = Awaited<ReturnType<typeof getBooking>>;
 
 export const getBookingWithResponses = <
   T extends Prisma.BookingGetPayload<{
     select: BookingSelect & {
       responses: true;
     };
-  }>
+  }>,
 >(
   booking: T,
   isSeatedEvent?: boolean
 ) => {
   return {
     ...booking,
-    responses: isSeatedEvent
-      ? bookingResponsesDbSchema.parse(booking.responses || {})
-      : bookingResponsesDbSchema.parse(booking.responses || getResponsesFromOldBooking(booking)),
-  } as Omit<T, "responses"> & { responses: z.infer<typeof bookingResponsesDbSchema> };
+    responses: isSeatedEvent ? booking.responses : booking.responses || getResponsesFromOldBooking(booking),
+  } as Omit<T, "responses"> & { responses: Record<string, any> };
 };
 
 export default getBooking;
@@ -132,9 +133,15 @@ export const getBookingForReschedule = async (uid: string, userId?: number) => {
     select: {
       id: true,
       userId: true,
+      user: {
+        select: {
+          organizationId: true,
+        },
+      },
       eventType: {
         select: {
           seatsPerTimeSlot: true,
+          teamId: true,
           hosts: {
             select: {
               userId: true,
@@ -154,7 +161,10 @@ export const getBookingForReschedule = async (uid: string, userId?: number) => {
   // If no booking is found via the uid, it's probably a booking seat
   // that its being rescheduled, which we query next.
   let attendeeEmail: string | null = null;
-  let bookingSeatData: { description?: string; responses: Prisma.JsonValue } | null = null;
+  let bookingSeatData: {
+    description?: string;
+    responses: Prisma.JsonValue;
+  } | null = null;
   if (!theBooking) {
     const bookingSeat = await prisma.bookingSeat.findFirst({
       where: {
@@ -177,7 +187,10 @@ export const getBookingForReschedule = async (uid: string, userId?: number) => {
       },
     });
     if (bookingSeat) {
-      bookingSeatData = bookingSeat.data as unknown as { description?: string; responses: Prisma.JsonValue };
+      bookingSeatData = bookingSeat.data as unknown as {
+        description?: string;
+        responses: Prisma.JsonValue;
+      };
       bookingSeatReferenceUid = bookingSeat.id;
       rescheduleUid = bookingSeat.booking.uid;
       attendeeEmail = bookingSeat.attendee.email;
@@ -194,7 +207,18 @@ export const getBookingForReschedule = async (uid: string, userId?: number) => {
 
     const isUserIdInBooking = theBooking.userId === userId;
 
-    if (!isOwnerOfBooking && !isHostOfEventType && !isUserIdInBooking) return null;
+    let hasOrgAccess = false;
+    if (userId && theBooking.user?.organizationId) {
+      const permissionCheckService = new PermissionCheckService();
+      hasOrgAccess = await permissionCheckService.checkPermission({
+        userId,
+        teamId: theBooking.user.organizationId,
+        permission: "booking.readOrgBookings",
+        fallbackRoles: [MembershipRole.OWNER, MembershipRole.ADMIN],
+      });
+    }
+
+    if (!isOwnerOfBooking && !isHostOfEventType && !isUserIdInBooking && !hasOrgAccess) return null;
     hasOwnershipOnBooking = true;
   }
 
@@ -215,8 +239,8 @@ export const getBookingForReschedule = async (uid: string, userId?: number) => {
     attendees: rescheduleUid
       ? booking.attendees.filter((attendee) => attendee.email === attendeeEmail)
       : hasOwnershipOnBooking
-      ? []
-      : booking.attendees,
+        ? []
+        : booking.attendees,
   };
 };
 
@@ -236,6 +260,7 @@ export const getBookingForSeatedEvent = async (uid: string) => {
       startTime: true,
       endTime: true,
       status: true,
+      userId: true,
       attendees: {
         select: {
           id: true,
@@ -245,6 +270,7 @@ export const getBookingForSeatedEvent = async (uid: string) => {
       user: {
         select: {
           id: true,
+          username: true,
         },
       },
     },
@@ -275,6 +301,7 @@ export const getBookingForSeatedEvent = async (uid: string) => {
     location: null,
     eventType: {
       disableRescheduling: false,
+      minimumRescheduleNotice: null,
     },
     // mask attendee emails for seated events
     attendees: booking.attendees.map((attendee) => ({

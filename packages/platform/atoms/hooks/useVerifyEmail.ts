@@ -15,6 +15,7 @@ export interface IUseVerifyEmailProps {
   onVerifyEmail?: () => void;
   name?: string | { firstName: string; lastname?: string };
   requiresBookerEmailVerification?: boolean;
+  eventTypeId?: number;
 }
 
 export type UseVerifyEmailReturnType = ReturnType<typeof useVerifyEmail>;
@@ -22,6 +23,7 @@ export type UseVerifyEmailReturnType = ReturnType<typeof useVerifyEmail>;
 interface RequestEmailVerificationInput {
   email: string;
   username?: string;
+  eventTypeId?: number;
 }
 
 export const useVerifyEmail = ({
@@ -29,10 +31,12 @@ export const useVerifyEmail = ({
   name,
   requiresBookerEmailVerification,
   onVerifyEmail,
+  eventTypeId,
 }: IUseVerifyEmailProps) => {
   const [isEmailVerificationModalVisible, setEmailVerificationModalVisible] = useState(false);
   const verifiedEmail = useBookerStore((state) => state.verifiedEmail);
   const setVerifiedEmail = useBookerStore((state) => state.setVerifiedEmail);
+  const isRescheduling = useBookerStore((state) => Boolean(state.rescheduleUid && state.bookingData));
   const debouncedEmail = useDebounce(email, 600);
   const { data: user } = useMe();
 
@@ -53,7 +57,7 @@ export const useVerifyEmail = ({
           throw new Error(res.data.error.message);
         });
     },
-    enabled: !!debouncedEmail,
+    enabled: !!debouncedEmail && !isRescheduling,
   });
 
   const sendEmailVerificationMutation = useMutation<
@@ -84,12 +88,14 @@ export const useVerifyEmail = ({
     sendEmailVerificationMutation.mutate({
       email,
       username: typeof name === "string" ? name : name?.firstName,
+      eventTypeId,
     });
   };
 
   const isVerificationCodeSending = sendEmailVerificationMutation.isPending;
 
   const renderConfirmNotVerifyEmailButtonCond =
+    isRescheduling ||
     (!requiresBookerEmailVerification && !isEmailVerificationRequired) ||
     (email && verifiedEmail && verifiedEmail === email);
 

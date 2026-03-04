@@ -1,13 +1,16 @@
-import type { EventType, Prisma } from "@prisma/client";
 import type z from "zod";
 
-import { SystemField } from "@calcom/features/bookings/lib/SystemField";
 import type { bookingResponsesDbSchema } from "@calcom/features/bookings/lib/getBookingResponsesSchema";
+import { SystemField } from "@calcom/lib/bookings/SystemField";
 import { contructEmailFromPhoneNumber } from "@calcom/lib/contructEmailFromPhoneNumber";
 import { getBookingWithResponses } from "@calcom/lib/getBooking";
 import { HttpError } from "@calcom/lib/http-error";
+import logger from "@calcom/lib/logger";
+import type { EventType, Prisma } from "@calcom/prisma/client";
 import { eventTypeBookingFields } from "@calcom/prisma/zod-utils";
 import type { CalendarEvent } from "@calcom/types/Calendar";
+
+const log = logger.getSubLogger({ prefix: ["[getCalEventResponses]"] });
 
 export const getCalEventResponses = ({
   bookingFields,
@@ -38,18 +41,23 @@ export const getCalEventResponses = ({
   const calEventUserFieldsResponses = {} as NonNullable<CalendarEvent["userFieldsResponses"]>;
   const calEventResponses = {} as NonNullable<CalendarEvent["responses"]>;
   const parsedBookingFields = bookingFields ? eventTypeBookingFields.parse(bookingFields) : null;
+
   const backwardCompatibleResponses =
     responses ?? (booking ? getBookingWithResponses(booking).responses : null);
   if (!backwardCompatibleResponses) throw new Error("Couldn't get responses");
 
   // To set placeholder email for the booking
-  if (!!!backwardCompatibleResponses.email) {
-    if (typeof backwardCompatibleResponses["attendeePhoneNumber"] !== "string")
+  if (!backwardCompatibleResponses.email) {
+    if (typeof backwardCompatibleResponses["attendeePhoneNumber"] !== "string") {
+      log.error(`backwardCompatibleResponses: ${JSON.stringify(backwardCompatibleResponses)}`, {
+        responses,
+        bookingResponses: booking?.responses,
+      });
       throw new HttpError({
         statusCode: 400,
         message: "Both Phone and Email are missing",
       });
-
+    }
     backwardCompatibleResponses.email = contructEmailFromPhoneNumber(
       backwardCompatibleResponses["attendeePhoneNumber"]
     );
@@ -59,8 +67,9 @@ export const getCalEventResponses = ({
     parsedBookingFields.forEach((field) => {
       const label = field.label || field.defaultLabel;
       if (!label) {
-        //TODO: This error must be thrown while saving event-type as well so that such an event-type can't be saved
-        throw new Error(`Missing label for booking field "${field.name}"`);
+        //TODO: This error must be thrown while saving event-type so that such an event-type can't be saved
+        log.error(`Missing label for booking field "${field.name}"`);
+        return;
       }
 
       if (field.name == "guests" && !!seatsEnabled) {

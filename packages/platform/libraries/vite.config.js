@@ -1,12 +1,24 @@
 // vite.config.ts
+
+import path, { dirname, resolve } from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
-import { resolve } from "path";
-import path from "path";
 import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const usePool = process.env.USE_POOL ?? "true";
+
+console.log("Platform libraries usePool", usePool);
+
 // https://vitejs.dev/guide/build.html#library-mode
 export default defineConfig({
+  define: {
+    "process.env.USE_POOL": JSON.stringify(usePool),
+  },
   esbuild: {
     target: "node18",
     platform: "node",
@@ -27,7 +39,12 @@ export default defineConfig({
         conferencing: resolve(__dirname, "./conferencing.ts"),
         repositories: resolve(__dirname, "./repositories.ts"),
         bookings: resolve(__dirname, "./bookings.ts"),
+        organizations: resolve(__dirname, "./organizations.ts"),
         "private-links": resolve(__dirname, "./private-links.ts"),
+        pbac: resolve(__dirname, "./pbac.ts"),
+        errors: resolve(__dirname, "./errors.ts"),
+        calendars: resolve(__dirname, "./calendars.ts"),
+        tasker: resolve(__dirname, "./tasker.ts"),
       },
       name: "calcom-lib",
       fileName: "calcom-lib",
@@ -36,9 +53,11 @@ export default defineConfig({
       dynamicRequireRoot: "../../../apps/web",
       dynamicRequireTargets: ["next-i18next.config.js"],
       ignoreDynamicRequires: true,
+      include: ["../../prisma/client/**"],
     },
     rollupOptions: {
       external: [
+        "@calcom/i18n",
         "react",
         "fs",
         "path",
@@ -49,6 +68,8 @@ export default defineConfig({
         "fs/promises",
         "perf_hooks",
         "@prisma/client",
+        "@prisma/adapter-pg",
+        "pg",
         "async",
         "libphonenumber-js",
         "lodash",
@@ -120,6 +141,8 @@ export default defineConfig({
           "fs/promises": "fs/promises",
           perf_hooks: "perf_hooks",
           "@prisma/client": "@prisma/client",
+          "@prisma/adapter-pg": "@prisma/adapter-pg",
+          pg: "pg",
           async: "async",
           "libphonenumber-js": "libphonenumber-js",
           lodash: "lodash",
@@ -186,16 +209,16 @@ export default defineConfig({
   },
   plugins: [react(), dts()],
   resolve: {
+    conditions: ["node", "import", "require", "default"],
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@calcom/lib": path.resolve(__dirname, "../../lib"),
       "@calcom/trpc": resolve("../../trpc"),
       "lru-cache": resolve("../../../node_modules/lru-cache/dist/cjs/index.js"),
-      "@prisma/client": resolve("../../../node_modules/@prisma/client"),
-      "@calcom/prisma/client": resolve("../../../node_modules/.prisma/client"),
+      "@calcom/prisma/client/runtime/library": resolve("../../prisma/client/runtime/library"),
+      "@calcom/prisma/client": resolve("../../prisma/client"),
       "@calcom/platform-constants": path.resolve(__dirname, "../constants/index.ts"),
       "@calcom/platform-types": path.resolve(__dirname, "../types/index.ts"),
-      // eslint-disable-next-line prettier/prettier
       tslog: path.resolve(__dirname, "../../../apps/api/v2/src/lib/logger.bridge.ts"),
     },
   },

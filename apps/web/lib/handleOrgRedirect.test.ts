@@ -1,9 +1,9 @@
 import type { GetServerSidePropsContext } from "next";
-import type { ParsedUrlQuery } from "querystring";
+import type { ParsedUrlQuery } from "node:querystring";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import * as constants from "@calcom/lib/constants";
-import { RedirectType } from "@calcom/prisma/client";
+import { RedirectType } from "@calcom/prisma/enums";
 
 import { handleOrgRedirect, getRedirectWithOriginAndSearchString } from "./handleOrgRedirect";
 
@@ -29,7 +29,7 @@ const createTestContext = (overrides?: {
       },
     },
     query: overrides?.query || {},
-  } as unknown as GetServerSidePropsContext);
+  }) as unknown as GetServerSidePropsContext;
 
 const createTestRedirectParams = (overrides?: {
   slugs?: string[];

@@ -1,8 +1,9 @@
-import type { Attendee, Booking, User } from "@prisma/client";
 import type { FC } from "react";
 import { useMemo } from "react";
 import { JsonLd } from "react-schemaorg";
 import type { EventReservation, Person, ReservationStatusType } from "schema-dts";
+
+import type { Attendee, Booking, User } from "@calcom/prisma/client";
 
 type EventSchemaUser = Pick<User, "name" | "email">;
 type EventSchemaAttendee = Pick<Attendee, "name" | "email">;
@@ -60,7 +61,7 @@ const EventReservationSchema: FC<EventReservationSchemaInterface> = ({
             ? ({ "@type": "Person", name: organizer.name, email: organizer.email } as Person)
             : undefined,
           attendee: attendees?.map(
-            (person) => ({ "@type": "Person", name: person.name, email: person.email } as Person)
+            (person) => ({ "@type": "Person", name: person.name, email: person.email }) as Person
           ),
           location: location || undefined,
           description: description || undefined,

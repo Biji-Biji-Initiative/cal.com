@@ -1,7 +1,6 @@
-import type { Availability } from "@prisma/client";
-
 import type { ConfigType } from "@calcom/dayjs";
 import dayjs from "@calcom/dayjs";
+import type { Availability } from "@calcom/prisma/client";
 import type { Schedule, TimeRange, WorkingHours } from "@calcom/types/schedule";
 
 import { nameOfDay } from "./weekday";
@@ -29,10 +28,10 @@ export function getAvailabilityFromSchedule(schedule: Schedule): Availability[] 
         days: [day],
         startTime: time.start,
         endTime: time.end,
-      } as Availability);
+      }) as Availability;
 
     const filteredTimes = times.filter((time) => {
-      let idx;
+      let idx: number;
       if (
         (idx = availability.findIndex(
           (schedule) =>

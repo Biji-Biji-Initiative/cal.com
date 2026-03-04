@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { useState } from "react";
+import posthog from "posthog-js";
 
+import { InstallAppButtonWithoutPlanCheck } from "@calcom/app-store/InstallAppButtonWithoutPlanCheck";
 import type { TDependencyData } from "@calcom/app-store/_appRegistry";
-import { InstallAppButtonWithoutPlanCheck } from "@calcom/app-store/components";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import type { App } from "@calcom/types/App";
 import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
-import { Icon } from "@calcom/ui/components/icon";
 import { showToast } from "@calcom/ui/components/toast";
+import { ArrowRightIcon, CircleAlertIcon } from "@coss/ui/icons";
 
 interface IAppConnectionItem {
   title: string;
@@ -44,6 +45,7 @@ const AppConnectionItem = (props: IAppConnectionItem) => {
   return (
     <div className="flex flex-row items-center justify-between p-5">
       <div className="flex items-center space-x-3">
+        {/* eslint-disable @next/next/no-img-element */}
         <img src={logo} alt={title} className="h-8 w-8" />
         <p className="text-sm font-bold">{title}</p>
         {isDefault && <Badge variant="green">{t("default")}</Badge>}
@@ -77,13 +79,14 @@ const AppConnectionItem = (props: IAppConnectionItem) => {
                   <div className="items-start space-x-2.5">
                     <div className="flex items-start">
                       <div>
-                        <Icon name="circle-alert" className="mr-2 mt-1 font-semibold" />
+                        <CircleAlertIcon className="mr-2 mt-1 font-semibold" />
                       </div>
                       <div>
                         <span className="text-xs font-semibold">
                           {t("this_app_requires_connected_account", {
                             appName: title,
                             dependencyName: dependency.name,
+                            interpolation: { escapeValue: false },
                           })}
                         </span>
 
@@ -96,7 +99,7 @@ const AppConnectionItem = (props: IAppConnectionItem) => {
                                 <span className="mr-1">
                                   {t("connect_app", { dependencyName: dependency.name })}
                                 </span>
-                                <Icon name="arrow-right" className="inline-block h-3 w-3" />
+                                <ArrowRightIcon className="inline-block h-3 w-3" />
                               </Link>
                             </>
                           </div>
@@ -107,6 +110,12 @@ const AppConnectionItem = (props: IAppConnectionItem) => {
                 ) : undefined
               }
               onClick={(event) => {
+                posthog.capture("onboarding_app_connect_clicked", {
+                  app_title: title,
+                  app_type: type,
+                  app_slug: slug,
+                  has_dependency: !!dependency,
+                });
                 // Save cookie key to return url step
                 document.cookie = `return-to=${window.location.href};path=/;max-age=3600;SameSite=Lax`;
                 buttonProps && buttonProps.onClick && buttonProps?.onClick(event);

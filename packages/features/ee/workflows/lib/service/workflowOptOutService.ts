@@ -1,4 +1,4 @@
-import { getTranslation } from "@calcom/lib/server/i18n";
+import { getTranslation } from "@calcom/i18n/server";
 
 import { deleteMultipleScheduledSMS } from "../reminders/providers/twilioProvider";
 import { WorkflowOptOutContactRepository } from "../repository/workflowOptOutContact";
@@ -8,9 +8,8 @@ export class WorkflowOptOutService {
   static async optOutPhoneNumber(phoneNumber: string) {
     await WorkflowOptOutContactRepository.addPhoneNumber(phoneNumber);
     // Delete scheduled workflows
-    const scheduledReminders = await WorkflowReminderRepository.getFutureScheduledAttendeeSMSReminders(
-      phoneNumber
-    );
+    const scheduledReminders =
+      await WorkflowReminderRepository.getFutureScheduledAttendeeSMSReminders(phoneNumber);
 
     // Get twilio scheduled workflows reminders
     await deleteMultipleScheduledSMS(
@@ -26,7 +25,11 @@ export class WorkflowOptOutService {
   }
 
   static async addOptOutMessage(message: string, locale: string) {
-    const t = await getTranslation(locale, "common");
-    return `${message}\n\n${t("sms_opt_out_message")}`;
+    if (process.env.TWILIO_OPT_OUT_ENABLED === "true") {
+      const t = await getTranslation(locale, "common");
+      return `${message}\n\n${t("sms_opt_out_message")}`;
+    }
+
+    return message;
   }
 }

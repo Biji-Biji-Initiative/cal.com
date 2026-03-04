@@ -1,4 +1,4 @@
-import { DelegationCredentialRepository } from "@calcom/lib/server/repository/delegationCredential";
+import { DelegationCredentialRepository } from "@calcom/features/delegation-credentials/repositories/DelegationCredentialRepository";
 import { encryptedServiceAccountKeySchema } from "@calcom/lib/server/serviceAccountKey";
 import type { PrismaClient } from "@calcom/prisma";
 
@@ -27,7 +27,7 @@ export default async function handler({
 
     return ensureNoServiceAccountKey({
       ...delegation,
-      serviceAccountClientId: serviceAccountKey.success ? serviceAccountKey.data?.client_id ?? null : null,
+      serviceAccountClientId: serviceAccountKey.success ? (serviceAccountKey.data?.client_id ?? null) : null,
     });
   });
 }

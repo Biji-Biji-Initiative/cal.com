@@ -1,4 +1,4 @@
-import { getFirstDelegationConferencingCredentialAppLocation } from "@calcom/lib/delegationCredential/server";
+import { getFirstDelegationConferencingCredentialAppLocation } from "@calcom/app-store/delegationCredential";
 import { withReporting } from "@calcom/lib/sentryWrapper";
 import type { Prisma } from "@calcom/prisma/client";
 import { userMetadata as userMetadataSchema } from "@calcom/prisma/zod-utils";
@@ -20,7 +20,7 @@ export const _getLocationValuesForDb = <
     username: string | null;
     metadata: Prisma.JsonValue;
     credentials: CredentialForCalendarService[];
-  }
+  },
 >({
   dynamicUserList,
   users,

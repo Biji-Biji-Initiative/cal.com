@@ -1,5 +1,4 @@
-// TODO: Fix tests (These test were never running due to the vitest workspace config)
-import prismaMock from "../../../../../../tests/libs/__mocks__/prismaMock";
+import prismaMock from "@calcom/testing/lib/__mocks__/prismaMock";
 
 import type { Request, Response } from "express";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -11,9 +10,9 @@ import { getEventTypesFromDB } from "@calcom/features/bookings/lib/handleNewBook
 import sendPayload from "@calcom/features/webhooks/lib/sendOrSchedulePayload";
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { buildBooking, buildEventType, buildWebhook, buildUser } from "@calcom/lib/test/builder";
-import prisma from "@calcom/prisma";
+import { prisma } from "@calcom/prisma";
 import type { Booking } from "@calcom/prisma/client";
-import { CreationSource } from "@calcom/prisma/enums";
+import { CreationSource, BookingStatus } from "@calcom/prisma/enums";
 
 import handler from "../../../pages/api/bookings/_post";
 
@@ -66,17 +65,24 @@ vi.mock("@calcom/features/webhooks/lib/sendOrSchedulePayload", () => ({
 }));
 
 const mockFindOriginalRescheduledBooking = vi.fn();
-vi.mock("@calcom/lib/server/repository/booking", () => ({
-  BookingRepository: vi.fn().mockImplementation(() => ({
+vi.mock("@calcom/features/bookings/repositories/BookingRepository", () => ({
+  BookingRepository: vi.fn().mockImplementation(function() { return {
     findOriginalRescheduledBooking: mockFindOriginalRescheduledBooking,
-  })),
+  }; }),
 }));
 
 vi.mock("@calcom/features/watchlist/operations/check-if-users-are-blocked.controller", () => ({
   checkIfUsersAreBlocked: vi.fn().mockResolvedValue(false),
 }));
 
-vi.mock("@calcom/lib/di/containers/QualifiedHosts", () => ({
+vi.mock("@calcom/features/watchlist/operations/filter-blocked-users.controller", () => ({
+  filterBlockedUsers: vi.fn().mockImplementation(async (users) => ({
+    eligibleUsers: users,
+    blockedCount: 0,
+  })),
+}));
+
+vi.mock("@calcom/features/di/containers/QualifiedHosts", () => ({
   getQualifiedHostsService: vi.fn().mockReturnValue({
     findQualifiedHostsWithDelegationCredentials: vi.fn().mockResolvedValue({
       qualifiedRRHosts: [],
@@ -86,24 +92,26 @@ vi.mock("@calcom/lib/di/containers/QualifiedHosts", () => ({
   }),
 }));
 
-vi.mock("@calcom/lib/EventManager", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    reschedule: vi.fn().mockResolvedValue({
-      results: [],
-      referencesToCreate: [],
-    }),
-    create: vi.fn().mockResolvedValue({
-      results: [],
-      referencesToCreate: [],
-    }),
-    update: vi.fn().mockResolvedValue({
-      results: [],
-      referencesToCreate: [],
-    }),
-    createAllCalendarEvents: vi.fn().mockResolvedValue([]),
-    updateAllCalendarEvents: vi.fn().mockResolvedValue([]),
-    deleteEventsAndMeetings: vi.fn().mockResolvedValue([]),
-  })),
+vi.mock("@calcom/features/bookings/lib/EventManager", () => ({
+  default: vi.fn().mockImplementation(function() {
+    return {
+      reschedule: vi.fn().mockResolvedValue({
+        results: [],
+        referencesToCreate: [],
+      }),
+      create: vi.fn().mockResolvedValue({
+        results: [],
+        referencesToCreate: [],
+      }),
+      update: vi.fn().mockResolvedValue({
+        results: [],
+        referencesToCreate: [],
+      }),
+      createAllCalendarEvents: vi.fn().mockResolvedValue([]),
+      updateAllCalendarEvents: vi.fn().mockResolvedValue([]),
+      deleteEventsAndMeetings: vi.fn().mockResolvedValue([]),
+    };
+  }),
   placeholderCreatedEvent: {
     results: [],
     referencesToCreate: [],
@@ -133,7 +141,7 @@ vi.mock("@calcom/features/bookings/lib/handleNewBooking/ensureAvailableUsers", (
   }),
 }));
 
-vi.mock("@calcom/lib/server/repository/profile", () => ({
+vi.mock("@calcom/features/profile/repositories/ProfileRepository", () => ({
   ProfileRepository: {
     findManyForUser: vi.fn().mockResolvedValue([]),
     buildPersonalProfileFromUser: vi.fn().mockReturnValue({
@@ -146,10 +154,10 @@ vi.mock("@calcom/lib/server/repository/profile", () => ({
   },
 }));
 vi.mock("@calcom/features/flags/features.repository", () => ({
-  FeaturesRepository: vi.fn().mockImplementation(() => ({
+  FeaturesRepository: vi.fn().mockImplementation(function() { return {
     checkIfFeatureIsEnabledGlobally: vi.fn().mockResolvedValue(false),
     checkIfTeamHasFeature: vi.fn().mockResolvedValue(false),
-  })),
+  }; }),
 }));
 
 vi.mock("@calcom/features/webhooks/lib/getWebhooks", () => ({
@@ -161,11 +169,11 @@ vi.mock("@calcom/features/ee/workflows/lib/getAllWorkflows", () => ({
   workflowSelect: {},
 }));
 
-vi.mock("@calcom/trpc/server/routers/viewer/workflows/util", () => ({
+vi.mock("@calcom/features/ee/workflows/lib/getAllWorkflowsFromEventType", () => ({
   getAllWorkflowsFromEventType: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@calcom/lib/server/i18n", () => {
+vi.mock("@calcom/i18n/server", () => {
   const mockT = (key: string, options?: any) => {
     if (key === "event_between_users") {
       return `${options?.eventName} between ${options?.host} and ${options?.attendeeName}`;
@@ -245,7 +253,9 @@ describe("POST /api/bookings", () => {
 
       const { req, res } = createMocks<CustomNextApiRequest, CustomNextApiResponse>({
         method: "POST",
-        body: {},
+        body: {
+          eventTypeId: 2,
+        },
       });
 
       await handler(req, res);
@@ -303,6 +313,7 @@ describe("POST /api/bookings", () => {
 
       prismaMock.eventType.findUniqueOrThrow.mockResolvedValue({
         ...buildEventType({ recurringEvent: { freq: 2, count: 12, interval: 1 } }),
+        // @ts-expect-error requires mockDeep which will be introduced in the Prisma 6.7.0 upgrade, ignore for now.
         profile: { organizationId: null },
         hosts: [],
         users: [buildUser()],
@@ -340,6 +351,7 @@ describe("POST /api/bookings", () => {
 
       prismaMock.eventType.findUniqueOrThrow.mockResolvedValue({
         ...buildEventType({ recurringEvent: { freq: 2, count: 12, interval: 1 } }),
+        // @ts-expect-error requires mockDeep which will be introduced in the Prisma 6.7.0 upgrade, ignore for now.
         profile: { organizationId: null },
         hosts: [],
         users: [buildUser()],
@@ -376,6 +388,7 @@ describe("POST /api/bookings", () => {
 
       prismaMock.eventType.findUniqueOrThrow.mockResolvedValue({
         ...buildEventType({ profileId: null }),
+        // @ts-expect-error requires mockDeep which will be introduced in the Prisma 6.7.0 upgrade, ignore for now.
         profile: { organizationId: null },
         hosts: [],
         users: [buildUser()],
@@ -417,6 +430,7 @@ describe("POST /api/bookings", () => {
 
         prismaMock.eventType.findUniqueOrThrow.mockResolvedValue({
           ...buildEventType({ profileId: null, length: 15 }),
+          // @ts-expect-error requires mockDeep which will be introduced in the Prisma 6.7.0 upgrade, ignore for now.
           profile: { organizationId: null },
           hosts: [],
           users: [buildUser()],
@@ -468,7 +482,7 @@ describe("POST /api/bookings", () => {
 
         prismaMock.booking.findUnique.mockResolvedValue({
           ...originalBooking,
-          status: "cancelled",
+          status: "CANCELLED",
         });
 
         const { req, res } = createMocks<CustomNextApiRequest, CustomNextApiResponse>({
@@ -492,6 +506,7 @@ describe("POST /api/bookings", () => {
 
         prismaMock.eventType.findUniqueOrThrow.mockResolvedValue({
           ...buildEventType({ profileId: null, length: 15 }),
+          // @ts-expect-error requires mockDeep which will be introduced in the Prisma 6.7.0 upgrade, ignore for now.
           profile: { organizationId: null },
           hosts: [],
           users: [buildUser()],
@@ -532,7 +547,7 @@ describe("POST /api/bookings", () => {
         const previousBooking = await prisma.booking.findUnique({
           where: { uid: "original-booking-uid" },
         });
-        expect(previousBooking?.status).toBe("cancelled");
+        expect(previousBooking?.status).toBe(BookingStatus.CANCELLED);
       });
 
       test("Creates source as api_v1", async () => {
@@ -556,6 +571,7 @@ describe("POST /api/bookings", () => {
 
         prismaMock.eventType.findUniqueOrThrow.mockResolvedValue({
           ...buildEventType({ profileId: null, length: 15 }),
+          // @ts-expect-error requires mockDeep which will be introduced in the Prisma 6.7.0 upgrade, ignore for now.
           profile: { organizationId: null },
           hosts: [],
           users: [buildUser()],
@@ -627,6 +643,7 @@ describe("POST /api/bookings", () => {
 
         prismaMock.eventType.findUniqueOrThrow.mockResolvedValue({
           ...buildEventType({ profileId: null, length: 15 }),
+          // @ts-expect-error requires mockDeep which will be introduced in the Prisma 6.7.0 upgrade, ignore for now.
           profile: { organizationId: null },
           hosts: [],
           users: [buildUser()],
@@ -684,6 +701,7 @@ describe("POST /api/bookings", () => {
 
       prismaMock.eventType.findUniqueOrThrow.mockResolvedValue({
         ...buildEventType({ recurringEvent: { freq: 2, count: 12, interval: 1 } }),
+        // @ts-expect-error requires mockDeep which will be introduced in the Prisma 6.7.0 upgrade, ignore for now.
         profile: { organizationId: null },
         hosts: [],
         users: [buildUser()],

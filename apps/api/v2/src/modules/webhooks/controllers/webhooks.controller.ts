@@ -16,12 +16,12 @@ import { WebhookOutputPipe } from "@/modules/webhooks/pipes/WebhookOutputPipe";
 import { UserWebhooksService } from "@/modules/webhooks/services/user-webhooks.service";
 import { WebhooksService } from "@/modules/webhooks/services/webhooks.service";
 import { Controller, Post, Body, UseGuards, Get, Param, Query, Delete, Patch } from "@nestjs/common";
-import { ApiHeader, ApiOperation, ApiTags as DocsTags } from "@nestjs/swagger";
-import { Webhook } from "@prisma/client";
+import { ApiHeader, ApiOperation, ApiParam, ApiTags as DocsTags } from "@nestjs/swagger";
 import { plainToClass } from "class-transformer";
 
 import { SUCCESS_STATUS } from "@calcom/platform-constants";
 import { SkipTakePagination } from "@calcom/platform-types";
+import type { Webhook } from "@calcom/prisma/client";
 
 @Controller({
   path: "/v2/webhooks",
@@ -75,6 +75,7 @@ export class WebhooksController {
 
   @Get("/:webhookId")
   @ApiOperation({ summary: "Get a webhook" })
+  @ApiParam({ name: "webhookId", type: String, required: true })
   @UseGuards(IsUserWebhookGuard)
   async getWebhook(@GetWebhook() webhook: Webhook): Promise<UserWebhookOutputResponseDto> {
     return {

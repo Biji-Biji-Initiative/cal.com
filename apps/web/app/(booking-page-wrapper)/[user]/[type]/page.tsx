@@ -5,7 +5,7 @@ import { generateMeetingMetadata } from "app/_utils";
 import { headers, cookies } from "next/headers";
 
 import { getOrgFullOrigin } from "@calcom/features/ee/organizations/lib/orgDomains";
-import { loadTranslations } from "@calcom/lib/server/i18n";
+import { loadTranslations } from "@calcom/i18n/server";
 
 import { buildLegacyCtx, decodeParams } from "@lib/buildLegacyCtx";
 
@@ -26,12 +26,11 @@ export const generateMetadata = async ({ params, searchParams }: PageProps) => {
   const meeting = {
     title,
     profile: { name: profileName, image: profileImage },
-    users: [
-      ...(eventData?.subsetOfUsers || []).map((user) => ({
+    users:
+      eventData?.subsetOfUsers.map((user) => ({
         name: `${user.name}`,
         username: `${user.username}`,
-      })),
-    ],
+      })) || [],
   };
   const decodedParams = decodeParams(await params);
   const metadata = await generateMeetingMetadata(

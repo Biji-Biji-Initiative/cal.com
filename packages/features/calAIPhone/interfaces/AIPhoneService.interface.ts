@@ -1,5 +1,7 @@
 import type { Logger } from "tslog";
 
+import type { TrackingData } from "@calcom/lib/tracking";
+
 import type { RetellAIPhoneServiceProviderTypeMap } from "../providers/retellAI";
 
 /**
@@ -47,7 +49,7 @@ export type AIPhoneServiceConfiguration<T extends AIPhoneServiceProviderType = A
   AIPhoneServiceProviderTypeMap[T]["Configuration"];
 
 export type AIPhoneServiceUpdateModelParams<
-  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
 > = AIPhoneServiceProviderTypeMap[T]["UpdateModelParams"];
 
 export type AIPhoneServiceModel<T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType> =
@@ -63,31 +65,41 @@ export type AIPhoneServicePhoneNumber<T extends AIPhoneServiceProviderType = AIP
   AIPhoneServiceProviderTypeMap[T]["PhoneNumber"];
 
 export type AIPhoneServiceUpdatePhoneNumberParams<
-  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
 > = AIPhoneServiceProviderTypeMap[T]["UpdatePhoneNumberParams"];
 
 export type AIPhoneServiceCreatePhoneNumberParams<
-  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
 > = AIPhoneServiceProviderTypeMap[T]["CreatePhoneNumberParams"];
 
 export type AIPhoneServiceImportPhoneNumberParams<
-  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
 > = AIPhoneServiceProviderTypeMap[T]["ImportPhoneNumberParams"];
 
 export type AIPhoneServiceUpdateAgentParams<
-  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
 > = AIPhoneServiceProviderTypeMap[T]["UpdateAgentParams"];
 
 export type AIPhoneServiceTools<T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType> =
   AIPhoneServiceProviderTypeMap[T]["Tools"];
 
 export type AIPhoneServiceCreatePhoneCallParams<
-  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
 > = AIPhoneServiceProviderTypeMap[T]["CreatePhoneCallParams"];
 
 export type AIPhoneServiceAgentWithDetails<
-  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
 > = AIPhoneServiceProviderTypeMap[T]["AgentWithDetails"];
+
+export type AIPhoneServiceListCallsParams<T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType> =
+  AIPhoneServiceProviderTypeMap[T]["ListCallsParams"];
+
+export type AIPhoneServiceListCallsResponse<
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
+> = AIPhoneServiceProviderTypeMap[T]["ListCallsResponse"];
+
+export type AIPhoneServiceVoice<T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType> =
+  AIPhoneServiceProviderTypeMap[T]["Voice"];
 
 export interface AIPhoneServiceDeletion {
   modelId?: string;
@@ -108,7 +120,7 @@ export type AIPhoneServiceCallData<T extends AIPhoneServiceProviderType = AIPhon
 
 // Extended import phone number params with additional fields
 export type AIPhoneServiceImportPhoneNumberParamsExtended<
-  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
 > = AIPhoneServiceImportPhoneNumberParams<T> & {
   userId: number;
   teamId?: number;
@@ -120,7 +132,7 @@ export interface AIPhoneServiceAgentListItem {
   name: string;
   providerAgentId: string;
   enabled: boolean;
-  userId: number;
+  userId: number | null;
   teamId: number | null;
   createdAt: Date;
   updatedAt: Date;
@@ -138,7 +150,7 @@ export interface AIPhoneServiceAgentListItem {
   user: {
     id: number;
     name: string | null | undefined;
-    email: string | undefined;
+    email: string | null;
   } | null;
 }
 
@@ -191,7 +203,9 @@ export interface AIPhoneServiceProvider<T extends AIPhoneServiceProviderType = A
   /**
    * Create a phone number
    */
-  createPhoneNumber(data: AIPhoneServiceCreatePhoneNumberParams<T>): Promise<AIPhoneServicePhoneNumber<T>>;
+  createPhoneNumber(
+    data: AIPhoneServiceCreatePhoneNumberParams<T>
+  ): Promise<AIPhoneServicePhoneNumber<T> & { provider: string }>;
 
   /**
    * Delete a phone number
@@ -231,6 +245,7 @@ export interface AIPhoneServiceProvider<T extends AIPhoneServiceProviderType = A
     teamId?: number;
     agentId?: string | null;
     workflowId?: string;
+    tracking?: TrackingData;
   }): Promise<{ url: string; message: string }>;
 
   /**
@@ -273,7 +288,7 @@ export interface AIPhoneServiceProvider<T extends AIPhoneServiceProviderType = A
   /**
    * Create a new agent
    */
-  createAgent(params: {
+  createOutboundAgent(params: {
     name?: string;
     userId: number;
     teamId?: number;
@@ -290,17 +305,37 @@ export interface AIPhoneServiceProvider<T extends AIPhoneServiceProviderType = A
   }>;
 
   /**
+   * Create a new inbound agent
+   */
+  createInboundAgent(params: {
+    name?: string;
+    phoneNumber: string;
+    userId: number;
+    teamId?: number;
+    workflowStepId: number;
+    userTimeZone: string;
+  }): Promise<{
+    id: string;
+    providerAgentId: string;
+    message: string;
+  }>;
+
+  /**
    * Update agent configuration
    */
   updateAgentConfiguration(params: {
     id: string;
     userId: number;
+    teamId?: number;
     name?: string;
     enabled?: boolean;
     generalPrompt?: string | null;
     beginMessage?: string | null;
     generalTools?: AIPhoneServiceTools<T>;
     voiceId?: string;
+    language?: string;
+    outboundEventTypeId?: number;
+    timeZone?: string;
   }): Promise<{ message: string }>;
 
   /**
@@ -316,11 +351,59 @@ export interface AIPhoneServiceProvider<T extends AIPhoneServiceProviderType = A
     phoneNumber?: string;
     userId: number;
     teamId?: number;
+    timeZone: string;
+    eventTypeId: number;
   }): Promise<{
     callId: string;
     status: string;
     message: string;
   }>;
+
+  /**
+   * Create a web call
+   */
+  createWebCall(params: {
+    agentId: string;
+    userId: number;
+    teamId?: number;
+    timeZone: string;
+    eventTypeId: number;
+  }): Promise<{
+    callId: string;
+    accessToken: string;
+    agentId: string;
+  }>;
+
+  /**
+   * Update tools from event type ID
+   */
+  updateToolsFromAgentId(
+    agentId: string,
+    data: { eventTypeId: number | null; timeZone: string; userId: number | null; teamId?: number | null }
+  ): Promise<void>;
+
+  /**
+   * Remove tools for event types
+   */
+  removeToolsForEventTypes(agentId: string, eventTypeIds: number[]): Promise<void>;
+
+  /**
+   * List calls with optional filters
+   */
+  listCalls(params: {
+    limit?: number;
+    offset?: number;
+    filters: {
+      fromNumber: string[];
+      toNumber?: string[];
+      startTimestamp?: { lower_threshold?: number; upper_threshold?: number };
+    };
+  }): Promise<AIPhoneServiceListCallsResponse<T>>;
+
+  /**
+   * List available voices
+   */
+  listVoices(): Promise<AIPhoneServiceVoice<T>[]>;
 }
 
 /**
@@ -337,7 +420,7 @@ export interface AIPhoneServiceProviderConfig {
  * Factory interface for creating AI phone service providers
  */
 export interface AIPhoneServiceProviderFactory<
-  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType
+  T extends AIPhoneServiceProviderType = AIPhoneServiceProviderType,
 > {
   create(config: AIPhoneServiceProviderConfig): AIPhoneServiceProvider<T>;
 }

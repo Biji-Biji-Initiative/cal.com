@@ -2,8 +2,8 @@ import { getManageLink } from "@calcom/lib/CalEventParser";
 import { EMAIL_FROM_NAME } from "@calcom/lib/constants";
 import type { CalendarEvent } from "@calcom/types/Calendar";
 
-import { renderEmail } from "..";
 import generateIcsFile, { GenerateIcsRole } from "../lib/generateIcsFile";
+import renderEmail from "../src/renderEmail";
 import OrganizerScheduledEmail from "./organizer-scheduled-email";
 
 export default class AttendeeWasRequestedToRescheduleEmail extends OrganizerScheduledEmail {
@@ -45,10 +45,10 @@ export default class AttendeeWasRequestedToRescheduleEmail extends OrganizerSche
       <p style="color: #494949;">${this.t("when")}</p>
       <p style="color: #494949; font-weight: 400; line-height: 24px;text-decoration: line-through;">
       ${this.t(this.getOrganizerStart("dddd").toLowerCase())}, ${this.t(
-      this.getOrganizerStart("MMMM").toLowerCase()
-    )} ${this.getOrganizerStart("D")}, ${this.getOrganizerStart("YYYY")} | ${this.getOrganizerStart(
-      "h:mma"
-    )} - ${this.getOrganizerEnd("h:mma")} <span style="color: #888888">(${this.getTimezone()})</span>
+        this.getOrganizerStart("MMMM").toLowerCase()
+      )} ${this.getOrganizerStart("D")}, ${this.getOrganizerStart("YYYY")} | ${this.getOrganizerStart(
+        "h:mma"
+      )} - ${this.getOrganizerEnd("h:mma")} <span style="color: #888888">(${this.getTimezone()})</span>
       </p>
     </div>`;
   }

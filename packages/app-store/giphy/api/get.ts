@@ -1,9 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { z, ZodError } from "zod";
 
+import { getServerErrorFromUnknown } from "@calcom/lib/server/getServerErrorFromUnknown";
+
 import { GiphyManager } from "../lib";
 
-const giphyUrlRegexp = new RegExp("^https://(.*).giphy.com/media/(.*)/giphy.gif(.*)");
+const giphyUrlRegexp = new RegExp(
+  "^https?:\\/\\/(?:[\\w.-]+\\.)?giphy\\.com\\/media\\/(?:[^/]+\\/)*([a-zA-Z0-9_-]+)\\/giphy\\.gif(?:\\?.*)?$"
+);
 
 const getSchema = z.object({
   url: z.string().regex(giphyUrlRegexp, "Giphy URL is invalid"),
@@ -26,18 +30,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const sanitisedUrl = parsedUrl.origin + parsedUrl.pathname;
     // Extract Giphy ID from embed url
     const matches = giphyUrlRegexp.exec(sanitisedUrl);
-    if (!matches || matches.length < 3) {
+    if (!matches || matches.length < 2) {
       return res.status(400).json({ message: "Giphy URL is invalid" });
     }
-    const giphyId = matches[2];
+    const giphyId = matches[1];
     const gifImageUrl = await GiphyManager.getGiphyById(giphyId);
     return res.status(200).json({ image: gifImageUrl });
   } catch (error: unknown) {
-    console.error({ error });
-    if (error instanceof Error) {
-      return res.status(500).json({ message: error.message });
-    }
-    return res.status(500);
+    const httpError = getServerErrorFromUnknown(error);
+    return res.status(httpError.statusCode).json({ message: httpError.message });
   }
 }
 

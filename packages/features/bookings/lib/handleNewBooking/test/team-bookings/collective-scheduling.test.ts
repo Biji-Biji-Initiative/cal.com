@@ -14,7 +14,7 @@ import {
   BookingLocations,
   getZoomAppCredential,
   getDefaultBookingFields,
-} from "@calcom/web/test/utils/bookingScenario/bookingScenario";
+} from "@calcom/testing/lib/bookingScenario/bookingScenario";
 import {
   // expectWorkflowToBeTriggered,
   expectSuccessfulBookingCreationEmails,
@@ -25,9 +25,9 @@ import {
   expectSMSToBeTriggered,
   expectBookingRequestedEmails,
   expectBookingRequestedWebhookToHaveBeenFired,
-} from "@calcom/web/test/utils/bookingScenario/expects";
-import { getMockRequestDataForBooking } from "@calcom/web/test/utils/bookingScenario/getMockRequestDataForBooking";
-import { setupAndTeardown } from "@calcom/web/test/utils/bookingScenario/setupAndTeardown";
+} from "@calcom/testing/lib/bookingScenario/expects";
+import { getMockRequestDataForBooking } from "@calcom/testing/lib/bookingScenario/getMockRequestDataForBooking";
+import { setupAndTeardown } from "@calcom/testing/lib/bookingScenario/setupAndTeardown";
 
 import type { Request, Response } from "express";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -41,7 +41,9 @@ import { ErrorCode } from "@calcom/lib/errorCodes";
 import { resetTestSMS } from "@calcom/lib/testSMS";
 import { SchedulingType } from "@calcom/prisma/enums";
 import { BookingStatus } from "@calcom/prisma/enums";
-import { test } from "@calcom/web/test/fixtures/fixtures";
+import { test } from "@calcom/testing/lib/fixtures/fixtures";
+
+import { getNewBookingHandler } from "../getNewBookingHandler";
 
 export type CustomNextApiRequest = NextApiRequest & Request;
 
@@ -63,7 +65,7 @@ describe("handleNewBooking", () => {
           - Destination calendars for event-type and non-first hosts are used to create calendar events
         `,
           async ({ emails }) => {
-            const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+            const handleNewBooking = getNewBookingHandler();
             const booker = getBooker({
               email: "booker@example.com",
               name: "Booker",
@@ -152,7 +154,7 @@ describe("handleNewBooking", () => {
               },
             });
 
-            const calendarMock = mockCalendarToHaveNoBusySlots("googlecalendar", {
+            const calendarMock = await mockCalendarToHaveNoBusySlots("googlecalendar", {
               create: {
                 id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
@@ -201,7 +203,6 @@ describe("handleNewBooking", () => {
                   uid: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingId: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingPassword: "MOCK_PASSWORD",
-                  meetingUrl: "https://UNUSED_URL",
                 },
               ],
             });
@@ -246,7 +247,7 @@ describe("handleNewBooking", () => {
         test(
           `rejects a booking when even one of the hosts is busy`,
           async ({}) => {
-            const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+            const handleNewBooking = getNewBookingHandler();
             const booker = getBooker({
               email: "booker@example.com",
               name: "Booker",
@@ -335,7 +336,7 @@ describe("handleNewBooking", () => {
               },
             });
 
-            const calendarMock = mockCalendarToHaveNoBusySlots("googlecalendar", {
+            const calendarMock = await mockCalendarToHaveNoBusySlots("googlecalendar", {
               create: {
                 id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
@@ -372,7 +373,7 @@ describe("handleNewBooking", () => {
           - Destination calendars for event-type and non-first hosts are used to create calendar events
         `,
           async ({ emails }) => {
-            const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+            const handleNewBooking = getNewBookingHandler();
             const booker = getBooker({
               email: "booker@example.com",
               name: "Booker",
@@ -457,7 +458,7 @@ describe("handleNewBooking", () => {
                 url: `http://mock-dailyvideo.example.com/meeting-1`,
               },
             });
-            const calendarMock = mockCalendarToHaveNoBusySlots("googlecalendar", {
+            const calendarMock = await mockCalendarToHaveNoBusySlots("googlecalendar", {
               create: {
                 id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
@@ -503,7 +504,6 @@ describe("handleNewBooking", () => {
                   uid: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingId: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingPassword: "MOCK_PASSWORD",
-                  meetingUrl: "https://UNUSED_URL",
                 },
               ],
             });
@@ -546,7 +546,7 @@ describe("handleNewBooking", () => {
           - Destination calendars for event-type and non-first hosts are used to create calendar events
         `,
           async ({ emails, sms }) => {
-            const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+            const handleNewBooking = getNewBookingHandler();
             const org = await createOrganization({
               name: "Test Org",
               slug: "testorg",
@@ -682,7 +682,7 @@ describe("handleNewBooking", () => {
               },
             });
 
-            const calendarMock = mockCalendarToHaveNoBusySlots("googlecalendar", {
+            const calendarMock = await mockCalendarToHaveNoBusySlots("googlecalendar", {
               create: {
                 id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
@@ -732,7 +732,6 @@ describe("handleNewBooking", () => {
                   uid: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingId: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingPassword: "MOCK_PASSWORD",
-                  meetingUrl: "https://UNUSED_URL",
                 },
               ],
             });
@@ -780,7 +779,7 @@ describe("handleNewBooking", () => {
           - Destination calendars for event-type and non-first hosts are used to create calendar events
         `,
           async ({ emails, sms }) => {
-            const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+            const handleNewBooking = getNewBookingHandler();
             const org = await createOrganization({
               name: "Test Org",
               slug: "testorg",
@@ -917,7 +916,7 @@ describe("handleNewBooking", () => {
               },
             });
 
-            const calendarMock = mockCalendarToHaveNoBusySlots("googlecalendar", {
+            const calendarMock = await mockCalendarToHaveNoBusySlots("googlecalendar", {
               create: {
                 id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
@@ -967,7 +966,6 @@ describe("handleNewBooking", () => {
                   uid: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingId: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingPassword: "MOCK_PASSWORD",
-                  meetingUrl: "https://UNUSED_URL",
                 },
               ],
             });
@@ -1013,212 +1011,14 @@ describe("handleNewBooking", () => {
           },
           timeout
         );
-        test(
-          `[Event Type that requires confirmation with only Attendee Phone number as required field and Email as optional field] successfully creates a booking when the users are available as per the common schedule selected in the event-type
-          - Destination calendars for event-type and non-first hosts are used to create calendar events
-        `,
-          async ({ emails, sms }) => {
-            const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
-            const org = await createOrganization({
-              name: "Test Org",
-              slug: "testorg",
-            });
-            const subscriberUrl = "http://my-webhook.example.com";
-            const TEST_ATTENDEE_NUMBER = "+918888888888";
 
-            const booker = getBooker({
-              email: "booker@example.com",
-              name: "Booker",
-              attendeePhoneNumber: TEST_ATTENDEE_NUMBER,
-            });
-
-            const otherTeamMembers = [
-              {
-                name: "Other Team Member 1",
-                username: "other-team-member-1",
-                timeZone: Timezones["+5:30"],
-                defaultScheduleId: null,
-                email: "other-team-member-1@example.com",
-                id: 102,
-                schedules: [TestData.schedules.IstEveningShift],
-                credentials: [getGoogleCalendarCredential()],
-                selectedCalendars: [TestData.selectedCalendars.google],
-                destinationCalendar: {
-                  integration: TestData.apps["google-calendar"].type,
-                  externalId: "other-team-member-1@google-calendar.com",
-                },
-              },
-            ];
-
-            const organizer = getOrganizer({
-              name: "Organizer",
-              email: "organizer@example.com",
-              id: 101,
-              defaultScheduleId: null,
-              organizationId: org.id,
-              schedules: [TestData.schedules.IstMorningShift],
-              credentials: [getGoogleCalendarCredential()],
-              selectedCalendars: [TestData.selectedCalendars.google],
-              destinationCalendar: {
-                integration: TestData.apps["google-calendar"].type,
-                externalId: "organizer@google-calendar.com",
-              },
-              teams: [
-                {
-                  membership: {
-                    accepted: true,
-                  },
-                  team: {
-                    id: 1,
-                    name: "Team 1",
-                    slug: "team-1",
-                    parentId: org.id,
-                  },
-                },
-              ],
-            });
-
-            const scenarioData = getScenarioData(
-              {
-                webhooks: [
-                  {
-                    userId: organizer.id,
-                    eventTriggers: ["BOOKING_CREATED"],
-                    subscriberUrl: "http://my-webhook.example.com",
-                    active: true,
-                    eventTypeId: 1,
-                    appId: null,
-                  },
-                ],
-                eventTypes: [
-                  {
-                    id: 1,
-                    teamId: 1,
-                    slotInterval: 15,
-                    requiresConfirmation: true,
-                    schedulingType: SchedulingType.COLLECTIVE,
-                    length: 15,
-                    users: [
-                      {
-                        id: 101,
-                      },
-                      {
-                        id: 102,
-                      },
-                    ],
-                    // Both Email and Attendee Phone Number Fields are required
-                    bookingFields: getDefaultBookingFields({
-                      emailField: {
-                        name: "email",
-                        type: "email",
-                        label: "",
-                        hidden: true,
-                        sources: [{ id: "default", type: "default", label: "Default" }],
-                        editable: "system-but-optional",
-                        required: false,
-                        placeholder: "",
-                        defaultLabel: "email_address",
-                      },
-                      bookingFields: [
-                        {
-                          name: "attendeePhoneNumber",
-                          type: "phone",
-                          hidden: false,
-                          sources: [{ id: "default", type: "default", label: "Default" }],
-                          editable: "system-but-optional",
-                          required: true,
-                          defaultLabel: "phone_number",
-                        },
-                      ],
-                    }),
-                    // Common schedule is the morning shift
-                    schedule: TestData.schedules.IstMorningShift,
-                    destinationCalendar: {
-                      integration: TestData.apps["google-calendar"].type,
-                      externalId: "event-type-1@google-calendar.com",
-                    },
-                  },
-                ],
-                organizer,
-                usersApartFromOrganizer: otherTeamMembers,
-                apps: [TestData.apps["google-calendar"], TestData.apps["daily-video"]],
-              },
-              { id: org.id }
-            );
-            await createBookingScenario(scenarioData);
-
-            mockSuccessfulVideoMeetingCreation({
-              metadataLookupKey: appStoreMetadata.dailyvideo.dirName,
-              videoMeetingData: {
-                id: "MOCK_ID",
-                password: "MOCK_PASS",
-                url: `http://mock-dailyvideo.example.com/meeting-1`,
-              },
-            });
-
-            mockCalendarToHaveNoBusySlots("googlecalendar", {
-              create: {
-                id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
-                iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
-              },
-            });
-
-            const mockBookingData = getMockRequestDataForBooking({
-              data: {
-                // Try booking the first available free timeslot in both the users' schedules
-                start: `${getDate({ dateIncrement: 1 }).dateString}T11:30:00.000Z`,
-                end: `${getDate({ dateIncrement: 1 }).dateString}T11:45:00.000Z`,
-                eventTypeId: 1,
-                // No Email Passed
-                responses: {
-                  name: booker.name,
-                  email: "",
-                  attendeePhoneNumber: booker.attendeePhoneNumber,
-                  location: { optionValue: "", value: BookingLocations.CalVideo },
-                },
-              },
-            });
-
-            const createdBooking = await handleNewBooking({
-              bookingData: mockBookingData,
-            });
-
-            await expectBookingToBeInDatabase({
-              description: "",
-              location: BookingLocations.CalVideo,
-              responses: expect.objectContaining({
-                attendeePhoneNumber: booker.attendeePhoneNumber,
-                name: booker.name,
-              }),
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              uid: createdBooking.uid!,
-              eventTypeId: mockBookingData.eventTypeId,
-              status: BookingStatus.PENDING,
-            });
-
-            expectBookingRequestedEmails({
-              organizer,
-              emails,
-            });
-
-            expectBookingRequestedWebhookToHaveBeenFired({
-              booker: { name: booker.name, email: contructEmailFromPhoneNumber(TEST_ATTENDEE_NUMBER) },
-              organizer,
-              location: BookingLocations.CalVideo,
-              subscriberUrl,
-              eventType: scenarioData.eventTypes[0],
-              isEmailHidden: true,
-            });
-
-            expectSMSToBeTriggered({ sms, toNumber: TEST_ATTENDEE_NUMBER });
-          },
-          timeout
-        );
+        // NOTE: Tests for BOOKING_REQUESTED webhook have been moved to the new webhook architecture test suite
+        // See packages/features/webhooks/lib/__tests__/ for tests using the producer/consumer pattern
 
         test(
           `rejects a booking when the timeslot isn't within the common schedule`,
           async ({}) => {
-            const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+            const handleNewBooking = getNewBookingHandler();
             const booker = getBooker({
               email: "booker@example.com",
               name: "Booker",
@@ -1332,7 +1132,7 @@ describe("handleNewBooking", () => {
       test(
         `When Cal Video is the location, it uses global instance credentials and createMeeting is called for it`,
         async ({ emails }) => {
-          const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+          const handleNewBooking = getNewBookingHandler();
           const booker = getBooker({
             email: "booker@example.com",
             name: "Booker",
@@ -1412,7 +1212,7 @@ describe("handleNewBooking", () => {
               url: `http://mock-dailyvideo.example.com/meeting-1`,
             },
           });
-          const calendarMock = mockCalendarToHaveNoBusySlots("googlecalendar", {
+          const calendarMock = await mockCalendarToHaveNoBusySlots("googlecalendar", {
             create: {
               id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
               iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
@@ -1457,7 +1257,6 @@ describe("handleNewBooking", () => {
                 uid: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 meetingId: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 meetingPassword: "MOCK_PASSWORD",
-                meetingUrl: "https://UNUSED_URL",
               },
             ],
           });
@@ -1513,7 +1312,7 @@ describe("handleNewBooking", () => {
       test(
         `When Zoom is the location, it uses credentials of the first host and createMeeting is called for it.`,
         async ({ emails }) => {
-          const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+          const handleNewBooking = getNewBookingHandler();
           const booker = getBooker({
             email: "booker@example.com",
             name: "Booker",
@@ -1613,7 +1412,7 @@ describe("handleNewBooking", () => {
               url: `http://mock-zoomvideo.example.com/meeting-1`,
             },
           });
-          const calendarMock = mockCalendarToHaveNoBusySlots("googlecalendar", {
+          const calendarMock = await mockCalendarToHaveNoBusySlots("googlecalendar", {
             create: {
               id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
               iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
@@ -1657,7 +1456,6 @@ describe("handleNewBooking", () => {
                 uid: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 meetingId: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 meetingPassword: "MOCK_PASSWORD",
-                meetingUrl: "https://UNUSED_URL",
               },
             ],
           });
@@ -1715,7 +1513,7 @@ describe("handleNewBooking", () => {
       test(
         `When event type location is Organizer Default App and user metadata is empty, default to Cal Video`,
         async ({ emails }) => {
-          const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+          const handleNewBooking = getNewBookingHandler();
           const booker = getBooker({
             email: "booker@example.com",
             name: "Booker",
@@ -1819,7 +1617,7 @@ describe("handleNewBooking", () => {
               url: `http://mock-dailyvideo.example.com/meeting-1`,
             },
           });
-          const calendarMock = mockCalendarToHaveNoBusySlots("googlecalendar", {
+          const calendarMock = await mockCalendarToHaveNoBusySlots("googlecalendar", {
             create: {
               id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
               iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
@@ -1864,7 +1662,6 @@ describe("handleNewBooking", () => {
                 uid: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 meetingId: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 meetingPassword: "MOCK_PASSWORD",
-                meetingUrl: "https://UNUSED_URL",
               },
             ],
           });
@@ -1910,7 +1707,7 @@ describe("handleNewBooking", () => {
           - Reschedule and Cancel link in email are not of the org domain because the team is not part of any org
         `,
           async ({ emails }) => {
-            const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+            const handleNewBooking = getNewBookingHandler();
             const org = await createOrganization({
               name: "Test Org",
               slug: "testorg",
@@ -2013,7 +1810,7 @@ describe("handleNewBooking", () => {
                 url: `http://mock-dailyvideo.example.com/meeting-1`,
               },
             });
-            const calendarMock = mockCalendarToHaveNoBusySlots("googlecalendar", {
+            const calendarMock = await mockCalendarToHaveNoBusySlots("googlecalendar", {
               create: {
                 id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                 iCalUID: "MOCKED_GOOGLE_CALENDAR_ICS_ID",
@@ -2059,7 +1856,6 @@ describe("handleNewBooking", () => {
                   uid: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingId: "MOCKED_GOOGLE_CALENDAR_EVENT_ID",
                   meetingPassword: "MOCK_PASSWORD",
-                  meetingUrl: "https://UNUSED_URL",
                 },
               ],
             });
@@ -2104,7 +1900,7 @@ describe("handleNewBooking", () => {
 
     describe("Round Robin Assignment", () => {
       test(`successfully books contact owner if rr lead skip is enabled`, async ({ emails }) => {
-        const handleNewBooking = (await import("@calcom/features/bookings/lib/handleNewBooking")).default;
+        const handleNewBooking = getNewBookingHandler();
         const booker = getBooker({
           email: "booker@example.com",
           name: "Booker",

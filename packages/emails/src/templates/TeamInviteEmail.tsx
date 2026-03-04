@@ -3,7 +3,7 @@ import type { TFunction } from "i18next";
 import ServerTrans from "@calcom/lib/components/ServerTrans";
 import { APP_NAME, WEBAPP_URL, IS_PRODUCTION } from "@calcom/lib/constants";
 
-import { getSubject, getTypeOfInvite } from "../../templates/team-invite-email";
+import { getSubject, getTypeOfInvite } from "../../lib/utils/team-invite-utils";
 import { V2BaseEmailHtml, CallToAction } from "../components";
 
 type TeamInvite = {
@@ -61,7 +61,7 @@ export const TeamInviteEmail = (
       <div style={{ display: "flex", justifyContent: "center" }}>
         <CallToAction
           label={props.language(
-            props.isCalcomMember ? (props.isAutoJoin ? "login" : "email_user_cta") : "create_your_account"
+            props.isCalcomMember ? (props.isAutoJoin ? "login" : "accept_invite") : "join_now"
           )}
           href={props.joinLink}
           endIconName="linkIcon"
@@ -136,7 +136,7 @@ export const TeamInviteEmail = (
       parentTeamName: props.parentTeamName,
       prevLink: props.prevLink,
       newLink: props.newLink,
-      orgName: props.parentTeamName ?? props.isOrg ? props.teamName : "",
+      orgName: (props.parentTeamName ?? props.isOrg) ? props.teamName : "",
       prevLinkWithoutProtocol: props.prevLink?.replace(/https?:\/\//, ""),
       newLinkWithoutProtocol: props.newLink?.replace(/https?:\/\//, ""),
     };

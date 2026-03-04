@@ -1,11 +1,18 @@
-import type { Payment, Webhook } from "@prisma/client";
-import { createHmac } from "crypto";
-import { compile } from "handlebars";
-
+import { createHmac } from "node:crypto";
 import type { TGetTranscriptAccessLink } from "@calcom/app-store/dailyvideo/zod";
 import { getHumanReadableLocationValue } from "@calcom/app-store/locations";
+import type {
+  DelegationCredentialErrorPayloadType,
+  PaymentData,
+  WebhookSubscriber,
+} from "@calcom/features/webhooks/lib/dto/types";
 import { getUTCOffsetByTimezone } from "@calcom/lib/dayjs";
 import type { CalendarEvent, Person } from "@calcom/types/Calendar";
+import { compile } from "handlebars";
+import { z } from "zod";
+
+// Minimal webhook shape for sending payloads (subset of WebhookSubscriber)
+type WebhookForPayload = Pick<WebhookSubscriber, "subscriberUrl" | "appId" | "payloadTemplate" | "version">;
 
 type ContentType = "application/json" | "application/x-www-form-urlencoded";
 
@@ -75,9 +82,10 @@ export type OOOEntryPayloadType = {
   };
 };
 
-export type EventPayloadType = CalendarEvent &
+export type EventPayloadType = Omit<CalendarEvent, "assignmentReason"> &
   TranscriptionGeneratedPayload &
   EventTypeInfo & {
+    uid?: string | null;
     metadata?: { [key: string]: string | number | boolean | null };
     bookingId?: number;
     status?: string;
@@ -90,10 +98,16 @@ export type EventPayloadType = CalendarEvent &
     paymentId?: number;
     rescheduledBy?: string;
     cancelledBy?: string;
-    paymentData?: Payment;
+    paymentData?: PaymentData;
+    requestReschedule?: boolean;
+    assignmentReason?: string | { reasonEnum: string; reasonString: string }[] | null;
   };
 
-export type WebhookPayloadType = EventPayloadType | OOOEntryPayloadType | BookingNoShowUpdatedPayload;
+export type WebhookPayloadType =
+  | EventPayloadType
+  | OOOEntryPayloadType
+  | BookingNoShowUpdatedPayload
+  | DelegationCredentialErrorPayloadType;
 
 type WebhookDataType = WebhookPayloadType & { triggerEvent: string; createdAt: string };
 
@@ -130,6 +144,7 @@ function getZapierPayload(data: WithUTCOffsetType<EventPayloadType & { createdAt
   const location = getHumanReadableLocationValue(data.location || "", t);
 
   const body = {
+    uid: data.uid,
     title: data.title,
     description: data.description,
     customInputs: data.customInputs,
@@ -142,6 +157,7 @@ function getZapierPayload(data: WithUTCOffsetType<EventPayloadType & { createdAt
     cancellationReason: data.cancellationReason,
     user: {
       username: data.organizer.username,
+      usernameInOrg: data.organizer.usernameInOrg,
       name: data.organizer.name,
       email: data.organizer.email,
       timeZone: data.organizer.timeZone,
@@ -158,11 +174,18 @@ function getZapierPayload(data: WithUTCOffsetType<EventPayloadType & { createdAt
     },
     attendees: attendees,
     createdAt: data.createdAt,
+    metadata: {
+      videoCallUrl: data.metadata?.videoCallUrl,
+    },
   };
   return JSON.stringify(body);
 }
 
-function applyTemplate(template: string, data: WebhookDataType, contentType: ContentType) {
+function applyTemplate(
+  template: string,
+  data: WebhookDataType | Record<string, unknown>,
+  contentType: ContentType
+) {
   const compiled = compile(template)(data).replace(/&quot;/g, '"');
 
   if (contentType === "application/json") {
@@ -174,7 +197,7 @@ function applyTemplate(template: string, data: WebhookDataType, contentType: Con
 export function jsonParse(jsonString: string) {
   try {
     return JSON.parse(jsonString);
-  } catch (e) {
+  } catch {
     // don't do anything.
   }
   return false;
@@ -185,18 +208,37 @@ export function isOOOEntryPayload(data: WebhookPayloadType): data is OOOEntryPay
 }
 
 export function isNoShowPayload(data: WebhookPayloadType): data is BookingNoShowUpdatedPayload {
-  return "message" in data;
+  return "message" in data && "bookingUid" in data;
+}
+
+export function isDelegationCredentialErrorPayload(
+  data: WebhookPayloadType
+): data is DelegationCredentialErrorPayloadType {
+  return "error" in data && "credential" in data && "user" in data;
 }
 
 export function isEventPayload(data: WebhookPayloadType): data is EventPayloadType {
-  return !isNoShowPayload(data) && !isOOOEntryPayload(data);
+  return !isNoShowPayload(data) && !isOOOEntryPayload(data) && !isDelegationCredentialErrorPayload(data);
+}
+
+const webhookAssignmentReasonSchema = z.union([
+  z.string(),
+  z.array(z.object({ reasonEnum: z.string(), reasonString: z.string() })),
+  z.null(),
+  z.undefined(),
+]);
+
+export function sanitizeAssignmentReasonForWebhook(data: EventPayloadType): EventPayloadType {
+  const result = webhookAssignmentReasonSchema.safeParse(data.assignmentReason);
+  if (result.success) return data;
+  return { ...data, assignmentReason: undefined };
 }
 
 const sendPayload = async (
   secretKey: string | null,
   triggerEvent: string,
   createdAt: string,
-  webhook: Pick<Webhook, "subscriberUrl" | "appId" | "payloadTemplate">,
+  webhook: WebhookForPayload,
   data: WebhookPayloadType
 ) => {
   const { appId, payloadTemplate: template } = webhook;
@@ -209,6 +251,7 @@ const sendPayload = async (
   let body;
   /* Zapier id is hardcoded in the DB, we send the raw data for this case  */
   if (isEventPayload(data)) {
+    data = sanitizeAssignmentReasonForWebhook(data);
     data.description = data.description || data.additionalNotes;
     if (appId === "zapier") {
       body = getZapierPayload({ ...data, createdAt });
@@ -216,7 +259,13 @@ const sendPayload = async (
   }
 
   if (body === undefined) {
-    if (template && (isOOOEntryPayload(data) || isEventPayload(data) || isNoShowPayload(data))) {
+    if (
+      template &&
+      (isOOOEntryPayload(data) ||
+        isEventPayload(data) ||
+        isNoShowPayload(data) ||
+        isDelegationCredentialErrorPayload(data))
+    ) {
       body = applyTemplate(template, { ...data, triggerEvent, createdAt }, contentType);
     } else {
       body = JSON.stringify({
@@ -241,19 +290,31 @@ export const sendGenericWebhookPayload = async ({
   secretKey: string | null;
   triggerEvent: string;
   createdAt: string;
-  webhook: Pick<Webhook, "subscriberUrl" | "appId" | "payloadTemplate">;
+  webhook: WebhookForPayload;
   data: Record<string, unknown>;
   rootData?: Record<string, unknown>;
 }) => {
-  const body = JSON.stringify({
+  const { payloadTemplate: template } = webhook;
+
+  const contentType =
+    !template || jsonParse(template) ? "application/json" : "application/x-www-form-urlencoded";
+
+  const defaultPayload = {
     // Added rootData props first so that using the known(i.e. triggerEvent, createdAt, payload) properties in rootData doesn't override the known properties
     ...rootData,
     triggerEvent: triggerEvent,
     createdAt: createdAt,
     payload: data,
-  });
+  };
 
-  return _sendPayload(secretKey, webhook, body, "application/json");
+  let body: string;
+  if (template) {
+    body = applyTemplate(template, defaultPayload, contentType);
+  } else {
+    body = JSON.stringify(defaultPayload);
+  }
+
+  return _sendPayload(secretKey, webhook, body, contentType);
 };
 
 export const createWebhookSignature = (params: { secret?: string | null; body: string }) =>
@@ -263,11 +324,11 @@ export const createWebhookSignature = (params: { secret?: string | null; body: s
 
 const _sendPayload = async (
   secretKey: string | null,
-  webhook: Pick<Webhook, "subscriberUrl" | "appId" | "payloadTemplate">,
+  webhook: WebhookForPayload,
   body: string,
   contentType: "application/json" | "application/x-www-form-urlencoded"
 ) => {
-  const { subscriberUrl } = webhook;
+  const { subscriberUrl, version } = webhook;
   if (!subscriberUrl || !body) {
     throw new Error("Missing required elements to send webhook payload.");
   }
@@ -277,21 +338,15 @@ const _sendPayload = async (
     headers: {
       "Content-Type": contentType,
       "X-Cal-Signature-256": createWebhookSignature({ secret: secretKey, body }),
+      "X-Cal-Webhook-Version": version,
     },
     redirect: "manual",
     body,
   });
 
-  const text = await response.text();
-
   return {
     ok: response.ok,
     status: response.status,
-    ...(text
-      ? {
-          message: text,
-        }
-      : {}),
   };
 };
 
