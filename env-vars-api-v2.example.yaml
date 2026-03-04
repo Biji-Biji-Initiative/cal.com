@@ -34,8 +34,8 @@ DOCS_URL: "https://api-v2.cal.mereka.io/docs"
 LOGGER_BRIDGE_LOG_LEVEL: "4"
 
 # Web Push VAPID keys (required to start without errors)
-NEXT_PUBLIC_VAPID_PUBLIC_KEY: "BNNLcD25UN1ANdLQMxHjSn9te4oG6EXmzEOqG4xcbOiS25l5NRoxmFfYG6FlxBE2Qusd-EYSrsVjpmYwUfFXf3k"
-VAPID_PRIVATE_KEY: "nwx6K9rYONVIgn3HOvMDe3WubolkRUOX0bYIjSazwps"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY: "REPLACE_WITH_VAPID_PUBLIC_KEY"
+VAPID_PRIVATE_KEY: "REPLACE_WITH_VAPID_PRIVATE_KEY"
 
 # Redis (required by API v2 for rate limiting and queues)
 REDIS_URL: "redis://REDIS_HOST:6379"

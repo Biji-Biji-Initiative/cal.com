@@ -6,7 +6,7 @@ The **Cal.com API v2** is a **separate service** from the main web application. 
 
 ### **Architecture:**
 - **Web App**: `calcom-app-prod` (Next.js + v1 API) - Port 3000
-- **API v2**: `calcom-api-v2` (NestJS) - Port 80 (internal)
+- **API v2**: `calcom-api-v2` (NestJS) - Port 8080 (Cloud Run)
 - **Database**: Shared PostgreSQL instance
 - **Deployment**: Separate Google Cloud Run services
 
@@ -14,14 +14,14 @@ The **Cal.com API v2** is a **separate service** from the main web application. 
 
 ### **1. Separate Cloud Run Service**
 - **Service Name**: `calcom-api-v2`
-- **Port**: 80 (internal)
+- **Port**: 8080
 - **Memory**: 2048Mi (recommended)
 - **CPU**: 2 (recommended)
 
 ### **2. Separate Environment Variables**
 - **File**: `env-vars-api-v2.example.yaml`
 - **Database**: Same connection strings
-- **License**: Same staging key
+- **License**: `CALCOM_LICENSE_KEY` must be set from secret manager
 - **API Configuration**: Specific to v2
 
 ### **3. Separate Build Process**
@@ -48,23 +48,21 @@ yarn install
 yarn workspace @calcom/api-v2 run build
 
 # 2. Build Docker image
-docker build -t gcr.io/biji-biji-calcom-250825084322/calcom-api-v2 \
-  --build-arg DATABASE_URL="postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
-  --build-arg DATABASE_DIRECT_URL="postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable" \
+docker build -t gcr.io/biji-biji-calcom-250825084322/calcom-api-v2:$SHORT_SHA \
   -f apps/api/v2/Dockerfile .
 
 # 3. Push to Google Container Registry
-gcloud auth configure-docker
-docker push gcr.io/biji-biji-calcom-250825084322/calcom-api-v2
+gcloud auth configure-docker gcr.io --quiet
+docker push gcr.io/biji-biji-calcom-250825084322/calcom-api-v2:$SHORT_SHA
 
 # 4. Deploy to Cloud Run
 gcloud run deploy calcom-api-v2 \
-  --image gcr.io/biji-biji-calcom-250825084322/calcom-api-v2 \
+  --image gcr.io/biji-biji-calcom-250825084322/calcom-api-v2:$SHORT_SHA \
   --region us-central1 \
   --project biji-biji-calcom-250825084322 \
   --platform managed \
   --allow-unauthenticated \
-  --port 80 \
+  --port 8080 \
   --memory 2048Mi \
   --cpu 2 \
   --min-instances 1 \
@@ -80,7 +78,7 @@ gcloud run deploy calcom-api-v2 \
 ```yaml
 # Core Configuration
 NODE_ENV: "production"
-API_PORT: "80"
+API_PORT: "8080"
 API_URL: "https://api-v2.mereka.io"
 
 # Database Configuration
@@ -96,11 +94,14 @@ JWT_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
 WEB_APP_URL: "https://calendar.mereka.io"
 CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
 API_KEY_PREFIX: "mereka_"
-IS_E2E: "true"
+IS_E2E: "false"
 
 # API v2 Specific
 REWRITE_API_V2_PREFIX: "1"
 DOCS_URL: "https://api-v2.mereka.io/docs"
+REDIS_URL: "redis://REPLACE_WITH_REDIS_HOST:6379"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY: "REPLACE_WITH_VAPID_PUBLIC_KEY"
+VAPID_PRIVATE_KEY: "REPLACE_WITH_VAPID_PRIVATE_KEY"
 ```
 
 ## 🌐 **DNS Configuration**
@@ -177,9 +178,6 @@ yarn workspace @calcom/api-v2 run build
 ```bash
 # Check Docker context
 docker build --no-cache -t test-image -f apps/api/v2/Dockerfile .
-
-# Verify build args
-docker build --build-arg DATABASE_URL="test" -f apps/api/v2/Dockerfile .
 ```
 
 ### **3. Deployment Failures**
@@ -231,7 +229,6 @@ gcloud run services describe calcom-api-v2 \
 **Script**: `deploy-api-v2.sh` ✅  
 **Configuration**: `env-vars-api-v2.example.yaml` ✅  
 **Expected Result**: Separate API v2 service running on Cloud Run ✅
-
 
 
 

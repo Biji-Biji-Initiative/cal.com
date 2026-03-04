@@ -75,6 +75,8 @@ else
     CALCOM_LICENSE_KEY
     CAL_SIGNATURE_TOKEN
     REDIS_URL
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    VAPID_PRIVATE_KEY
   )
 fi
 
@@ -93,7 +95,7 @@ extract_value() {
   fi
 
   local value="$line"
-  if [[ "$line" == *"="* ]]; then
+  if [[ "$line" =~ ^[[:space:]]*${key}[[:space:]]*= ]]; then
     value="${line#*=}"
   else
     value="${line#*:}"
@@ -106,6 +108,11 @@ extract_value() {
 has_placeholder() {
   local value="$1"
   [[ "$value" == *"REPLACE_WITH_"* || "$value" == *"<set-in-infisical>"* || "$value" == *"your-"* ]]
+}
+
+should_skip_format_validation() {
+  local value="$1"
+  [[ "$ALLOW_PLACEHOLDERS" == "true" ]] && has_placeholder "$value"
 }
 
 missing=()
@@ -142,6 +149,60 @@ fi
 api_url="$(extract_value "API_URL")"
 if [[ -n "$api_url" && ! "$api_url" =~ ^https?:// ]]; then
   invalid+=("API_URL (must start with http:// or https://)")
+fi
+
+database_url="$(extract_value "DATABASE_URL")"
+if [[ -n "$database_url" ]]; then
+  if should_skip_format_validation "$database_url"; then
+    :
+  elif [[ "$database_url" != postgres://* && "$database_url" != postgresql://* ]]; then
+    invalid+=("DATABASE_URL (must start with postgres:// or postgresql://)")
+  fi
+fi
+
+database_direct_url="$(extract_value "DATABASE_DIRECT_URL")"
+if [[ -n "$database_direct_url" ]]; then
+  if should_skip_format_validation "$database_direct_url"; then
+    :
+  elif [[ "$database_direct_url" != postgres://* && "$database_direct_url" != postgresql://* ]]; then
+    invalid+=("DATABASE_DIRECT_URL (must start with postgres:// or postgresql://)")
+  fi
+fi
+
+if [[ "$PROFILE" == "api-v2" ]]; then
+  database_read_url="$(extract_value "DATABASE_READ_URL")"
+  if [[ -n "$database_read_url" ]]; then
+    if should_skip_format_validation "$database_read_url"; then
+      :
+    elif [[ "$database_read_url" != postgres://* && "$database_read_url" != postgresql://* ]]; then
+      invalid+=("DATABASE_READ_URL (must start with postgres:// or postgresql://)")
+    fi
+  fi
+
+  database_write_url="$(extract_value "DATABASE_WRITE_URL")"
+  if [[ -n "$database_write_url" ]]; then
+    if should_skip_format_validation "$database_write_url"; then
+      :
+    elif [[ "$database_write_url" != postgres://* && "$database_write_url" != postgresql://* ]]; then
+      invalid+=("DATABASE_WRITE_URL (must start with postgres:// or postgresql://)")
+    fi
+  fi
+
+  redis_url="$(extract_value "REDIS_URL")"
+  if [[ -n "$redis_url" ]] && ! should_skip_format_validation "$redis_url"; then
+    if [[ "$redis_url" != redis://* && "$redis_url" != rediss://* ]]; then
+      invalid+=("REDIS_URL (must start with redis:// or rediss://)")
+    fi
+  fi
+fi
+
+calcom_license_key="$(extract_value "CALCOM_LICENSE_KEY")"
+if [[ -n "$calcom_license_key" ]]; then
+  if should_skip_format_validation "$calcom_license_key"; then
+    :
+  elif [[ ! "$calcom_license_key" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
+    invalid+=("CALCOM_LICENSE_KEY (must be a UUID)")
+  fi
 fi
 
 next_public_is_e2e="$(extract_value "NEXT_PUBLIC_IS_E2E")"

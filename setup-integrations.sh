@@ -31,12 +31,6 @@ prompt_input() {
   printf -v "$var_name" '%s' "$value"
 }
 
-yaml_single_quote() {
-  local value="$1"
-  value="${value//\'/\'\'}"
-  printf "'%s'" "$value"
-}
-
 if [[ ! -f "$REPO_ROOT/package.json" ]]; then
   fail "Run this script from the cal.com repository root."
 fi
@@ -73,19 +67,13 @@ else
   [[ "$GOOGLE_API_CREDENTIALS" == *"client_id"* && "$GOOGLE_API_CREDENTIALS" == *"client_secret"* ]] || fail "Google credentials JSON does not appear valid. Install jq for strict validation."
 fi
 
-tmp_env="$(mktemp "${TMPDIR:-/tmp}/calcom-integrations.XXXXXX.yaml")"
-trap 'rm -f "$tmp_env"' EXIT
+delimiter='|'
+update_env_vars="^${delimiter}^GOOGLE_LOGIN_ENABLED=true${delimiter}GOOGLE_API_CREDENTIALS=${GOOGLE_API_CREDENTIALS}"
+if [[ -n "$ZOOM_CLIENT_ID" ]]; then
+  update_env_vars+="${delimiter}ZOOM_CLIENT_ID=${ZOOM_CLIENT_ID}${delimiter}ZOOM_CLIENT_SECRET=${ZOOM_CLIENT_SECRET}"
+fi
 
-{
-  printf 'GOOGLE_LOGIN_ENABLED: "true"\n'
-  printf 'GOOGLE_API_CREDENTIALS: %s\n' "$(yaml_single_quote "$GOOGLE_API_CREDENTIALS")"
-  if [[ -n "$ZOOM_CLIENT_ID" ]]; then
-    printf 'ZOOM_CLIENT_ID: "%s"\n' "$ZOOM_CLIENT_ID"
-    printf 'ZOOM_CLIENT_SECRET: "%s"\n' "$ZOOM_CLIENT_SECRET"
-  fi
-} >"$tmp_env"
-
-args=(run services update "$SERVICE_NAME" --region "$REGION" --env-vars-file "$tmp_env" --quiet)
+args=(run services update "$SERVICE_NAME" --region "$REGION" --update-env-vars "$update_env_vars" --quiet)
 if [[ -n "$PROJECT_ID" ]]; then
   args+=(--project "$PROJECT_ID")
 fi
@@ -94,6 +82,7 @@ info "Updating Cloud Run environment variables..."
 gcloud "${args[@]}"
 
 info "Integration variables updated successfully."
+info "Used --update-env-vars (non-destructive): existing unrelated env vars were preserved."
 info "Next steps:"
 info "1. Verify Google login and Google Calendar install flow in /settings/apps."
 info "2. If needed, reseed app store: yarn workspace @calcom/prisma db-seed"

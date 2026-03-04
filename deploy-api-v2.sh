@@ -12,7 +12,9 @@ REPO_ROOT="$SCRIPT_DIR"
 PROJECT_ID="${PROJECT_ID:-REPLACE_WITH_GCP_PROJECT_ID}"
 REGION="${REGION:-us-central1}"
 SERVICE_NAME="${SERVICE_NAME:-calcom-api-v2}"
-IMAGE_NAME="${IMAGE_NAME:-gcr.io/${PROJECT_ID}/calcom-api-v2}"
+IMAGE_REPO="${IMAGE_REPO:-gcr.io/${PROJECT_ID}/calcom-api-v2}"
+IMAGE_TAG="${IMAGE_TAG:-$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M%S)}"
+IMAGE_NAME="${IMAGE_NAME:-${IMAGE_REPO}:${IMAGE_TAG}}"
 ENV_FILE="${ENV_FILE:-env-vars-api-v2.example.yaml}"
 CLOUDSQL_INSTANCE="${CLOUDSQL_INSTANCE:-}"
 
@@ -60,6 +62,11 @@ check_prerequisites() {
         exit 1
     fi
 
+    if [[ ! -x "$REPO_ROOT/scripts/verify-calcom-env.sh" ]]; then
+        log_error "Missing required script: $REPO_ROOT/scripts/verify-calcom-env.sh"
+        exit 1
+    fi
+
     log_info "Validating environment file..."
     if ! "$REPO_ROOT/scripts/verify-calcom-env.sh" "$env_file_path" --profile api-v2; then
         log_error "Environment preflight failed. Fix $ENV_FILE before deployment."
@@ -102,10 +109,12 @@ build_docker_image() {
 
 # Push Docker image
 push_docker_image() {
-    log_info "Pushing Docker image to Google Container Registry..."
+    local registry_host
+    registry_host="${IMAGE_NAME%%/*}"
+    log_info "Pushing Docker image to registry: $registry_host"
     
-    # Configure Docker to use gcloud as a credential helper
-    gcloud auth configure-docker
+    # Configure Docker to use gcloud as a credential helper for the target registry
+    gcloud auth configure-docker "$registry_host" --quiet
     
     # Push the image
     docker push "$IMAGE_NAME"
@@ -156,6 +165,7 @@ get_service_url() {
 # Main deployment process
 main() {
     log_info "Starting Cal.com API v2 deployment..."
+    log_info "Image: $IMAGE_NAME"
     
     check_prerequisites
     build_api_v2
@@ -173,4 +183,3 @@ main() {
 
 # Run main function
 main "$@"
-
