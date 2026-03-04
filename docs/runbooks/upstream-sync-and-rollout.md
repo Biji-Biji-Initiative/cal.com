@@ -51,6 +51,17 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
    - `./scripts/smoke-check-calcom.sh --web-url https://<web-domain> --api-url https://<api-domain>`
    - Optional CI execution: trigger `.github/workflows/smoke-check.yml` with target URLs.
 
+### Quick Probe Commands (Read-only)
+```bash
+curl -I https://cal.mereka.io/api/auth/signin
+curl -I https://cal.mereka.io/api/auth/signin/google
+curl -I https://cal.mereka.io/outpost.goauthentik.io/ping
+curl -I https://calendar.mereka.io/api/auth/signin/google
+```
+Expected signals:
+- Auth endpoints generally return redirect statuses (`302/307`) when auth flow is wired.
+- Outpost ping should return `204` when Authentik outpost routing is healthy.
+
 ## Data Preservation Rules
 1. Never run destructive migration commands in production.
 2. Use `db-deploy` in production; reserve `db-migrate` for development.
