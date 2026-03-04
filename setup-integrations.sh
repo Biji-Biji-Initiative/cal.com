@@ -1,85 +1,99 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Cal.com Integration Setup Script
-# Run this after you've obtained your Zoom and Google credentials
+set -euo pipefail
 
-echo "🚀 Cal.com Integration Setup Script"
-echo "=================================="
-echo ""
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SERVICE_NAME="${SERVICE_NAME:-calcom-app-prod}"
+REGION="${REGION:-us-central1}"
+PROJECT_ID="${PROJECT_ID:-}"
 
-# Check if running from correct directory
-if [ ! -f "package.json" ]; then
-    echo "❌ Please run this script from the cal.com directory"
-    exit 1
-fi
-
-# Function to prompt for input
-prompt_input() {
-    local prompt="$1"
-    local var_name="$2"
-    local is_secret="$3"
-    
-    if [ "$is_secret" = "true" ]; then
-        read -s -p "$prompt: " input
-        echo ""
-    else
-        read -p "$prompt: " input
-    fi
-    
-    if [ -n "$input" ]; then
-        eval "$var_name='$input'"
-    fi
+info() {
+  echo "[INFO] $1"
 }
 
-echo "📋 Please provide your integration credentials:"
-echo ""
+fail() {
+  echo "[ERROR] $1" >&2
+  exit 1
+}
 
-# Zoom credentials
-prompt_input "Zoom Client ID" "ZOOM_CLIENT_ID" false
-prompt_input "Zoom Client Secret" "ZOOM_CLIENT_SECRET" true
+prompt_input() {
+  local prompt="$1"
+  local var_name="$2"
+  local secret="${3:-false}"
+  local value=""
 
-# Google credentials
-prompt_input "Google Client ID" "GOOGLE_CLIENT_ID" false
-prompt_input "Google Client Secret" "GOOGLE_CLIENT_SECRET" true
-prompt_input "Google API Credentials JSON (paste the entire JSON)" "GOOGLE_API_CREDENTIALS" false
+  if [[ "$secret" == "true" ]]; then
+    read -r -s -p "$prompt: " value
+    echo
+  else
+    read -r -p "$prompt: " value
+  fi
+  printf -v "$var_name" '%s' "$value"
+}
 
-echo ""
-echo "🔧 Updating Cloud Run environment variables..."
+yaml_single_quote() {
+  local value="$1"
+  value="${value//\'/\'\'}"
+  printf "'%s'" "$value"
+}
 
-# Update Cloud Run service with new environment variables
-gcloud run services update calcom-app --region=us-central1 \
-  --update-env-vars="ZOOM_CLIENT_ID=$ZOOM_CLIENT_ID,ZOOM_CLIENT_SECRET=$ZOOM_CLIENT_SECRET,GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET,GOOGLE_API_CREDENTIALS='$GOOGLE_API_CREDENTIALS',GOOGLE_LOGIN_ENABLED=true" \
-  --quiet
-
-if [ $? -eq 0 ]; then
-    echo "✅ Environment variables updated successfully!"
-    echo ""
-    echo "🔄 Repopulating app store..."
-    
-    # Repopulate app store
-    yarn workspace @calcom/prisma db-seed
-    
-    if [ $? -eq 0 ]; then
-        echo "✅ App store repopulated successfully!"
-        echo ""
-        echo "🎉 Setup complete! Your integrations should now be available."
-        echo ""
-        echo "📱 Next steps:"
-        echo "1. Go to https://calendar.mereka.io/settings/apps"
-        echo "2. Look for Zoom and Google Calendar in the app store"
-        echo "3. Click 'Install' and follow the OAuth flow"
-        echo ""
-        echo "🔐 IMPORTANT: Enable 2FA for admin access:"
-        echo "1. Go to https://calendar.mereka.io/settings/security"
-        echo "2. Enable Two-factor authentication"
-        echo "3. Scan QR code with authenticator app"
-        echo "4. Enter 6-digit code to complete setup"
-        echo ""
-        echo "🔍 If you encounter issues, check the INTEGRATION_SETUP.md file for troubleshooting steps."
-    else
-        echo "❌ Failed to repopulate app store. Please run manually:"
-        echo "   yarn workspace @calcom/prisma db-seed"
-    fi
-else
-    echo "❌ Failed to update environment variables. Please check your gcloud configuration."
+if [[ ! -f "$REPO_ROOT/package.json" ]]; then
+  fail "Run this script from the cal.com repository root."
 fi
+
+command -v gcloud >/dev/null 2>&1 || fail "gcloud CLI is required."
+
+info "Cal.com integration env updater"
+info "Target service: ${SERVICE_NAME} (${REGION})"
+echo
+
+prompt_input "Google OAuth credentials file path (downloaded JSON)" GOOGLE_CREDENTIALS_FILE
+[[ -f "$GOOGLE_CREDENTIALS_FILE" ]] || fail "Google credentials file not found: $GOOGLE_CREDENTIALS_FILE"
+
+ZOOM_CLIENT_ID=""
+ZOOM_CLIENT_SECRET=""
+prompt_input "Zoom Client ID (optional)" ZOOM_CLIENT_ID
+prompt_input "Zoom Client Secret (optional)" ZOOM_CLIENT_SECRET true
+
+if [[ -n "$ZOOM_CLIENT_ID" && -z "$ZOOM_CLIENT_SECRET" ]]; then
+  fail "Zoom Client Secret is required when Zoom Client ID is set."
+fi
+if [[ -z "$ZOOM_CLIENT_ID" && -n "$ZOOM_CLIENT_SECRET" ]]; then
+  fail "Zoom Client ID is required when Zoom Client Secret is set."
+fi
+
+if command -v jq >/dev/null 2>&1; then
+  GOOGLE_API_CREDENTIALS="$(jq -c . "$GOOGLE_CREDENTIALS_FILE")"
+  client_id="$(jq -r '.web.client_id // empty' "$GOOGLE_CREDENTIALS_FILE")"
+  client_secret="$(jq -r '.web.client_secret // empty' "$GOOGLE_CREDENTIALS_FILE")"
+  redirect_count="$(jq -r '(.web.redirect_uris // []) | length' "$GOOGLE_CREDENTIALS_FILE")"
+  [[ -n "$client_id" && -n "$client_secret" && "$redirect_count" -gt 0 ]] || fail "Google credentials JSON is missing web.client_id, web.client_secret, or web.redirect_uris."
+else
+  GOOGLE_API_CREDENTIALS="$(tr -d '\n' <"$GOOGLE_CREDENTIALS_FILE")"
+  [[ "$GOOGLE_API_CREDENTIALS" == *"client_id"* && "$GOOGLE_API_CREDENTIALS" == *"client_secret"* ]] || fail "Google credentials JSON does not appear valid. Install jq for strict validation."
+fi
+
+tmp_env="$(mktemp "${TMPDIR:-/tmp}/calcom-integrations.XXXXXX.yaml")"
+trap 'rm -f "$tmp_env"' EXIT
+
+{
+  printf 'GOOGLE_LOGIN_ENABLED: "true"\n'
+  printf 'GOOGLE_API_CREDENTIALS: %s\n' "$(yaml_single_quote "$GOOGLE_API_CREDENTIALS")"
+  if [[ -n "$ZOOM_CLIENT_ID" ]]; then
+    printf 'ZOOM_CLIENT_ID: "%s"\n' "$ZOOM_CLIENT_ID"
+    printf 'ZOOM_CLIENT_SECRET: "%s"\n' "$ZOOM_CLIENT_SECRET"
+  fi
+} >"$tmp_env"
+
+args=(run services update "$SERVICE_NAME" --region "$REGION" --env-vars-file "$tmp_env" --quiet)
+if [[ -n "$PROJECT_ID" ]]; then
+  args+=(--project "$PROJECT_ID")
+fi
+
+info "Updating Cloud Run environment variables..."
+gcloud "${args[@]}"
+
+info "Integration variables updated successfully."
+info "Next steps:"
+info "1. Verify Google login and Google Calendar install flow in /settings/apps."
+info "2. If needed, reseed app store: yarn workspace @calcom/prisma db-seed"

@@ -39,7 +39,7 @@ This document contains the exact configuration that successfully deployed Cal.co
 ```yaml
 # Core Authentication
 NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
-CALENDSO_ENCRYPTION_KEY: "/+xwwLq2TKP0I8G9dkN2//ko30WRIczS2DGw/8osMtk="
+CALENDSO_ENCRYPTION_KEY: "REPLACE_WITH_CALENDSO_ENCRYPTION_KEY"
 
 # URL Configuration
 NEXTAUTH_URL: "https://calendar.mereka.io"
@@ -54,7 +54,7 @@ DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:54
 # Google OAuth Configuration
 GOOGLE_LOGIN_ENABLED: "true"
 GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com","client_secret":"REPLACE_WITH_GOOGLE_CLIENT_SECRET","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
-CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"
+CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
 CAL_SIGNATURE_TOKEN: "REPLACE_WITH_CAL_SIGNATURE_TOKEN"
 
 # White-labeling Configuration
@@ -144,7 +144,7 @@ https://cal.mereka.io/api/auth/callback/google
 ```bash
 cat > env-vars.yaml << 'EOF'
 NEXTAUTH_SECRET: "REPLACE_WITH_NEXTAUTH_SECRET"
-CALENDSO_ENCRYPTION_KEY: "/+xwwLq2TKP0I8G9dkN2//ko30WRIczS2DGw/8osMtk="
+CALENDSO_ENCRYPTION_KEY: "REPLACE_WITH_CALENDSO_ENCRYPTION_KEY"
 NEXTAUTH_URL: "https://calendar.mereka.io"
 WEB_APP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBAPP_URL: "https://calendar.mereka.io"

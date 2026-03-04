@@ -24,7 +24,7 @@ DATABASE_DIRECT_URL: "postgresql://user:pass@localhost:5432/db?host=/cloudsql/pr
 # Google OAuth (if using Google login)
 GOOGLE_LOGIN_ENABLED: "true"
 GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"...","client_secret":"...","redirect_uris":["..."]}}'
-CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"
+CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"
 CAL_SIGNATURE_TOKEN: "generated-random-hex-token"
 
 # White-labeling Configuration

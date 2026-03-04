@@ -14,7 +14,7 @@ This guide explains how to set up and troubleshoot API key creation in your Mere
 ### Core API Variables
 ```yaml
 API_KEY_PREFIX: "mereka_"                    # Required for API key generation
-CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"  # Required for commercial features
+CALCOM_LICENSE_KEY: "REPLACE_WITH_CALCOM_LICENSE_KEY"  # Required for commercial features
 CAL_SIGNATURE_TOKEN: "REPLACE_WITH_CAL_SIGNATURE_TOKEN"  # Required for internal verification
 ```
 
