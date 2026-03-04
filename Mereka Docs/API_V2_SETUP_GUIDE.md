@@ -28,6 +28,7 @@ The **Cal.com API v2** is a **separate service** from the main web application. 
 - **Build Command**: `yarn workspace @calcom/api-v2 run build`
 - **Dockerfile**: `apps/api/v2/Dockerfile`
 - **Output**: `dist/` directory
+- **Registry Note**: If using `gcr.io/...`, ensure your project has completed Artifact Registry migration.
 
 ## 🚀 **Deployment Process**
 
@@ -229,6 +230,5 @@ gcloud run services describe calcom-api-v2 \
 **Script**: `deploy-api-v2.sh` ✅  
 **Configuration**: `env-vars-api-v2.example.yaml` ✅  
 **Expected Result**: Separate API v2 service running on Cloud Run ✅
-
 
 

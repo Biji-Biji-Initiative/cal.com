@@ -1,4 +1,5 @@
 steps:
+  # NOTE: gcr.io paths now rely on Artifact Registry-backed gcr.io repositories.
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'

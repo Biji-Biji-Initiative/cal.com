@@ -62,6 +62,10 @@ check_prerequisites() {
         exit 1
     fi
 
+    if [[ "$IMAGE_NAME" == gcr.io/* ]]; then
+        log_warn "Using gcr.io image path. Ensure this project has completed Artifact Registry gcr.io migration."
+    fi
+
     if [[ ! -x "$REPO_ROOT/scripts/verify-calcom-env.sh" ]]; then
         log_error "Missing required script: $REPO_ROOT/scripts/verify-calcom-env.sh"
         exit 1
