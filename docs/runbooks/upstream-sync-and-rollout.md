@@ -14,6 +14,7 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
    - `git checkout main`
    - `git merge --ff-only upstream/main` (or rebase strategy used by your team)
 2. Validate env files without leaking secrets:
+   - Combined gate (env readiness + optional live smoke): `./scripts/run-release-gate.sh --dev-web ./calcom-k8s.env.example --staging-web ./env-vars-production.example.yaml --prod-web ./env-vars-production.example.yaml --api-v2 ./env-vars-api-v2.example.yaml --allow-placeholders`
    - Regression test for env parser/deprecated-key guard: `./scripts/test-verify-calcom-env.sh`
    - Template sanity: `./scripts/verify-calcom-env.sh env-vars-production.example.yaml --profile web --allow-placeholders --require-google --require-sso`
    - Template sanity: `./scripts/verify-calcom-env.sh env-vars-api-v2.example.yaml --profile api-v2 --allow-placeholders`
