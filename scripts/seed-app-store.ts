@@ -3,10 +3,10 @@
  * This file is deprecated. The only use of this file is to seed the database for E2E tests. Each test should take care of seeding it's own data going forward.
  */
 import dotEnv from "dotenv";
-import path from "node:path";
+import path from "node:path"
 
-import { shouldEnableApp } from "@calcom/app-store/_utils/validateAppKeys";
 import { appStoreMetadata } from "@calcom/app-store/appStoreMetaData";
+import { shouldEnableApp } from "@calcom/app-store/_utils/validateAppKeys";
 import prisma from "@calcom/prisma";
 import type { Prisma } from "@calcom/prisma/client";
 import { AppCategories } from "@calcom/prisma/enums";
@@ -49,11 +49,16 @@ async function createApp(
       },
     });
 
-    // Preserve existing keys when a later seed pass doesn't provide keys (e.g. appStoreMetadata loop).
-    // Otherwise key-validated apps like google-calendar can be incorrectly disabled.
-    const keysForValidation = (keys ?? foundApp?.keys) as Prisma.JsonValue | undefined;
-    const enabled = shouldEnableApp(dirName, keysForValidation);
-    const data = { slug, dirName, categories, keys, enabled };
+    // Only enable apps if they have valid keys (or don't require keys)
+    const keysToValidate = (keys ?? foundApp?.keys) as Prisma.JsonValue | undefined;
+    const enabled = shouldEnableApp(dirName, keysToValidate);
+    const data = {
+      slug,
+      dirName,
+      categories,
+      ...(keys !== undefined && { keys }),
+      enabled,
+    };
 
     if (!foundApp) {
       await prisma.app.create({
