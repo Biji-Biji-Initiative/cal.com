@@ -63,3 +63,4 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 2. Prefer config/infrastructure overrides over source-code divergence.
 3. Run upstream sync on a fixed cadence (weekly/biweekly).
 4. Treat secrets as external-only (Infisical/secret manager), never in git.
+5. Keep CI drift guard active: [`.github/workflows/upstream-drift.yml`](/home/gurpreet/projects/k8s/cal.com/.github/workflows/upstream-drift.yml).
