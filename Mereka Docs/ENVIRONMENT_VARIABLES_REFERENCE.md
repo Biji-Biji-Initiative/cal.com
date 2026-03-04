@@ -1,11 +1,10 @@
 # Cal.com Environment Variables Reference
 
-## Complete List of All 22 Environment Variables
+## Complete List of All 21 Environment Variables
 
 ### Core Authentication & Security
 - `NEXTAUTH_SECRET` - NextAuth.js session encryption key
 - `CALENDSO_ENCRYPTION_KEY` - Application encryption key (32 bytes for AES256)
-- `CALCOM_DEPLOYMENT_KEY` - Internal signature verification key
 - `CAL_SIGNATURE_TOKEN` - Signature token for deployment verification
 - `CALCOM_LICENSE_KEY` - Cal.com license key (staging: REPLACE_WITH_CALCOM_LICENSE_KEY)
 - `NEXT_PUBLIC_IS_E2E` - Development mode flag (bypasses license validation)
@@ -15,18 +14,18 @@
 - `WEB_APP_URL` - Main application URL
 - `NEXT_PUBLIC_WEBAPP_URL` - Public webapp URL
 - `NEXT_PUBLIC_WEBSITE_URL` - Public website URL
-- `BASE_URL` - Base application URL
-- `NEXT_PUBLIC_BASE_URL` - Public base URL
 
 ### Database Configuration
 - `DATABASE_URL` - Primary database connection string
 - `DATABASE_DIRECT_URL` - Direct database connection string
 
 ### Google OAuth Integration
-- `GOOGLE_CLIENT_ID` - Google OAuth client ID
-- `GOOGLE_CLIENT_SECRET` - Google OAuth client secret
 - `GOOGLE_LOGIN_ENABLED` - Enable Google login (true/false)
 - `GOOGLE_API_CREDENTIALS` - Google API credentials JSON
+
+### Authentik / SSO Integration
+- `SAML_DATABASE_URL` - SSO metadata database connection
+- `SAML_ADMINS` - Comma-separated admin emails allowed to configure SSO
 
 ### White-labeling Configuration
 - `NEXT_PUBLIC_APP_NAME` - Application name (Mereka Calendar)
@@ -45,29 +44,26 @@ NEXTAUTH_URL: "https://calendar.mereka.io"
 WEB_APP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBAPP_URL: "https://calendar.mereka.io"
 NEXT_PUBLIC_WEBSITE_URL: "https://calendar.mereka.io"
-BASE_URL: "https://calendar.mereka.io"
-NEXT_PUBLIC_BASE_URL: "https://calendar.mereka.io"
 DATABASE_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
 DATABASE_DIRECT_URL: "postgresql://caluser:REPLACE_WITH_DB_PASSWORD@localhost:5432/calendso?host=/cloudsql/biji-biji-calcom-250825084322:us-central1:calcom-sql-250825084517&sslmode=disable"
-GOOGLE_CLIENT_ID: "REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET: "REPLACE_WITH_GOOGLE_CLIENT_SECRET"
 GOOGLE_LOGIN_ENABLED: "true"
 GOOGLE_API_CREDENTIALS: '{"web":{"client_id":"REPLACE_WITH_GOOGLE_CLIENT_ID.apps.googleusercontent.com","client_secret":"REPLACE_WITH_GOOGLE_CLIENT_SECRET","redirect_uris":["https://calendar.mereka.io/api/integrations/googlecalendar/callback","https://calendar.mereka.io/api/auth/callback/google","https://cal.mereka.io/api/integrations/googlecalendar/callback","https://cal.mereka.io/api/auth/callback/google"]}}'
-CALCOM_DEPLOYMENT_KEY: "REPLACE_WITH_CALCOM_DEPLOYMENT_KEY"
 CALCOM_LICENSE_KEY: "1a1f8138-0bfc-4f37-b4af-1e24fd145839"
-CAL_SIGNATURE_TOKEN: "REPLACE_WITH_CALCOM_DEPLOYMENT_KEY"
+CAL_SIGNATURE_TOKEN: "REPLACE_WITH_CAL_SIGNATURE_TOKEN"
 NEXT_PUBLIC_APP_NAME: "Mereka Calendar"
 NEXT_PUBLIC_SUPPORT_MAIL_ADDRESS: "support@mereka.io"
 NEXT_PUBLIC_COMPANY_NAME: "Mereka"
 NEXT_PUBLIC_SENDER_ID: "Mereka"
 NEXT_PUBLIC_SENDGRID_SENDER_NAME: "Mereka Calendar"
 API_KEY_PREFIX: "mereka_"
+SAML_DATABASE_URL: "postgresql://REPLACE_WITH_SAML_DB_USER:REPLACE_WITH_SAML_DB_PASSWORD@REPLACE_WITH_SAML_DB_HOST:5432/REPLACE_WITH_SAML_DB_NAME"
+SAML_ADMINS: "admin@example.com"
 ```
 
 ## Deployment Status
 
 - **Service**: `calcom-app-prod` (revision 00008-68c)
-- **Environment Variables**: 23/23 ✅
+- **Environment Variables**: 21/21 ✅
 - **Memory**: 2048Mi ✅
 - **Database**: Connected ✅
 - **Custom Domain**: `https://calendar.mereka.io` ✅
@@ -84,6 +80,6 @@ API_KEY_PREFIX: "mereka_"
 
 - The `env-vars-production.example.yaml` file contains all production values
 - Never delete this file - it's essential for deployments
-- All 22 environment variables are required for full functionality
+- All 21 environment variables are required for full functionality
 - White-labeling is now active with Mereka branding
 - TRPC errors have been resolved
