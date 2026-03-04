@@ -68,6 +68,12 @@ else
 fi
 
 delimiter='|'
+for value in "$GOOGLE_API_CREDENTIALS" "$ZOOM_CLIENT_ID" "$ZOOM_CLIENT_SECRET"; do
+  if [[ "$value" == *"$delimiter"* ]]; then
+    fail "Credential value contains '${delimiter}', which conflicts with gcloud --update-env-vars delimiter parsing."
+  fi
+done
+
 update_env_vars="^${delimiter}^GOOGLE_LOGIN_ENABLED=true${delimiter}GOOGLE_API_CREDENTIALS=${GOOGLE_API_CREDENTIALS}"
 if [[ -n "$ZOOM_CLIENT_ID" ]]; then
   update_env_vars+="${delimiter}ZOOM_CLIENT_ID=${ZOOM_CLIENT_ID}${delimiter}ZOOM_CLIENT_SECRET=${ZOOM_CLIENT_SECRET}"
