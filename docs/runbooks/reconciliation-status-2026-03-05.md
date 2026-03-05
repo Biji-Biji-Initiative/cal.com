@@ -57,10 +57,12 @@ Additional diagnostics:
 - `dig +short A api-v2.cal.mereka.io @1.1.1.1` resolves to Cloudflare anycast IPs (`104.21.27.20`, `172.67.140.213`).
 - `curl -4 -I https://api-v2.cal.mereka.io` and `curl -6 -I https://api-v2.cal.mereka.io` both fail during TLS handshake.
 - `openssl s_client -connect api-v2.cal.mereka.io:443 -servername api-v2.cal.mereka.io -brief` fails before certificate exchange.
+- `gcloud beta run domain-mappings describe --domain=api-v2.cal.mereka.io --region=us-central1 --project=biji-biji-calcom-250825084322` returns `NOT_FOUND`.
+- `gcloud beta run domain-mappings describe --domain=api-v2.mereka.io --region=us-central1 --project=biji-biji-calcom-250825084322` also returns `NOT_FOUND`.
 - Control comparison:
   - `cal.mereka.io` and `calendar.mereka.io` complete TLS handshake successfully and present a valid certificate.
 
-Interpretation: TLS failure is at edge/routing/certificate policy level for `api-v2.cal.mereka.io`, not in Cal.com web auth routes.
+Interpretation: TLS failure is at edge/routing/certificate policy level for `api-v2.cal.mereka.io`, with no matching Cloud Run domain mapping currently provisioned in the target project.
 
 ## Why Release Is Not Ready Yet
 

@@ -19,6 +19,7 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
    - Template sanity: `./scripts/verify-calcom-env.sh env-vars-production.example.yaml --profile web --allow-placeholders --require-google --require-sso`
    - Template sanity: `./scripts/verify-calcom-env.sh env-vars-api-v2.example.yaml --profile api-v2 --allow-placeholders`
    - Full readiness check (includes upstream/origin drift + forbidden tracked files + env preflight): `./scripts/check-rollout-readiness.sh --dev-web ./calcom-k8s.env.example --staging-web ./env-vars-production.example.yaml --prod-web ./env-vars-production.example.yaml --api-v2 ./env-vars-api-v2.example.yaml --allow-placeholders`
+   - API domain readiness (DNS + TLS + optional domain-mapping): `./scripts/check-api-domain-readiness.sh --api-url https://<api-domain> --project <gcp-project-id> --region us-central1`
    - Real deploy file (from secret manager export): `./scripts/verify-calcom-env.sh /path/to/prod.env.yaml --profile web --require-google --require-sso`
 3. Ensure no placeholders before deploy:
    - No `REPLACE_WITH_*` values
@@ -50,7 +51,7 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 6. Baseline HTTP smoke checks pass:
    - `./scripts/smoke-check-calcom.sh --web-url https://<web-domain> --api-url https://<api-domain> --check-google --check-sso`
    - Combined gate with live smoke:
-   - `./scripts/run-release-gate.sh --dev-web /secure/dev-web.yaml --staging-web /secure/staging-web.yaml --prod-web /secure/prod-web.yaml --api-v2 /secure/prod-api-v2.yaml --web-url https://<web-domain> --api-url https://<api-domain>`
+   - `./scripts/run-release-gate.sh --dev-web /secure/dev-web.yaml --staging-web /secure/staging-web.yaml --prod-web /secure/prod-web.yaml --api-v2 /secure/prod-api-v2.yaml --web-url https://<web-domain> --api-url https://<api-domain> --gcp-project <gcp-project-id> --gcp-region us-central1`
    - Optional CI execution: trigger `.github/workflows/smoke-check.yml` with target URLs.
 
 ### Quick Probe Commands (Read-only)
@@ -123,6 +124,7 @@ Expected signals:
 3. Read-only triage sequence:
    - `dig +short A api-v2.cal.mereka.io @1.1.1.1`
    - `curl -I https://api-v2.cal.mereka.io`
+   - `./scripts/check-api-domain-readiness.sh --api-url https://api-v2.cal.mereka.io --project <gcp-project-id> --region us-central1`
    - `kubectl -n prod-calcom get deploy,svc,ingress | grep -i api`
 4. Fix:
    - Ensure API v2 runtime exists (service + ingress/domain mapping).

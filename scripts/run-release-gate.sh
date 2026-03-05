@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 READINESS_SCRIPT="$ROOT_DIR/scripts/check-rollout-readiness.sh"
 SMOKE_SCRIPT="$ROOT_DIR/scripts/smoke-check-calcom.sh"
+API_DOMAIN_SCRIPT="$ROOT_DIR/scripts/check-api-domain-readiness.sh"
 
 DEV_WEB_FILE="${DEV_WEB_FILE:-}"
 STAGING_WEB_FILE="${STAGING_WEB_FILE:-}"
@@ -12,6 +13,8 @@ PROD_WEB_FILE="${PROD_WEB_FILE:-}"
 API_V2_FILE="${API_V2_FILE:-}"
 WEB_URL="${WEB_URL:-}"
 API_URL="${API_URL:-}"
+GCP_PROJECT_ID="${GCP_PROJECT_ID:-}"
+GCP_REGION="${GCP_REGION:-us-central1}"
 
 ALLOW_PLACEHOLDERS="false"
 SKIP_GIT_CHECKS="false"
@@ -37,6 +40,8 @@ Optional live smoke options:
   --smoke-no-google       Skip Google login/callback smoke checks
   --smoke-no-sso          Skip Authentik outpost smoke checks
   --smoke-insecure        Allow insecure TLS for smoke checks
+  --gcp-project <id>      Optional GCP project id for domain-mapping checks
+  --gcp-region <region>   Optional GCP region for domain-mapping checks (default: us-central1)
 
 General options:
   --allow-placeholders    Allow placeholder values in env files (template mode)
@@ -44,7 +49,7 @@ General options:
   -h, --help              Show help
 
 Environment variable alternatives:
-  DEV_WEB_FILE, STAGING_WEB_FILE, PROD_WEB_FILE, API_V2_FILE, WEB_URL, API_URL
+  DEV_WEB_FILE, STAGING_WEB_FILE, PROD_WEB_FILE, API_V2_FILE, WEB_URL, API_URL, GCP_PROJECT_ID, GCP_REGION
 EOF
 }
 
@@ -72,6 +77,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --api-url)
       API_URL="${2:-}"
+      shift 2
+      ;;
+    --gcp-project)
+      GCP_PROJECT_ID="${2:-}"
+      shift 2
+      ;;
+    --gcp-region)
+      GCP_REGION="${2:-}"
       shift 2
       ;;
     --smoke-timeout)
@@ -112,6 +125,7 @@ done
 
 [[ -x "$READINESS_SCRIPT" ]] || { echo "Missing script: $READINESS_SCRIPT" >&2; exit 1; }
 [[ -x "$SMOKE_SCRIPT" ]] || { echo "Missing script: $SMOKE_SCRIPT" >&2; exit 1; }
+[[ -x "$API_DOMAIN_SCRIPT" ]] || { echo "Missing script: $API_DOMAIN_SCRIPT" >&2; exit 1; }
 
 if [[ -z "$DEV_WEB_FILE" || -z "$STAGING_WEB_FILE" || -z "$PROD_WEB_FILE" || -z "$API_V2_FILE" ]]; then
   echo "All env file paths are required." >&2
@@ -138,6 +152,17 @@ fi
 "$READINESS_SCRIPT" "${readiness_args[@]}"
 
 if [[ -n "$WEB_URL" ]]; then
+  if [[ -n "$API_URL" ]]; then
+    echo "[INFO] Running API domain readiness checks"
+    api_domain_args=(--api-url "$API_URL")
+    if [[ -n "$GCP_PROJECT_ID" ]]; then
+      api_domain_args+=(--project "$GCP_PROJECT_ID" --region "$GCP_REGION")
+    else
+      api_domain_args+=(--skip-domain-mapping)
+    fi
+    "$API_DOMAIN_SCRIPT" "${api_domain_args[@]}"
+  fi
+
   echo "[INFO] Running live smoke checks"
   smoke_args=(--web-url "$WEB_URL" --timeout "$SMOKE_TIMEOUT")
   if [[ -n "$API_URL" ]]; then
