@@ -14,9 +14,12 @@ This status captures the fork reconciliation effort for `Biji-Biji-Initiative/ca
 ## Branch Baseline
 
 - Working branch: `reconcile/upstream-main-2026-03-05`
-- Base: `upstream/main`
-- Reconciled delta commit: `a057608f8f` (`chore(reconcile): reapply fork deploy+gate delta on upstream/main`)
-- Result: Final file state matches current fork `main` for tracked files (`git diff main..HEAD` is empty).
+- Base: `origin/main` + merged latest `upstream/main`
+- Current reconciliation head: `c8fb614409` (`Merge remote-tracking branch 'upstream/main' into reconcile/upstream-main-2026-03-05`)
+- PR: `https://github.com/Biji-Biji-Initiative/cal.com/pull/4`
+- Branch state:
+  - vs `upstream/main`: ahead `56`, behind `0`
+  - vs `origin/main`: ahead `17`, behind `0`
 
 ## What Was Validated
 
@@ -30,6 +33,7 @@ This status captures the fork reconciliation effort for `Biji-Biji-Initiative/ca
    - `scripts/verify-calcom-env.sh`
 2. Env parser regression tests passed:
    - `scripts/test-verify-calcom-env.sh`
+   - Re-validated after latest upstream merge on this branch.
 3. Live smoke checks executed against documented public domains.
 4. Nonprod web smoke checks:
    - `https://staging.cal.mereka.io` passed web/auth/google/outpost probes.
@@ -94,6 +98,17 @@ Current rollout policy:
 ## Why Release Is Not Ready Yet
 
 Release gates require both web and API probes to pass. API TLS failure means rollout should remain blocked until edge/certificate routing is fixed for `api-v2.cal.mereka.io`.
+
+## Current Fork CI Constraints
+
+1. `yarn test` is still noisy on this branch due existing suite instability (timeouts + jsdom/background-task unhandled runtime errors spanning unrelated suites).
+2. `@calcom/web` build requires explicit env keys just to pass config gate:
+   - `NEXTAUTH_SECRET`
+   - `CALENDSO_ENCRYPTION_KEY`
+   - `NEXTAUTH_URL`
+   - `NEXT_PUBLIC_WEBAPP_URL`
+3. CI stabilization follow-up issue:
+   - `https://github.com/Biji-Biji-Initiative/cal.com/issues/5`
 
 ## Next 10 Actions (Strict Order)
 
