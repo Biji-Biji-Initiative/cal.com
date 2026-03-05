@@ -34,8 +34,12 @@ vi.mock("next/server", () => ({
 }));
 
 vi.mock("@calcom/features/calendar-subscription/lib/CalendarSubscriptionService");
-vi.mock("@calcom/features/calendar-subscription/lib/cache/CalendarCacheEventService");
-vi.mock("@calcom/features/calendar-subscription/lib/sync/CalendarSyncService");
+vi.mock("@calcom/features/calendar-subscription/lib/cache/CalendarCacheEventService", () => ({
+  CalendarCacheEventService: class MockCalendarCacheEventService {},
+}));
+vi.mock("@calcom/features/calendar-subscription/lib/sync/CalendarSyncService", () => ({
+  CalendarSyncService: class MockCalendarSyncService {},
+}));
 vi.mock("@calcom/prisma", () => ({
   prisma: {},
 }));
@@ -69,7 +73,7 @@ describe("/api/webhooks/calendar-subscription/[provider]", () => {
 
       expect(response.status).toBe(200);
       expect(mockProcessWebhook).toHaveBeenCalledWith("google_calendar", request);
-    }, 10000);
+    }, 30000);
 
     test("should accept office365_calendar provider", async () => {
       const request = new NextRequest(

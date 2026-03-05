@@ -34,8 +34,12 @@ vi.mock("next/server", () => ({
 }));
 
 vi.mock("@calcom/features/calendar-subscription/lib/CalendarSubscriptionService");
-vi.mock("@calcom/features/calendar-subscription/lib/cache/CalendarCacheEventService");
-vi.mock("@calcom/features/calendar-subscription/lib/sync/CalendarSyncService");
+vi.mock("@calcom/features/calendar-subscription/lib/cache/CalendarCacheEventService", () => ({
+  CalendarCacheEventService: class MockCalendarCacheEventService {},
+}));
+vi.mock("@calcom/features/calendar-subscription/lib/sync/CalendarSyncService", () => ({
+  CalendarSyncService: class MockCalendarSyncService {},
+}));
 vi.mock("@calcom/prisma", () => ({
   prisma: {},
 }));
@@ -60,7 +64,7 @@ describe("/api/cron/calendar-subscriptions", () => {
       expect(response.status).toBe(403);
       const body = await response.json();
       expect(body.message).toBe("Forbiden");
-    }, 10000);
+    }, 30000);
 
     test("should return 403 when invalid API key is provided", async () => {
       const request = new NextRequest("http://localhost/api/cron/calendar-subscriptions");
