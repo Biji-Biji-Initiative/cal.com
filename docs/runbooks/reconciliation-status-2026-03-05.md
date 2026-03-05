@@ -61,6 +61,7 @@ Additional diagnostics:
 - `gcloud beta run domain-mappings describe --domain=api-v2.mereka.io --region=us-central1 --project=biji-biji-calcom-250825084322` also returns `NOT_FOUND`.
 - `gcloud compute forwarding-rules list --project bbi-k8` shows `34.177.83.168` attached to a regional external target pool in `asia-southeast1` (same IP used by `cal.mereka.io` / `calendar.mereka.io`).
 - `kubectl -n prod-calcom get deploy,svc,ingress` shows only Cal.com web ingress hosts (`cal.mereka.io`, `calendar.mereka.io`) and no `api-v2` deployment/service/ingress.
+- `kubectl get ingress -A` shows Cal.com ingress only in namespace `prod-calcom`; no Cal.com ingress currently detected in dev/staging namespaces.
 - Control comparison:
   - `cal.mereka.io` and `calendar.mereka.io` complete TLS handshake successfully and present a valid certificate.
 
@@ -70,6 +71,7 @@ Current rollout policy:
 
 - Use web-only gate mode (`--skip-api-v2`) for mainline Cal.com rollout until API v2 runtime and hostname are actually provisioned.
 - Keep API v2 checks available and re-enable them as soon as API v2 service + domain mapping/ingress is in place.
+- Treat dev/staging Cal.com deployment footprint as an explicit prerequisite using `scripts/check-k8s-calcom-footprint.sh`.
 
 ## Why Release Is Not Ready Yet
 

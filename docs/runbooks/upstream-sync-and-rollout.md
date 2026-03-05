@@ -29,6 +29,9 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 4. Backup production database:
    - Create snapshot/backup
    - Verify restore path (staging restore drill)
+5. Confirm Cal.com footprint exists in target clusters/namespaces:
+   - `./scripts/check-k8s-calcom-footprint.sh --prod-ns prod-calcom --staging-ns staging-calcom --dev-ns dev-calcom`
+   - Use `--strict` to hard-fail if dev/staging are missing before promotion.
 
 ## Rollout Sequence
 1. **Dev (RKE2)**
