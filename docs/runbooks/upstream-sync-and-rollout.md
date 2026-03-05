@@ -19,7 +19,7 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
    - Template sanity: `./scripts/verify-calcom-env.sh env-vars-production.example.yaml --profile web --allow-placeholders --require-google --require-sso`
    - Template sanity: `./scripts/verify-calcom-env.sh env-vars-api-v2.example.yaml --profile api-v2 --allow-placeholders`
    - Full readiness check (includes upstream/origin drift + forbidden tracked files + env preflight): `./scripts/check-rollout-readiness.sh --dev-web ./calcom-k8s.env.example --staging-web ./env-vars-production.example.yaml --prod-web ./env-vars-production.example.yaml --api-v2 ./env-vars-api-v2.example.yaml --allow-placeholders`
-   - API domain readiness (DNS + TLS + optional domain-mapping): `./scripts/check-api-domain-readiness.sh --api-url https://<api-domain> --project <gcp-project-id> --region us-central1`
+   - API domain readiness (DNS + TLS; optional Cloud Run mapping check when API host is Cloud Run-backed): `./scripts/check-api-domain-readiness.sh --api-url https://<api-domain> --project <gcp-project-id> --region us-central1`
    - Real deploy file (from secret manager export): `./scripts/verify-calcom-env.sh /path/to/prod.env.yaml --profile web --require-google --require-sso`
 3. Ensure no placeholders before deploy:
    - No `REPLACE_WITH_*` values

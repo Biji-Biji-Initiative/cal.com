@@ -59,10 +59,11 @@ Additional diagnostics:
 - `openssl s_client -connect api-v2.cal.mereka.io:443 -servername api-v2.cal.mereka.io -brief` fails before certificate exchange.
 - `gcloud beta run domain-mappings describe --domain=api-v2.cal.mereka.io --region=us-central1 --project=biji-biji-calcom-250825084322` returns `NOT_FOUND`.
 - `gcloud beta run domain-mappings describe --domain=api-v2.mereka.io --region=us-central1 --project=biji-biji-calcom-250825084322` also returns `NOT_FOUND`.
+- `gcloud compute forwarding-rules list --project bbi-k8` shows `34.177.83.168` attached to a regional external target pool in `asia-southeast1` (same IP used by `cal.mereka.io` / `calendar.mereka.io`).
 - Control comparison:
   - `cal.mereka.io` and `calendar.mereka.io` complete TLS handshake successfully and present a valid certificate.
 
-Interpretation: TLS failure is at edge/routing/certificate policy level for `api-v2.cal.mereka.io`, with no matching Cloud Run domain mapping currently provisioned in the target project.
+Interpretation: TLS failure is at edge/routing/certificate policy level for `api-v2.cal.mereka.io`. Current evidence points to hostname-level edge configuration mismatch (Cloudflare-proxied API host vs direct GCP LB strategy used by web hosts).
 
 ## Why Release Is Not Ready Yet
 

@@ -7,8 +7,8 @@ Usage: scripts/check-api-domain-readiness.sh --api-url <url> [options]
 
 Options:
   --api-url <url>             API base URL (required)
-  --project <id>              GCP project id for Cloud Run domain-mapping check
-  --region <region>           Cloud Run region (default: us-central1)
+  --project <id>              GCP project id for optional Cloud Run domain-mapping check
+  --region <region>           Cloud Run region for mapping check (default: us-central1)
   --skip-domain-mapping       Skip gcloud domain-mapping check
   -h, --help                  Show this help
 EOF
