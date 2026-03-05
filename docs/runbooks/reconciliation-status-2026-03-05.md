@@ -43,6 +43,11 @@ This status captures the fork reconciliation effort for `Biji-Biji-Initiative/ca
      - `https://cal.mereka.io/api/auth/callback/google`
      - `https://staging.cal.mereka.io/api/integrations/googlecalendar/callback`
      - `https://staging.cal.mereka.io/api/auth/callback/google`
+7. Web-only release gate status:
+   - `scripts/run-release-gate.sh ... --skip-api-v2 --web-url https://cal.mereka.io` passed.
+   - `scripts/run-release-gate.sh ... --skip-api-v2 --web-url https://staging.cal.mereka.io` passed.
+8. Runtime parity (web):
+   - Prod and staging both run `calcom/cal.com:v6.2.0` with `auth-proxy=node:22-alpine`.
 
 ## Current Live Blocker
 
