@@ -41,6 +41,7 @@ Examples:
     --staging-web ./env-vars-production.example.yaml \
     --prod-web ./env-vars-production.example.yaml \
     --skip-api-v2 \
+    --api-v2 ./env-vars-api-v2.example.yaml \
     --allow-placeholders
 
   scripts/check-rollout-readiness.sh \
