@@ -36,6 +36,13 @@ This status captures the fork reconciliation effort for `Biji-Biji-Initiative/ca
    - `https://cal.mereka.dev` responds with `308` redirects to staging host for web/auth/google paths (outpost ping still `204`).
 5. Added matrix smoke wrapper for repeatable promotion checks:
    - `scripts/smoke-check-matrix.sh`
+6. Google OAuth credential readiness:
+   - Staging and prod `calcom-env` secrets both contain `GOOGLE_LOGIN_ENABLED=true`.
+   - `GOOGLE_API_CREDENTIALS.web.redirect_uris` include required callbacks for:
+     - `https://cal.mereka.io/api/integrations/googlecalendar/callback`
+     - `https://cal.mereka.io/api/auth/callback/google`
+     - `https://staging.cal.mereka.io/api/integrations/googlecalendar/callback`
+     - `https://staging.cal.mereka.io/api/auth/callback/google`
 
 ## Current Live Blocker
 
