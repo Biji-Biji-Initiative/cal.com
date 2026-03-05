@@ -31,6 +31,9 @@ This status captures the fork reconciliation effort for `Biji-Biji-Initiative/ca
 2. Env parser regression tests passed:
    - `scripts/test-verify-calcom-env.sh`
 3. Live smoke checks executed against documented public domains.
+4. Nonprod web smoke checks:
+   - `https://staging.cal.mereka.io` passed web/auth/google/outpost probes.
+   - `https://cal.mereka.dev` responds with `308` redirects to staging host for web/auth/google paths (outpost ping still `204`).
 
 ## Current Live Blocker
 
@@ -72,6 +75,7 @@ Current rollout policy:
 - Use web-only gate mode (`--skip-api-v2`) for mainline Cal.com rollout until API v2 runtime and hostname are actually provisioned.
 - Keep API v2 checks available and re-enable them as soon as API v2 service + domain mapping/ingress is in place.
 - Treat dev/staging Cal.com deployment footprint as an explicit prerequisite using `scripts/check-k8s-calcom-footprint.sh`.
+- Treat `cal.mereka.dev` as a redirect alias to staging until a dedicated dev Cal.com environment is intentionally introduced.
 
 ## Why Release Is Not Ready Yet
 
