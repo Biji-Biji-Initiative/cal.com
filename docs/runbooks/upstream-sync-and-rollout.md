@@ -55,6 +55,7 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 5. Existing users/bookings remain accessible after migration.
 6. Baseline HTTP smoke checks pass:
    - `./scripts/smoke-check-calcom.sh --web-url https://<web-domain> --api-url https://<api-domain> --check-google --check-sso`
+   - Multi-environment matrix: `./scripts/smoke-check-matrix.sh --prod-url https://cal.mereka.io --staging-url https://staging.cal.mereka.io --dev-url https://cal.mereka.dev`
    - Combined gate with live smoke:
    - Web-only: `./scripts/run-release-gate.sh --dev-web /secure/dev-web.yaml --staging-web /secure/staging-web.yaml --prod-web /secure/prod-web.yaml --skip-api-v2 --web-url https://<web-domain>`
    - With API v2: `./scripts/run-release-gate.sh --dev-web /secure/dev-web.yaml --staging-web /secure/staging-web.yaml --prod-web /secure/prod-web.yaml --api-v2 /secure/prod-api-v2.yaml --web-url https://<web-domain> --api-url https://<api-domain> --gcp-project <gcp-project-id> --gcp-region us-central1`

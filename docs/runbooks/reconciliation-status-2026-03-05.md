@@ -34,6 +34,8 @@ This status captures the fork reconciliation effort for `Biji-Biji-Initiative/ca
 4. Nonprod web smoke checks:
    - `https://staging.cal.mereka.io` passed web/auth/google/outpost probes.
    - `https://cal.mereka.dev` responds with `308` redirects to staging host for web/auth/google paths (outpost ping still `204`).
+5. Added matrix smoke wrapper for repeatable promotion checks:
+   - `scripts/smoke-check-matrix.sh`
 
 ## Current Live Blocker
 
