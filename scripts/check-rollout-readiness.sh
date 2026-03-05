@@ -14,6 +14,7 @@ ALLOW_PLACEHOLDERS="false"
 REQUIRE_GOOGLE="true"
 REQUIRE_SSO="true"
 SKIP_GIT_CHECKS="false"
+SKIP_API_V2="false"
 
 usage() {
   cat >&2 <<'EOF'
@@ -24,6 +25,7 @@ Options:
   --staging-web <path>    Staging web env file
   --prod-web <path>       Prod web env file
   --api-v2 <path>         API v2 env file
+  --skip-api-v2           Skip API v2 env preflight checks
   --allow-placeholders    Allow template placeholders in env checks
   --no-google             Do not require Google login readiness checks
   --no-sso                Do not require SSO readiness checks
@@ -38,7 +40,7 @@ Examples:
     --dev-web ./calcom-k8s.env.example \
     --staging-web ./env-vars-production.example.yaml \
     --prod-web ./env-vars-production.example.yaml \
-    --api-v2 ./env-vars-api-v2.example.yaml \
+    --skip-api-v2 \
     --allow-placeholders
 
   scripts/check-rollout-readiness.sh \
@@ -66,6 +68,10 @@ while [[ $# -gt 0 ]]; do
     --api-v2)
       API_V2_FILE="${2:-}"
       shift 2
+      ;;
+    --skip-api-v2)
+      SKIP_API_V2="true"
+      shift
       ;;
     --allow-placeholders)
       ALLOW_PLACEHOLDERS="true"
@@ -95,8 +101,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$DEV_WEB_FILE" || -z "$STAGING_WEB_FILE" || -z "$PROD_WEB_FILE" || -z "$API_V2_FILE" ]]; then
-  echo "All env file arguments are required." >&2
+if [[ -z "$DEV_WEB_FILE" || -z "$STAGING_WEB_FILE" || -z "$PROD_WEB_FILE" ]]; then
+  echo "Web env file arguments are required." >&2
+  usage
+  exit 1
+fi
+if [[ "$SKIP_API_V2" != "true" && -z "$API_V2_FILE" ]]; then
+  echo "--api-v2 is required unless --skip-api-v2 is set." >&2
   usage
   exit 1
 fi
@@ -106,12 +117,18 @@ if [[ ! -x "$VERIFY_SCRIPT" ]]; then
   exit 1
 fi
 
-for candidate in "$DEV_WEB_FILE" "$STAGING_WEB_FILE" "$PROD_WEB_FILE" "$API_V2_FILE"; do
+for candidate in "$DEV_WEB_FILE" "$STAGING_WEB_FILE" "$PROD_WEB_FILE"; do
   if [[ ! -f "$candidate" ]]; then
     echo "Env file not found: $candidate" >&2
     exit 1
   fi
 done
+if [[ "$SKIP_API_V2" != "true" ]]; then
+  if [[ ! -f "$API_V2_FILE" ]]; then
+    echo "Env file not found: $API_V2_FILE" >&2
+    exit 1
+  fi
+fi
 
 pass() { echo "[PASS] $1"; }
 fail() { echo "[FAIL] $1"; exit 1; }
@@ -181,6 +198,10 @@ fi
 run_verify "dev-web" "$DEV_WEB_FILE" web "${web_flags[@]}"
 run_verify "staging-web" "$STAGING_WEB_FILE" web "${web_flags[@]}"
 run_verify "prod-web" "$PROD_WEB_FILE" web "${web_flags[@]}"
-run_verify "api-v2" "$API_V2_FILE" api-v2 "${api_flags[@]}"
+if [[ "$SKIP_API_V2" == "true" ]]; then
+  info "Skipping api-v2 env preflight (--skip-api-v2)"
+else
+  run_verify "api-v2" "$API_V2_FILE" api-v2 "${api_flags[@]}"
+fi
 
 pass "Rollout readiness checks complete"

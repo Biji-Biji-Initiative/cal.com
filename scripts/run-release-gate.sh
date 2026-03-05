@@ -22,6 +22,7 @@ SMOKE_TIMEOUT="${SMOKE_TIMEOUT:-20}"
 INSECURE_SMOKE="false"
 SMOKE_CHECK_GOOGLE="true"
 SMOKE_CHECK_SSO="true"
+SKIP_API_V2="false"
 
 usage() {
   cat >&2 <<'EOF'
@@ -32,6 +33,7 @@ Required env-file options:
   --staging-web <path>    Staging web env file
   --prod-web <path>       Prod web env file
   --api-v2 <path>         API v2 env file
+  --skip-api-v2           Skip API v2 env preflight checks
 
 Optional live smoke options:
   --web-url <url>         Run smoke checks against web URL
@@ -70,6 +72,10 @@ while [[ $# -gt 0 ]]; do
     --api-v2)
       API_V2_FILE="${2:-}"
       shift 2
+      ;;
+    --skip-api-v2)
+      SKIP_API_V2="true"
+      shift
       ;;
     --web-url)
       WEB_URL="${2:-}"
@@ -127,8 +133,13 @@ done
 [[ -x "$SMOKE_SCRIPT" ]] || { echo "Missing script: $SMOKE_SCRIPT" >&2; exit 1; }
 [[ -x "$API_DOMAIN_SCRIPT" ]] || { echo "Missing script: $API_DOMAIN_SCRIPT" >&2; exit 1; }
 
-if [[ -z "$DEV_WEB_FILE" || -z "$STAGING_WEB_FILE" || -z "$PROD_WEB_FILE" || -z "$API_V2_FILE" ]]; then
-  echo "All env file paths are required." >&2
+if [[ -z "$DEV_WEB_FILE" || -z "$STAGING_WEB_FILE" || -z "$PROD_WEB_FILE" ]]; then
+  echo "Web env file paths are required." >&2
+  usage
+  exit 1
+fi
+if [[ "$SKIP_API_V2" != "true" && -z "$API_V2_FILE" ]]; then
+  echo "--api-v2 is required unless --skip-api-v2 is set." >&2
   usage
   exit 1
 fi
@@ -139,8 +150,12 @@ readiness_args=(
   --dev-web "$DEV_WEB_FILE"
   --staging-web "$STAGING_WEB_FILE"
   --prod-web "$PROD_WEB_FILE"
-  --api-v2 "$API_V2_FILE"
 )
+if [[ "$SKIP_API_V2" == "true" ]]; then
+  readiness_args+=(--skip-api-v2)
+else
+  readiness_args+=(--api-v2 "$API_V2_FILE")
+fi
 
 if [[ "$ALLOW_PLACEHOLDERS" == "true" ]]; then
   readiness_args+=(--allow-placeholders)

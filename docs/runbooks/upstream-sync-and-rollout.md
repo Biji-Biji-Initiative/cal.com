@@ -14,11 +14,13 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
    - `git checkout main`
    - `git merge --ff-only upstream/main` (or rebase strategy used by your team)
 2. Validate env files without leaking secrets:
-   - Combined gate (env readiness + optional live smoke): `./scripts/run-release-gate.sh --dev-web ./calcom-k8s.env.example --staging-web ./env-vars-production.example.yaml --prod-web ./env-vars-production.example.yaml --api-v2 ./env-vars-api-v2.example.yaml --allow-placeholders`
+   - Combined gate (web-only mode, env readiness + optional live smoke): `./scripts/run-release-gate.sh --dev-web ./calcom-k8s.env.example --staging-web ./env-vars-production.example.yaml --prod-web ./env-vars-production.example.yaml --skip-api-v2 --allow-placeholders`
+   - Combined gate (with API v2): `./scripts/run-release-gate.sh --dev-web ./calcom-k8s.env.example --staging-web ./env-vars-production.example.yaml --prod-web ./env-vars-production.example.yaml --api-v2 ./env-vars-api-v2.example.yaml --allow-placeholders`
    - Regression test for env parser/deprecated-key guard: `./scripts/test-verify-calcom-env.sh`
    - Template sanity: `./scripts/verify-calcom-env.sh env-vars-production.example.yaml --profile web --allow-placeholders --require-google --require-sso`
    - Template sanity: `./scripts/verify-calcom-env.sh env-vars-api-v2.example.yaml --profile api-v2 --allow-placeholders`
-   - Full readiness check (includes upstream/origin drift + forbidden tracked files + env preflight): `./scripts/check-rollout-readiness.sh --dev-web ./calcom-k8s.env.example --staging-web ./env-vars-production.example.yaml --prod-web ./env-vars-production.example.yaml --api-v2 ./env-vars-api-v2.example.yaml --allow-placeholders`
+   - Full readiness check (web-only mode): `./scripts/check-rollout-readiness.sh --dev-web ./calcom-k8s.env.example --staging-web ./env-vars-production.example.yaml --prod-web ./env-vars-production.example.yaml --skip-api-v2 --allow-placeholders`
+   - Full readiness check (with API v2): `./scripts/check-rollout-readiness.sh --dev-web ./calcom-k8s.env.example --staging-web ./env-vars-production.example.yaml --prod-web ./env-vars-production.example.yaml --api-v2 ./env-vars-api-v2.example.yaml --allow-placeholders`
    - API domain readiness (DNS + TLS; optional Cloud Run mapping check when API host is Cloud Run-backed): `./scripts/check-api-domain-readiness.sh --api-url https://<api-domain> --project <gcp-project-id> --region us-central1`
    - Real deploy file (from secret manager export): `./scripts/verify-calcom-env.sh /path/to/prod.env.yaml --profile web --require-google --require-sso`
 3. Ensure no placeholders before deploy:
@@ -51,7 +53,8 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
 6. Baseline HTTP smoke checks pass:
    - `./scripts/smoke-check-calcom.sh --web-url https://<web-domain> --api-url https://<api-domain> --check-google --check-sso`
    - Combined gate with live smoke:
-   - `./scripts/run-release-gate.sh --dev-web /secure/dev-web.yaml --staging-web /secure/staging-web.yaml --prod-web /secure/prod-web.yaml --api-v2 /secure/prod-api-v2.yaml --web-url https://<web-domain> --api-url https://<api-domain> --gcp-project <gcp-project-id> --gcp-region us-central1`
+   - Web-only: `./scripts/run-release-gate.sh --dev-web /secure/dev-web.yaml --staging-web /secure/staging-web.yaml --prod-web /secure/prod-web.yaml --skip-api-v2 --web-url https://<web-domain>`
+   - With API v2: `./scripts/run-release-gate.sh --dev-web /secure/dev-web.yaml --staging-web /secure/staging-web.yaml --prod-web /secure/prod-web.yaml --api-v2 /secure/prod-api-v2.yaml --web-url https://<web-domain> --api-url https://<api-domain> --gcp-project <gcp-project-id> --gcp-region us-central1`
    - Optional CI execution: trigger `.github/workflows/smoke-check.yml` with target URLs.
 
 ### Quick Probe Commands (Read-only)
