@@ -1,0 +1,39 @@
+name: Upstream Drift Check
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Configure upstream remote
+        run: |
+          git remote add upstream https://github.com/calcom/cal.com.git
+          git fetch upstream main --prune
+
+      - name: Verify main includes upstream/main
+        run: |
+          set -euo pipefail
+          upstream_sha="$(git rev-parse upstream/main)"
+          base_sha="$(git merge-base HEAD upstream/main)"
+          head_sha="$(git rev-parse HEAD)"
+
+          echo "HEAD: $head_sha"
+          echo "upstream/main: $upstream_sha"
+          echo "merge-base: $base_sha"
+
+          if [[ "$base_sha" != "$upstream_sha" ]]; then
+            echo "::error::This branch is behind upstream/main. Sync required."
+            exit 1
+          fi
+
+          echo "Fork is up to date with upstream/main ancestry."

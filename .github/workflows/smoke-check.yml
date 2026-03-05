@@ -1,0 +1,61 @@
+name: Live Smoke Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      web_url:
+        description: "Web URL (e.g. https://calendar.example.com)"
+        required: true
+        type: string
+      api_url:
+        description: "Optional API URL (e.g. https://api-v2.example.com)"
+        required: false
+        type: string
+      timeout_seconds:
+        description: "Curl timeout per check"
+        required: false
+        default: "20"
+        type: string
+      check_google:
+        description: "Check Google login/callback smoke endpoints"
+        required: false
+        default: true
+        type: boolean
+      check_sso:
+        description: "Check Authentik outpost smoke endpoint"
+        required: false
+        default: true
+        type: boolean
+      insecure_tls:
+        description: "Allow insecure TLS certificates"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  smoke-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run smoke checks
+        run: |
+          set -euo pipefail
+          chmod +x scripts/smoke-check-calcom.sh
+
+          args=(--web-url "${{ inputs.web_url }}" --timeout "${{ inputs.timeout_seconds }}")
+          if [[ -n "${{ inputs.api_url }}" ]]; then
+            args+=(--api-url "${{ inputs.api_url }}")
+          fi
+          if [[ "${{ inputs.check_google }}" == "true" ]]; then
+            args+=(--check-google)
+          fi
+          if [[ "${{ inputs.check_sso }}" == "true" ]]; then
+            args+=(--check-sso)
+          fi
+          if [[ "${{ inputs.insecure_tls }}" == "true" ]]; then
+            args+=(--insecure)
+          fi
+
+          ./scripts/smoke-check-calcom.sh "${args[@]}"

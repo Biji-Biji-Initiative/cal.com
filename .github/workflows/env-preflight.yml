@@ -1,0 +1,59 @@
+name: Env Preflight
+
+on:
+  pull_request:
+    paths:
+      - "scripts/verify-calcom-env.sh"
+      - "scripts/check-rollout-readiness.sh"
+      - "scripts/test-verify-calcom-env.sh"
+      - "env-vars-production.example.yaml"
+      - "env-vars-api-v2.example.yaml"
+      - "calcom.env.example"
+      - "calcom-k8s.env.example"
+      - "docs/runbooks/upstream-sync-and-rollout.md"
+      - ".github/workflows/env-preflight.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/verify-calcom-env.sh"
+      - "scripts/check-rollout-readiness.sh"
+      - "scripts/test-verify-calcom-env.sh"
+      - "env-vars-production.example.yaml"
+      - "env-vars-api-v2.example.yaml"
+      - "calcom.env.example"
+      - "calcom-k8s.env.example"
+      - ".github/workflows/env-preflight.yml"
+
+jobs:
+  verify-env-templates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Verify Web Template (strict integrations)
+        run: |
+          bash -n scripts/verify-calcom-env.sh
+          bash -n scripts/check-rollout-readiness.sh
+          bash -n scripts/test-verify-calcom-env.sh
+          ./scripts/test-verify-calcom-env.sh
+          ./scripts/verify-calcom-env.sh env-vars-production.example.yaml --profile web --allow-placeholders --require-google --require-sso
+
+      - name: Verify API v2 Template
+        run: ./scripts/verify-calcom-env.sh env-vars-api-v2.example.yaml --profile api-v2 --allow-placeholders
+
+      - name: Verify Local Example Templates
+        run: |
+          ./scripts/verify-calcom-env.sh calcom.env.example --profile web --allow-placeholders --require-google --require-sso
+          ./scripts/verify-calcom-env.sh calcom-k8s.env.example --profile web --allow-placeholders --require-google --require-sso
+
+      - name: Verify Full Rollout Readiness (template mode)
+        run: |
+          ./scripts/check-rollout-readiness.sh \
+            --dev-web ./calcom-k8s.env.example \
+            --staging-web ./env-vars-production.example.yaml \
+            --prod-web ./env-vars-production.example.yaml \
+            --api-v2 ./env-vars-api-v2.example.yaml \
+            --allow-placeholders \
+            --skip-git-checks

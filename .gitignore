@@ -42,6 +42,14 @@ yarn-error.log*
 !.env.example
 !.env.appStore.example
 
+# deployment secrets and generated logs
+.deploy_api_v2*.log
+calcom.env
+calcom-k8s.env
+env-vars-production.yaml
+env-vars-api-v2.yaml
+google-credentials.json
+
 # vercel
 .vercel
 
