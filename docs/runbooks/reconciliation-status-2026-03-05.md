@@ -52,6 +52,16 @@ Observed outcome:
 - Authentik outpost ping: pass (`204`)
 - API docs endpoint: fail (`TLS alert handshake failure`)
 
+Additional diagnostics:
+
+- `dig +short A api-v2.cal.mereka.io @1.1.1.1` resolves to Cloudflare anycast IPs (`104.21.27.20`, `172.67.140.213`).
+- `curl -4 -I https://api-v2.cal.mereka.io` and `curl -6 -I https://api-v2.cal.mereka.io` both fail during TLS handshake.
+- `openssl s_client -connect api-v2.cal.mereka.io:443 -servername api-v2.cal.mereka.io -brief` fails before certificate exchange.
+- Control comparison:
+  - `cal.mereka.io` and `calendar.mereka.io` complete TLS handshake successfully and present a valid certificate.
+
+Interpretation: TLS failure is at edge/routing/certificate policy level for `api-v2.cal.mereka.io`, not in Cal.com web auth routes.
+
 ## Why Release Is Not Ready Yet
 
 Release gates require both web and API probes to pass. API TLS failure means rollout should remain blocked until edge/certificate routing is fixed for `api-v2.cal.mereka.io`.
@@ -68,3 +78,13 @@ Release gates require both web and API probes to pass. API TLS failure means rol
 8. Repeat full smoke/auth/calendar checks on staging.
 9. Promote to prod with rollback guard.
 10. Run post-deploy smoke + booking/calendar validation and record evidence.
+
+## TLS Fix Checklist for `api-v2.cal.mereka.io`
+
+1. Confirm Cloudflare SSL/TLS mode is not misconfigured for this hostname (recommended: Full/Strict with valid origin cert).
+2. Verify edge certificate is active and covers `api-v2.cal.mereka.io`.
+3. Check for conflicting per-hostname TLS rules (mTLS required, minimum TLS, custom cipher policies).
+4. Verify origin target and port are correct and reachable from Cloudflare.
+5. Re-test:
+   - `curl -I https://api-v2.cal.mereka.io/docs`
+   - `scripts/smoke-check-calcom.sh --web-url https://cal.mereka.io --api-url https://api-v2.cal.mereka.io --check-google --check-sso`
