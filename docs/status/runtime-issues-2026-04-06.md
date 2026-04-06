@@ -1,61 +1,45 @@
 # Runtime Issues — 2026-04-06
 
-Separate from repo maintenance. These are infrastructure/deploy issues.
+## Issue 1: cal.mereka.io returns 500 — RESOLVED
 
-## Issue 1: cal.mereka.io returns 500 (CRITICAL)
+**Root cause**: nginx-ingress auth subrequest to Authentik used internal service URL. Authentik's forward_domain proxy matches on Host header, but nginx sent `Host: authentik-server.authentik.svc.cluster.local` instead of `Host: cal.mereka.io`, causing 404 from Authentik → 500 from nginx.
 
-**Status**: Active — prod is down
-**Component**: calcom web app on rke2-prod
-**Namespace**: calcom-prod
-**Pod**: calcom-78fccc955b-x22p4 (Running, 2/2)
+**Fix**: Changed `auth-url` annotation to use external Authentik URL (`https://auth0.mereka.io/...`) which naturally carries the correct Host. PRs #2457, #2458 in bbi-infrastructure.
 
-**Symptom**: All routes return HTTP 500.
+**Current status**: All environments returning 302 (SSO redirect to Authentik). Verified:
+- cal.mereka.io → 302 to auth0.mereka.io
+- cal.mereka.dev → 302 to auth0.mereka.dev
+- staging.cal.mereka.io → 302 to auth0.mereka.io
 
-**Root cause**: Next.js "Failed to find Server Action" errors in logs. This means:
-- The deployed image (`calcom/cal.com@sha256:ace3bb...`) is stale
-- Server Actions compiled into the build don't match what incoming requests expect
-- The image is from the upstream public registry, not a fork-specific build
-
-**Fix options**:
-1. Build a new image from the current fork main branch and deploy
-2. Or deploy a known-working upstream image tag
-
-**Ingress**: `cal.mereka.io` and `calendar.mereka.io` via nginx on rke2-prod workers (185.227.134.230, 185.227.135.166, 185.250.38.89)
+**Note**: The calcom app itself works correctly (verified via `localhost:3000` inside the pod). The "Failed to find Server Action" errors in logs are from Cloudflare challenge requests that reach the app without proper session context — not a stale image issue.
 
 ---
 
-## Issue 2: api-v2.cal.mereka.io TLS failure
+## Issue 2: api-v2.cal.mereka.io TLS failure — DNS RECORD STALE
 
-**Status**: Active — endpoint unreachable
-**Component**: DNS / Cloudflare SSL
+**Root cause**: Multi-level subdomain (`*.*.mereka.io`) not covered by Cloudflare free SSL wildcard (`*.mereka.io`). Additionally, api-v2 is NOT deployed on RKE2 — it was a Cloud Run service never migrated.
 
-**Root cause**: `api-v2.cal.mereka.io` is a multi-level subdomain. Cloudflare free SSL only covers `*.mereka.io`, not `*.*.mereka.io`. The TLS handshake fails because no certificate covers this hostname.
+**Status**: DNS record exists but nothing behind it. Tracked as future deployment.
 
-**Additional finding**: api-v2 is NOT deployed on RKE2. There are no `calcom-api-v2` deployments on either cluster. It was a Cloud Run service that was never migrated.
-
-**Fix options**:
-1. **If api-v2 is needed**: Deploy on RKE2, set DNS to gray cloud (DNS-only), use cert-manager for Let's Encrypt
-2. **If api-v2 is not needed**: Remove the DNS record from Cloudflare
-3. **Alternative**: Flatten to `api-v2-cal.mereka.io` (single-level subdomain, covered by wildcard cert)
+**Decision needed**: Deploy api-v2 on RKE2 (requires new Dockerfile build, K8s manifests, DNS fix) or remove the DNS record.
 
 ---
 
-## Issue 3: cal.mereka.io proxied through Cloudflare but origin is 500
+## Issue 3: Fork-specific image build — IN PROGRESS
 
-**Status**: Cosmetic until Issue 1 is fixed
-**Component**: Cloudflare proxy config
+**Context**: The fork uses upstream's `calcom/cal.com:v6.2.0` image which doesn't include Mereka branding at the client-side JS level. A fork-specific image build pipeline has been created.
 
-**Details**: cal.mereka.io is proxied (orange cloud) through Cloudflare, resolving to CF anycast IPs. The origin (rke2-prod ingress-nginx) returns 500, which Cloudflare passes through. Once Issue 1 is fixed, this setup should work.
+**Status**: First build triggered (workflow `build-fork-image.yml`). Image will push to `ghcr.io/biji-biji-initiative/cal.com:main-<sha>`. Once built, the bbi-infrastructure prod overlay needs updating to reference the new image.
 
 ---
 
-## Cluster topology reference
+## Cluster topology
 
 | Item | Value |
 |------|-------|
-| rke2-prod control planes | 194.233.91.173, 194.233.94.5, 194.233.95.110 |
 | rke2-prod workers | 185.227.134.230, 185.227.135.166, 185.250.38.89 |
-| Ingress controller | nginx, DaemonSet on all workers (hostPort 80/443) |
-| calcom-prod image | `calcom/cal.com@sha256:ace3bb1219fb73...` |
+| Ingress controller | nginx DaemonSet on all workers (hostPort 80/443) |
+| calcom-prod image | `calcom/cal.com@sha256:ace3bb...` (to be replaced with fork image) |
 | calcom-prod namespace | calcom-prod |
-| Database | calcom-postgresql (in-cluster, calcom-prod namespace) |
+| Authentik | authentik namespace, embedded outpost with Cal.com Proxy provider |
+| auth-verify | 4/4 PASS for calcom |
