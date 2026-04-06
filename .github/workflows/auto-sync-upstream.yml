@@ -109,6 +109,15 @@ jobs:
         if: steps.merge.outputs.result != ''
         run: git push origin "${{ steps.merge.outputs.branch }}"
 
+      - name: Ensure labels exist
+        if: steps.merge.outputs.result != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create "upstream-sync" --color "0e8a16" --description "Automated upstream sync PR" --force 2>/dev/null || true
+          gh label create "automated" --color "ededed" --description "Created by automation" --force 2>/dev/null || true
+          gh label create "needs-manual-resolution" --color "d93f0b" --description "Requires manual conflict resolution" --force 2>/dev/null || true
+
       - name: Create PR (clean merge)
         if: steps.merge.outputs.result == 'clean'
         env:
@@ -117,6 +126,8 @@ jobs:
           gh pr create \
             --base main \
             --head "${{ steps.merge.outputs.branch }}" \
+            --label "upstream-sync" \
+            --label "automated" \
             --title "chore(upstream): sync with calcom/cal.com (${{ steps.check.outputs.behind_count }} commits)" \
             --body "$(cat <<'PREOF'
           ## Upstream Sync
@@ -139,6 +150,27 @@ jobs:
           PREOF
           )"
 
+      - name: Summarize upstream changes
+        if: steps.merge.outputs.result == 'clean'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pr_number=$(gh pr list --head "${{ steps.merge.outputs.branch }}" --json number -q '.[0].number')
+          if [[ -n "$pr_number" ]]; then
+            subjects=$(git log --oneline HEAD~${{ steps.check.outputs.behind_count }}..HEAD | head -20)
+            extra=""
+            if [ "${{ steps.check.outputs.behind_count }}" -gt 20 ]; then
+              extra="_...and more. See the full range in the PR description._"
+            fi
+            gh pr comment "$pr_number" --body "### Upstream commits included
+
+\`\`\`
+$subjects
+\`\`\`
+
+$extra"
+          fi
+
       - name: Create draft PR (conflicts)
         if: steps.merge.outputs.result == 'conflict'
         env:
@@ -148,6 +180,9 @@ jobs:
             --draft \
             --base main \
             --head "${{ steps.merge.outputs.branch }}" \
+            --label "upstream-sync" \
+            --label "automated" \
+            --label "needs-manual-resolution" \
             --title "chore(upstream): sync with calcom/cal.com (${{ steps.check.outputs.behind_count }} commits) [CONFLICTS]" \
             --body "$(cat <<PREOF
           ## Upstream Sync (Manual Resolution Needed)
