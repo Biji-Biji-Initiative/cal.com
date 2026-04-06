@@ -6,9 +6,16 @@ on:
     - cron: "0 6 * * 1"
   workflow_dispatch:
 
+# NOTE: auto-sync-upstream.yml now handles the actual upstream merge.
+# This workflow serves as a secondary alerting mechanism.
+
+permissions:
+  contents: read
+
 jobs:
   drift-check:
-    runs-on: ubuntu-latest
+    runs-on: mereka-k8s-runners
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v5
