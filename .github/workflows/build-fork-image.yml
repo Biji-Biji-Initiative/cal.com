@@ -23,7 +23,7 @@ jobs:
   build:
     name: Build and push to GHCR
     runs-on: mereka-k8s-heavy-builders
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
