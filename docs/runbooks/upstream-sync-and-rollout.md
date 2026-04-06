@@ -1,7 +1,7 @@
 # Upstream Sync And Rollout Runbook
 
 ## Goal
-Keep this fork close to `calcom/cal.com` while safely rolling updates through `dev (RKE2) -> staging -> prod (GKE)` with data preservation and integration validation.
+Keep this fork close to `calcom/cal.com` while safely rolling updates through `dev (RKE2) -> staging -> prod (RKE2)` with data preservation and integration validation.
 
 ## Source Of Truth
 - Upstream code updates: [`docs/self-hosting/upgrading.mdx`](../self-hosting/upgrading.mdx)
@@ -35,7 +35,7 @@ Keep this fork close to `calcom/cal.com` while safely rolling updates through `d
    - Run `yarn workspace @calcom/prisma db-deploy`
    - Deploy image/tag
    - Execute integration matrix (below)
-3. **Prod (GKE)**
+3. **Prod (RKE2)**
    - Confirm staging passed
    - Apply migration (`db-deploy`)
    - Roll out with progressive traffic shift
@@ -81,7 +81,7 @@ Expected signals:
    - All Dev checks pass on staging URL.
    - Existing seeded users and historical bookings are still readable after migration.
    - New booking creates expected calendar event.
-3. **Prod (GKE)**:
+3. **Prod (RKE2)**:
    - All staging checks pass on production URL.
    - Error rate and latency remain within baseline after rollout.
    - No schema/data regression observed in first post-deploy smoke window.

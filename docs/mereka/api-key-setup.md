@@ -1,5 +1,9 @@
 # 🔑 API Key Setup Guide - Mereka Calendar
 
+> **Note**: This document describes the legacy GKE/Cloud Run deployment. Production is now on RKE2.
+> For current deployment procedures, see the infrastructure repo (bbi-infrastructure) and the
+> [deployment guide](deployment-guide.md).
+
 ## Overview
 This guide explains how to set up and troubleshoot API key creation in your Mereka Calendar deployment.
 

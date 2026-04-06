@@ -1,5 +1,9 @@
 # Working Cal.com Configuration Reference
 
+> **Note**: This document describes the legacy GKE/Cloud Run deployment. Production is now on RKE2.
+> For current deployment procedures, see the infrastructure repo (bbi-infrastructure) and the
+> [deployment guide](deployment-guide.md).
+
 ## 🎯 PROVEN WORKING SETUP (August 25, 2025)
 
 This document contains the exact configuration that successfully deployed Cal.com without errors.

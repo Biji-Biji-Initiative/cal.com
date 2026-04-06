@@ -1,5 +1,9 @@
 # Cal.com Environment Variables Reference
 
+> **Note**: This document describes the legacy GKE/Cloud Run deployment. Production is now on RKE2.
+> For current deployment procedures, see the infrastructure repo (bbi-infrastructure) and the
+> [deployment guide](deployment-guide.md).
+
 ## Deployment Environment Variable Reference
 
 ### Core Authentication & Security

@@ -1,5 +1,9 @@
 # 🚀 API v2 Service Setup Guide - Mereka Calendar
 
+> **Note**: This document describes the legacy GKE/Cloud Run deployment. Production is now on RKE2.
+> For current deployment procedures, see the infrastructure repo (bbi-infrastructure) and the
+> [deployment guide](deployment-guide.md).
+
 ## 📋 **Overview**
 
 The **Cal.com API v2** is a **separate service** from the main web application. It's a modern NestJS-based API that provides enhanced functionality and better performance than the v1 API.

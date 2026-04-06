@@ -1,5 +1,9 @@
 # Cal.com Integration Setup Guide
 
+> **Note**: This document describes the legacy GKE/Cloud Run deployment. Production is now on RKE2.
+> For current deployment procedures, see the infrastructure repo (bbi-infrastructure) and the
+> [deployment guide](deployment-guide.md).
+
 ## 🎯 Overview
 This guide will help you set up Zoom, Google Calendar, Google OAuth login, and 2FA for admin features in your Cal.com instance at `https://calendar.mereka.io`.
 
