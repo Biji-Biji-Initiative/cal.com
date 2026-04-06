@@ -2,11 +2,7 @@ import { withReporting } from "@calcom/lib/sentryWrapper";
 import type { PrismaClient } from "@calcom/prisma";
 import type { Booking, Prisma } from "@calcom/prisma/client";
 import { BookingStatus, RRTimestampBasis } from "@calcom/prisma/enums";
-import {
-  bookingAuthorizationCheckSelect,
-  bookingDetailsSelect,
-  bookingMinimalSelect,
-} from "@calcom/prisma/selects/booking";
+import { bookingDetailsSelect, bookingMinimalSelect } from "@calcom/prisma/selects/booking";
 import { credentialForCalendarServiceSelect } from "@calcom/prisma/selects/credential";
 import { workflowSelect } from "../../ee/workflows/lib/getAllWorkflows";
 import type {
@@ -493,11 +489,13 @@ export class BookingRepository implements IBookingRepository {
         },
         attendees: {
           select: {
+            id: true,
             email: true,
             name: true,
             timeZone: true,
             locale: true,
             phoneNumber: true,
+            noShow: true,
           },
         },
         user: {
@@ -669,15 +667,6 @@ export class BookingRepository implements IBookingRepository {
           },
         },
       },
-    });
-  }
-
-  async findByUidForAuthorizationCheck({ bookingUid }: { bookingUid: string }) {
-    return await this.prismaClient.booking.findUnique({
-      where: {
-        uid: bookingUid,
-      },
-      select: bookingAuthorizationCheckSelect,
     });
   }
 
