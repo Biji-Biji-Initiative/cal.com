@@ -162,13 +162,11 @@ jobs:
             if [ "${{ steps.check.outputs.behind_count }}" -gt 20 ]; then
               extra="_...and more. See the full range in the PR description._"
             fi
-            gh pr comment "$pr_number" --body "### Upstream commits included
-
-\`\`\`
-$subjects
-\`\`\`
-
-$extra"
+            body="### Upstream commits included"$'\n\n'"$(printf '```\n%s\n```' "$subjects")"
+            if [[ -n "$extra" ]]; then
+              body="${body}"$'\n\n'"${extra}"
+            fi
+            gh pr comment "$pr_number" --body "$body"
           fi
 
       - name: Create draft PR (conflicts)
