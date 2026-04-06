@@ -122,3 +122,20 @@ specs/**/_drafts/
 # trigger.dev
 .trigger
 agents/devin-knowledge.json
+
+# === Fork-specific local ignores ===
+
+# Local development symlinks to other repos
+infrastructure
+platform-control-plane
+
+# Beads issue tracker (local state)
+.beads/
+
+# Stale artifact
+20m
+
+# Template scaffolding (not tracked)
+docs/adrs/
+specs/_TEMPLATE.md
+docs/runbooks/_TEMPLATE.md
