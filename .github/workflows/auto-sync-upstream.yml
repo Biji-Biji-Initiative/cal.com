@@ -1,0 +1,183 @@
+name: Auto Sync Upstream
+
+on:
+  schedule:
+    # Every Monday at 06:30 UTC (after drift check at 06:00)
+    - cron: "30 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-upstream:
+    runs-on: mereka-k8s-runners
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote and fetch
+        run: |
+          git remote add upstream https://github.com/calcom/cal.com.git || true
+          git fetch upstream main --prune
+
+      - name: Check if sync is needed
+        id: check
+        run: |
+          set -euo pipefail
+          upstream_sha="$(git rev-parse upstream/main)"
+          base_sha="$(git merge-base HEAD upstream/main)"
+
+          if [[ "$base_sha" == "$upstream_sha" ]]; then
+            echo "Already up to date with upstream/main."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          behind_count="$(git rev-list --count HEAD..upstream/main)"
+          echo "Behind upstream by $behind_count commits."
+          echo "needed=true" >> "$GITHUB_OUTPUT"
+          echo "behind_count=$behind_count" >> "$GITHUB_OUTPUT"
+          echo "upstream_sha=$upstream_sha" >> "$GITHUB_OUTPUT"
+          echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
+          echo "short_upstream=$(git rev-parse --short upstream/main)" >> "$GITHUB_OUTPUT"
+          echo "short_base=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Check for existing sync PR
+        if: steps.check.outputs.needed == 'true'
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing=$(gh pr list --base main --head "sync/upstream-" --state open --json number --jq '.[0].number // empty')
+          if [[ -n "$existing" ]]; then
+            echo "Sync PR #$existing already open. Skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Clean up stale sync branches
+        if: steps.check.outputs.needed == 'true' && steps.existing.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Delete any old sync/ branches that don't have open PRs
+          for ref in $(git ls-remote --heads origin 'refs/heads/sync/upstream-*' | awk '{print $2}' | sed 's|refs/heads/||'); do
+            pr_count=$(gh pr list --head "$ref" --state open --json number --jq 'length')
+            if [[ "$pr_count" == "0" ]]; then
+              echo "Deleting stale branch: $ref"
+              git push origin --delete "$ref" 2>/dev/null || true
+            fi
+          done
+
+      - name: Create sync branch and attempt merge
+        if: steps.check.outputs.needed == 'true' && steps.existing.outputs.skip == 'false'
+        id: merge
+        run: |
+          set -euo pipefail
+          BRANCH_NAME="sync/upstream-$(date +%Y-%m-%d)"
+
+          git checkout -b "$BRANCH_NAME"
+          echo "branch=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+
+          if git merge upstream/main --no-edit; then
+            echo "result=clean" >> "$GITHUB_OUTPUT"
+            echo "Clean merge successful."
+          else
+            echo "result=conflict" >> "$GITHUB_OUTPUT"
+            # Get list of conflicting files before aborting
+            conflicting_files=$(git diff --name-only --diff-filter=U | head -20)
+            echo "conflicts<<EOF" >> "$GITHUB_OUTPUT"
+            echo "$conflicting_files" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+            git merge --abort
+            echo "Merge has conflicts. Will create draft PR."
+          fi
+
+      - name: Push branch
+        if: steps.merge.outputs.result != ''
+        run: git push origin "${{ steps.merge.outputs.branch }}"
+
+      - name: Create PR (clean merge)
+        if: steps.merge.outputs.result == 'clean'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "${{ steps.merge.outputs.branch }}" \
+            --title "chore(upstream): sync with calcom/cal.com (${{ steps.check.outputs.behind_count }} commits)" \
+            --body "$(cat <<'PREOF'
+          ## Upstream Sync
+
+          Merging **${{ steps.check.outputs.behind_count }} commits** from [calcom/cal.com](https://github.com/calcom/cal.com) `main`.
+
+          **Upstream range**: [`${{ steps.check.outputs.short_base }}...${{ steps.check.outputs.short_upstream }}`](https://github.com/calcom/cal.com/compare/${{ steps.check.outputs.base_sha }}...${{ steps.check.outputs.upstream_sha }})
+
+          **Merge result**: Clean (no conflicts)
+
+          ### Post-merge checklist
+          - [ ] CI passes (env-preflight validates automatically)
+          - [ ] Deploy to staging
+          - [ ] Run smoke checks: `scripts/smoke-check-calcom.sh --web-url <staging-url> --check-google --check-sso`
+          - [ ] Promote to prod
+          - [ ] Run smoke checks against prod
+
+          ---
+          *Auto-generated by [auto-sync-upstream](.github/workflows/auto-sync-upstream.yml)*
+          PREOF
+          )"
+
+      - name: Create draft PR (conflicts)
+        if: steps.merge.outputs.result == 'conflict'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --draft \
+            --base main \
+            --head "${{ steps.merge.outputs.branch }}" \
+            --title "chore(upstream): sync with calcom/cal.com (${{ steps.check.outputs.behind_count }} commits) [CONFLICTS]" \
+            --body "$(cat <<PREOF
+          ## Upstream Sync (Manual Resolution Needed)
+
+          Attempted merge of **${{ steps.check.outputs.behind_count }} commits** from [calcom/cal.com](https://github.com/calcom/cal.com) \`main\`.
+
+          **Upstream range**: [\`${{ steps.check.outputs.short_base }}...${{ steps.check.outputs.short_upstream }}\`](https://github.com/calcom/cal.com/compare/${{ steps.check.outputs.base_sha }}...${{ steps.check.outputs.upstream_sha }})
+
+          **Merge result**: Conflicts detected
+
+          ### Conflicting files
+          \`\`\`
+          ${{ steps.merge.outputs.conflicts }}
+          \`\`\`
+
+          ### Resolution steps
+          1. Check out this branch locally: \`git checkout ${{ steps.merge.outputs.branch }}\`
+          2. Merge upstream: \`git merge upstream/main\`
+          3. Resolve conflicts (fork customizations are in \`packages/lib/constants.ts\` — keep our logo lines)
+          4. Push resolved merge
+          5. Follow the post-merge checklist below
+
+          ### Post-merge checklist
+          - [ ] Conflicts resolved and pushed
+          - [ ] CI passes
+          - [ ] Deploy to staging
+          - [ ] Run smoke checks
+          - [ ] Promote to prod
+
+          ---
+          *Auto-generated by [auto-sync-upstream](.github/workflows/auto-sync-upstream.yml)*
+          PREOF
+          )"
