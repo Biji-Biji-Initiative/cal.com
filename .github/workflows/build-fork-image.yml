@@ -10,10 +10,11 @@ on:
         description: "Optional image tag override (e.g. v1.2.3-mereka). Defaults to main-<short-sha>."
         required: false
 
-# Only one build per branch at a time; cancel any in-progress run on new push.
+# Only one build per branch at a time. Don't cancel in-progress builds
+# because cold Docker builds take 40+ minutes and cancelling wastes work.
 concurrency:
   group: build-fork-image-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
