@@ -72,8 +72,8 @@ SAML_ADMINS: "admin@example.com"
 ## Files
 
 - **Production Config**: `env-vars-production.example.yaml` ✅
-- **Deployment Script**: `deploy-calcom.sh` ✅
-- **Documentation**: `WORKING_CONFIG.md`, `DEPLOYMENT_GUIDE.md` ✅
+- **Deployment Script**: `scripts/deploy-calcom.sh` ✅
+- **Documentation**: `docs/mereka/working-config.md`, `docs/mereka/deployment-guide.md` ✅
 
 ## Notes
 

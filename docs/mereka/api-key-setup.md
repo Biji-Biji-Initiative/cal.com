@@ -108,9 +108,9 @@ curl -H "Authorization: Bearer mereka_xxxxxxxxxxxxxxxx" \
 
 ## 📚 **Related Documentation**
 
-- **[ENVIRONMENT_VARIABLES_REFERENCE.md](ENVIRONMENT_VARIABLES_REFERENCE.md)** - Complete environment variables list
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Deployment troubleshooting
-- **[WORKING_CONFIG.md](WORKING_CONFIG.md)** - Current working configuration
+- **[env-reference.md](env-reference.md)** - Complete environment variables list
+- **[deployment-guide.md](deployment-guide.md)** - Deployment troubleshooting
+- **[working-config.md](working-config.md)** - Current working configuration
 
 ---
 
