@@ -2,12 +2,12 @@ name: Build Fork Image
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*-mereka*"
   workflow_dispatch:
     inputs:
       tag_override:
-        description: "Optional image tag override (e.g. v1.2.3-mereka). Defaults to main-<short-sha>."
+        description: "Optional image tag override. Defaults to main-<short-sha>."
         required: false
 
 # Only one build per branch at a time. Don't cancel in-progress builds
@@ -38,13 +38,15 @@ jobs:
 
           if [[ -n "${{ inputs.tag_override }}" ]]; then
             VERSION_TAG="${{ inputs.tag_override }}"
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION_TAG="${GITHUB_REF_NAME}"
           else
             VERSION_TAG="main-${SHORT_SHA}"
           fi
 
-          # Always produce a versioned tag; also tag as latest on main-branch pushes.
+          # Always produce a versioned tag; also tag as latest on tag-push events.
           TAGS="${REGISTRY}:${VERSION_TAG}"
-          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
             TAGS="${TAGS},${REGISTRY}:latest"
           fi
 
@@ -68,6 +70,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=registry,ref=ghcr.io/biji-biji-initiative/cal.com:buildcache
+          cache-to: type=registry,ref=ghcr.io/biji-biji-initiative/cal.com:buildcache,mode=max
           # DATABASE_URL is required by `yarn build` (Next.js env substitution) but
           # the Dockerfile never opens a DB connection at build time — prisma generate
           # only reads the schema file. A syntactically-valid dummy URL is sufficient.
