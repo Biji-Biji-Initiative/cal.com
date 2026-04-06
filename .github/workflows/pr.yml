@@ -23,7 +23,7 @@ jobs:
   # This MUST run before any job that checks out PR code and executes it with secrets
   trust-check:
     name: Trust Check
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: mereka-k8s-runners
     permissions:
       pull-requests: read
       actions: read
@@ -162,7 +162,7 @@ jobs:
     name: Prepare
     needs: [trust-check]
     if: needs.trust-check.outputs.is-trusted == 'true'
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: mereka-k8s-runners
     permissions:
       pull-requests: read
     outputs:
@@ -472,7 +472,7 @@ jobs:
         e2e-app-store,
       ]
     if: always()
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: mereka-k8s-runners
     steps:
       - name: Fail if trust-check did not succeed
         run: |
