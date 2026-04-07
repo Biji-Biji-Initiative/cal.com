@@ -1,45 +1,43 @@
-# Runtime Issues — 2026-04-06
+# Runtime Issues — 2026-04-06 (Updated 2026-04-07)
 
-## Issue 1: cal.mereka.io returns 500 — RESOLVED
+## Issue 1: All environments returned 500 — RESOLVED
 
-**Root cause**: nginx-ingress auth subrequest to Authentik used internal service URL. Authentik's forward_domain proxy matches on Host header, but nginx sent `Host: authentik-server.authentik.svc.cluster.local` instead of `Host: cal.mereka.io`, causing 404 from Authentik → 500 from nginx.
+**Root cause**: nginx-ingress auth subrequests to Authentik used internal service URLs. Authentik's forward_domain proxy matches on Host header, returning 404 → nginx returned 500.
 
-**Fix**: Changed `auth-url` annotation to use external Authentik URL (`https://auth0.mereka.io/...`) which naturally carries the correct Host. PRs #2457, #2458 in bbi-infrastructure.
+**Fix**: Changed auth-url annotations to external Authentik URLs across all environments:
+- Prod: `https://auth0.mereka.io/outpost.goauthentik.io/auth/nginx`
+- Dev: `https://auth0.mereka.dev/outpost.goauthentik.io/auth/nginx`
+- Staging: `https://auth0.mereka.io/outpost.goauthentik.io/auth/nginx`
 
-**Current status**: All environments returning 302 (SSO redirect to Authentik). Verified:
-- cal.mereka.io → 302 to auth0.mereka.io
-- cal.mereka.dev → 302 to auth0.mereka.dev
-- staging.cal.mereka.io → 302 to auth0.mereka.io
-
-**Note**: The calcom app itself works correctly (verified via `localhost:3000` inside the pod). The "Failed to find Server Action" errors in logs are from Cloudflare challenge requests that reach the app without proper session context — not a stale image issue.
+**Status**: All environments returning 302 (SSO redirect).
 
 ---
 
-## Issue 2: api-v2.cal.mereka.io TLS failure — DNS RECORD STALE
+## Issue 2: api-v2 not deployed — RESOLVED
 
-**Root cause**: Multi-level subdomain (`*.*.mereka.io`) not covered by Cloudflare free SSL wildcard (`*.mereka.io`). Additionally, api-v2 is NOT deployed on RKE2 — it was a Cloud Run service never migrated.
+**Previous state**: api-v2 was a Cloud Run service, never migrated to RKE2. DNS record `api-v2.cal.mereka.io` was stale (multi-level subdomain, TLS broken).
 
-**Status**: DNS record exists but nothing behind it. Tracked as future deployment.
+**Fix**:
+- Built api-v2 Docker image from fork (`ghcr.io/biji-biji-initiative/cal.com-api-v2:v6.2.0`)
+- Deployed to all 3 environments with per-env hostnames:
+  - Prod: `calcom-api.mereka.io`
+  - Dev: `calcom-api-dev.mereka.dev`
+  - Staging: `calcom-api-staging.mereka.io`
+- Redis cache deployed alongside api-v2 in each environment
+- Network policies (K8s + Cilium) configured for api-v2 pods
+- Stale `api-v2.cal.mereka.io` DNS record removed
 
-**Decision needed**: Deploy api-v2 on RKE2 (requires new Dockerfile build, K8s manifests, DNS fix) or remove the DNS record.
+**Status**: api-v2 running 1/1 in all environments. Health endpoint returning 200.
 
 ---
 
-## Issue 3: Fork-specific image build — IN PROGRESS
+## Issue 3: Image build pipeline — RESOLVED
 
-**Context**: The fork uses upstream's `calcom/cal.com:v6.2.0` image which doesn't include Mereka branding at the client-side JS level. A fork-specific image build pipeline has been created.
+**Previous state**: Fork used upstream `calcom/cal.com:v6.2.0` with no way to build fork-specific images.
 
-**Status**: First build triggered (workflow `build-fork-image.yml`). Image will push to `ghcr.io/biji-biji-initiative/cal.com:main-<sha>`. Once built, the bbi-infrastructure prod overlay needs updating to reference the new image.
+**Fix**:
+- Web app uses upstream image + ConfigMap-mounted Mereka logo (no fork build needed)
+- api-v2 has a build workflow (`build-fork-image.yml`) with Docker layer caching
+- api-v2 image built locally on VPS and pushed to GHCR
 
----
-
-## Cluster topology
-
-| Item | Value |
-|------|-------|
-| rke2-prod workers | 185.227.134.230, 185.227.135.166, 185.250.38.89 |
-| Ingress controller | nginx DaemonSet on all workers (hostPort 80/443) |
-| calcom-prod image | `calcom/cal.com@sha256:ace3bb...` (to be replaced with fork image) |
-| calcom-prod namespace | calcom-prod |
-| Authentik | authentik namespace, embedded outpost with Cal.com Proxy provider |
-| auth-verify | 4/4 PASS for calcom |
+**Status**: Operational. api-v2 builds on demand via workflow_dispatch or v*-mereka* tags.
