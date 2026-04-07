@@ -73,3 +73,25 @@ GitHub Actions cron workflows that hit application API endpoints (e.g., `/api/cr
 2. These are better served by K8s CronJobs on RKE2 when needed
 
 If the fork needs scheduled jobs in the future, prefer K8s-native scheduling over GitHub Actions crons.
+
+## Permanently Disabled Workflows
+
+These workflows are disabled because they serve no purpose on this fork.
+
+| Workflow | Reason |
+|----------|--------|
+| `cron-bookingReminder.yml` | No APP_URL/CRON_API_KEY secrets; use K8s CronJobs if needed |
+| `cron-changeTimeZone.yml` | Same |
+| `cron-checkSmsPrices.yml` | Same |
+| `cron-downgradeUsers.yml` | Same |
+| `cron-monthlyDigestEmail.yml` | Same |
+| `cron-scheduleEmailReminders.yml` | Same |
+| `cron-scheduleSMSReminders.yml` | Same |
+| `cron-scheduleWhatsappReminders.yml` | Same |
+| `cron-syncAppMeta.yml` | Same |
+| `cron-webhooks-triggers.yml` | Same |
+| `cron-stale-issue.yml` | Upstream issue management, not applicable |
+| `delete-blacksmith-cache.yml` | Blacksmith not used (ARC-first policy) |
+| `i18n.yml` | Upstream AI translation automation |
+| `atoms-production-build.yml` | Atoms is a separate product |
+| `e2e-atoms.yml` | Atoms tests, separate product |
