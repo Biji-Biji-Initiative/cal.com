@@ -32,7 +32,7 @@ on:
 jobs:
   prepare:
     name: "Prepare Release"
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: mereka-k8s-runners
     outputs:
       release_tag: ${{ steps.determine-tag.outputs.release_tag }}
       checkout_ref: ${{ steps.determine-tag.outputs.checkout_ref }}
@@ -81,7 +81,7 @@ jobs:
   release-amd64:
     name: "Release AMD64"
     needs: prepare
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: mereka-k8s-heavy-builders
     env:
       RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
     steps:
