@@ -9,7 +9,7 @@ permissions:
   pull-requests: write
 jobs:
   cleanup-report:
-    runs-on: ubuntu-latest
+    runs-on: mereka-k8s-runners
     steps:
       - name: Generate GitHub App token
         id: generate-token

@@ -17,7 +17,7 @@ concurrency:
 jobs:
   delete_reports:
     name: Delete Reports
-    runs-on: ubuntu-latest
+    runs-on: mereka-k8s-runners
     env:
       # Contains all reports for deleted branch
       BRANCH_REPORTS_DIR: reports/${{ github.event.ref }}
