@@ -1,0 +1,9 @@
+self-hosted-runner:
+  labels:
+    - mereka-k8s-runners
+    - mereka-k8s-heavy-builders
+
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      - 'shellcheck reported issue in this script: SC2086:.+'

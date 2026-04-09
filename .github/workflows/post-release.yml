@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: mereka-k8s-runners
     steps:
       - name: Generate GitHub App token
         id: generate-token

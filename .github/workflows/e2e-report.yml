@@ -15,7 +15,7 @@ on:
 jobs:
   get-pr-info:
     name: Get PR Info
-    runs-on: ubuntu-latest
+    runs-on: mereka-k8s-runners
     # For workflow_run: only run if the triggering workflow failed
     # For workflow_dispatch: always run (inputs are provided manually)
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'failure' }}

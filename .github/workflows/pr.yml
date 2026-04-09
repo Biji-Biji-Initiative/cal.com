@@ -162,7 +162,8 @@ jobs:
     name: Prepare
     needs: [trust-check]
     if: needs.trust-check.outputs.is-trusted == 'true'
-    runs-on: mereka-k8s-runners
+    runs-on: mereka-k8s-heavy-builders
+    timeout-minutes: 60
     permissions:
       pull-requests: read
     outputs:

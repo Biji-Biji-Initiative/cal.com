@@ -13,7 +13,7 @@ jobs:
       APP_URL_US: ${{ vars.APP_URL_US }}
       CRON_API_KEY_EU: ${{ secrets.CRON_API_KEY_EU }}
       CRON_API_KEY_US: ${{ secrets.CRON_API_KEY }}
-    runs-on: ubuntu-latest
+    runs-on: mereka-k8s-runners
     steps:
       - name: cURL request EU
         if: ${{ env.APP_URL_EU && env.CRON_API_KEY_EU }}

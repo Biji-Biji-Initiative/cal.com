@@ -27,7 +27,7 @@ permissions:
   pull-requests: write
 jobs:
   publish-report:
-    runs-on: ubuntu-latest
+    runs-on: mereka-k8s-runners
     continue-on-error: true
     env:
       # Unique URL path for each workflow run attempt
