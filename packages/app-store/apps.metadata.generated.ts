@@ -15,6 +15,7 @@ import { metadata as caldavcalendar__metadata_ts } from "./caldavcalendar/_metad
 import campfire_config_json from "./campfire/config.json";
 import caretta_config_json from "./caretta/config.json";
 import chatbase_config_json from "./chatbase/config.json";
+import clara_config_json from "./clara/config.json";
 import clic_config_json from "./clic/config.json";
 import closecom_config_json from "./closecom/config.json";
 import cron_config_json from "./cron/config.json";
@@ -79,7 +80,6 @@ import raycast_config_json from "./raycast/config.json";
 import retell_ai_config_json from "./retell-ai/config.json";
 import riverside_config_json from "./riverside/config.json";
 import roam_config_json from "./roam/config.json";
-import routing_forms_config_json from "./routing-forms/config.json";
 import salesforce_config_json from "./salesforce/config.json";
 import salesroom_config_json from "./salesroom/config.json";
 import sendgrid_config_json from "./sendgrid/config.json";
@@ -128,6 +128,7 @@ export const appStoreMetadata = {
   campfire: campfire_config_json,
   caretta: caretta_config_json,
   chatbase: chatbase_config_json,
+  clara: clara_config_json,
   clic: clic_config_json,
   closecom: closecom_config_json,
   cron: cron_config_json,
@@ -192,7 +193,6 @@ export const appStoreMetadata = {
   "retell-ai": retell_ai_config_json,
   riverside: riverside_config_json,
   roam: roam_config_json,
-  "routing-forms": routing_forms_config_json,
   salesforce: salesforce_config_json,
   salesroom: salesroom_config_json,
   sendgrid: sendgrid_config_json,

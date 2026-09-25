@@ -123,6 +123,9 @@ specs/**/_drafts/
 .trigger
 agents/devin-knowledge.json
 
+# pagefind
+_pagefind/
+
 # === Fork-specific local ignores ===
 
 # Local development symlinks to other repos

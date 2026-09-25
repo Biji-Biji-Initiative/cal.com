@@ -18,7 +18,7 @@ import { TimezoneSelect } from "@calcom/web/modules/timezone/components/Timezone
 import TravelScheduleModal from "@components/settings/TravelScheduleModal";
 import { revalidateSettingsGeneral } from "app/(use-page-wrapper)/settings/(settings-layout)/my-account/general/actions";
 import { useSession } from "next-auth/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 export type FormValues = {
@@ -89,15 +89,18 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
     { value: 24, label: t("24_hour") },
   ];
 
-  const weekStartOptions = [
-    { value: "Sunday", label: nameOfDay(localeProp, 0) },
-    { value: "Monday", label: nameOfDay(localeProp, 1) },
-    { value: "Tuesday", label: nameOfDay(localeProp, 2) },
-    { value: "Wednesday", label: nameOfDay(localeProp, 3) },
-    { value: "Thursday", label: nameOfDay(localeProp, 4) },
-    { value: "Friday", label: nameOfDay(localeProp, 5) },
-    { value: "Saturday", label: nameOfDay(localeProp, 6) },
-  ];
+  const weekStartOptions = useMemo(
+    () => [
+      { value: "Sunday", label: nameOfDay(language || localeProp, 0) },
+      { value: "Monday", label: nameOfDay(language || localeProp, 1) },
+      { value: "Tuesday", label: nameOfDay(language || localeProp, 2) },
+      { value: "Wednesday", label: nameOfDay(language || localeProp, 3) },
+      { value: "Thursday", label: nameOfDay(language || localeProp, 4) },
+      { value: "Friday", label: nameOfDay(language || localeProp, 5) },
+      { value: "Saturday", label: nameOfDay(language || localeProp, 6) },
+    ],
+    [language, localeProp]
+  );
 
   const formMethods = useForm<FormValues>({
     defaultValues: {
@@ -278,7 +281,7 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
                     <>{t("time_format")}</>
                   </Label>
                   <Select
-                    value={value}
+                    value={timeFormatOptions.find((option) => option.value === (typeof value === "object" ? value?.value : value)) || value}
                     options={timeFormatOptions}
                     onChange={(event) => {
                       if (event) formMethods.setValue("timeFormat", { ...event }, { shouldDirty: true });
@@ -287,8 +290,8 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
                 </>
               )}
             />
-            <div className="text-gray text-subtle mt-2 flex items-center text-xs">
-              <Icon name="info" className="mr-2" />
+            <div className="text-gray text-subtle mt-2 flex items-start text-xs">
+              <Icon name="info" className="mr-2 mt-0.25" />
               {t("timeformat_profile_hint")}
             </div>
             <Controller
@@ -300,7 +303,7 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
                     <>{t("start_of_week")}</>
                   </Label>
                   <Select
-                    value={value}
+                    value={weekStartOptions.find((option) => option.value === (typeof value === "object" ? value?.value : value)) || value}
                     options={weekStartOptions}
                     onChange={(event) => {
                       if (event) formMethods.setValue("weekStart", { ...event }, { shouldDirty: true });
@@ -353,7 +356,7 @@ const GeneralView = ({ user, travelSchedules }: GeneralViewProps) => {
         <SettingsToggle
           toggleSwitchAtTheEnd={true}
           title={t("monthly_digest_email")}
-          description={t("monthly_digest_email_for_teams")}
+          description={t("monthly_digest_email")}
           disabled={mutation.isPending}
           checked={isReceiveMonthlyDigestEmailChecked}
           onCheckedChange={(checked) => {

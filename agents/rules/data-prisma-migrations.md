@@ -1,4 +1,6 @@
 ---
+paths:
+  - "packages/prisma/**"
 title: Prisma Schema and Migrations
 impact: HIGH
 impactDescription: Schema changes affect all downstream code and deployments
@@ -9,7 +11,7 @@ tags: prisma, database, migrations, schema
 
 ## After Schema Changes
 
-After making changes to the Prisma schema in Cal.com and creating migrations, you need to run:
+After making changes to the Prisma schema in Cal.diy and creating migrations, you need to run:
 
 ```bash
 yarn prisma generate

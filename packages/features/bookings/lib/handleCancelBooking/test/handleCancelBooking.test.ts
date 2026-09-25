@@ -12,7 +12,6 @@ import {
 } from "@calcom/testing/lib/bookingScenario/bookingScenario";
 import {
   expectBookingCancelledWebhookToHaveBeenFired,
-  expectWorkflowToBeTriggered,
 } from "@calcom/testing/lib/bookingScenario/expects";
 import { setupAndTeardown } from "@calcom/testing/lib/bookingScenario/setupAndTeardown";
 
@@ -29,7 +28,7 @@ vi.mock("@calcom/features/bookings/lib/payment/processPaymentRefund", () => ({
 describe("Cancel Booking", () => {
   setupAndTeardown();
 
-  test("Should trigger BOOKING_CANCELLED webhook and workflow", async ({ emails }) => {
+  test("Should trigger BOOKING_CANCELLED webhook", async ({ emails }) => {
     const handleCancelBooking = (await import("@calcom/features/bookings/lib/handleCancelBooking")).default;
 
     const booker = getBooker({
@@ -60,15 +59,6 @@ describe("Cancel Booking", () => {
             active: true,
             eventTypeId: 1,
             appId: null,
-          },
-        ],
-        workflows: [
-          {
-            userId: organizer.id,
-            trigger: "EVENT_CANCELLED",
-            action: "EMAIL_HOST",
-            template: "REMINDER",
-            activeOn: [1],
           },
         ],
         eventTypes: [
@@ -134,8 +124,6 @@ describe("Cancel Booking", () => {
         cancelledBy: organizer.email,
         cancellationReason: "No reason",
       },
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expectBookingCancelledWebhookToHaveBeenFired({
@@ -154,8 +142,21 @@ describe("Cancel Booking", () => {
         },
       },
     });
+  });
 
-    expectWorkflowToBeTriggered({ emailsToReceive: [organizer.email], emails });
+  test("Should throw when cancelling a non-existing booking", async () => {
+    const handleCancelBooking = (await import("@calcom/features/bookings/lib/handleCancelBooking")).default;
+
+    await expect(
+      handleCancelBooking({
+        bookingData: {
+          id: 99999,
+          uid: "non-existing-uid",
+          cancelledBy: "someone@example.com",
+          cancellationReason: "No reason",
+        },
+      })
+    ).rejects.toThrow("Booking not found.");
   });
 
   test("Should call processPaymentRefund", async () => {
@@ -266,8 +267,6 @@ describe("Cancel Booking", () => {
         cancelledBy: organizer.email,
         cancellationReason: "No reason",
       },
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expectBookingCancelledWebhookToHaveBeenFired({
@@ -290,161 +289,7 @@ describe("Cancel Booking", () => {
     expect(processPaymentRefund).toHaveBeenCalled();
   });
 
-  test("Should successfully cancel round robin team event when host is also an attendee with workflow emails", async () => {
-    const handleCancelBooking = (await import("@calcom/features/bookings/lib/handleCancelBooking")).default;
-
-    const organizer = getOrganizer({
-      name: "Host Organizer",
-      email: "host-organizer@example.com",
-      id: 101,
-      schedules: [TestData.schedules.IstWorkHours],
-      credentials: [getGoogleCalendarCredential()],
-      selectedCalendars: [TestData.selectedCalendars.google],
-    });
-
-    const hostAttendee = getOrganizer({
-      name: "Host Attendee",
-      email: "host-attendee@example.com",
-      id: 102,
-      schedules: [TestData.schedules.IstWorkHours],
-      credentials: [getGoogleCalendarCredential()],
-      selectedCalendars: [TestData.selectedCalendars.google],
-    });
-
-    const uidOfBookingToBeCancelled = "round-robin-booking-uid";
-    const idOfBookingToBeCancelled = 2030;
-    const { dateString: plus1DateString } = getDate({ dateIncrement: 1 });
-
-    await createBookingScenario(
-      getScenarioData({
-        webhooks: [
-          {
-            userId: organizer.id,
-            eventTriggers: ["BOOKING_CANCELLED"],
-            subscriberUrl: "http://my-webhook.example.com",
-            active: true,
-            eventTypeId: 2,
-            appId: null,
-          },
-        ],
-        eventTypes: [
-          {
-            id: 2,
-            slotInterval: 30,
-            length: 30,
-            schedulingType: "ROUND_ROBIN",
-            teamId: 1,
-            users: [
-              {
-                id: 101,
-              },
-              {
-                id: 102,
-              },
-            ],
-            hosts: [
-              {
-                userId: 101,
-                isFixed: false,
-              },
-              {
-                userId: 102,
-                isFixed: false,
-              },
-            ],
-          },
-        ],
-        workflows: [
-          {
-            id: 1,
-            name: "Cancellation Email Workflow",
-            teamId: 1,
-            trigger: "EVENT_CANCELLED",
-            action: "EMAIL_ATTENDEE",
-            template: "REMINDER",
-            activeOn: [2],
-          },
-        ],
-        bookings: [
-          {
-            id: idOfBookingToBeCancelled,
-            uid: uidOfBookingToBeCancelled,
-            eventTypeId: 2,
-            userId: 101,
-            responses: {
-              email: hostAttendee.email,
-              name: hostAttendee.name,
-              location: { optionValue: "", value: BookingLocations.CalVideo },
-            },
-            status: BookingStatus.ACCEPTED,
-            startTime: `${plus1DateString}T05:00:00.000Z`,
-            endTime: `${plus1DateString}T05:30:00.000Z`,
-            attendees: [
-              {
-                email: hostAttendee.email,
-                timeZone: "Asia/Kolkata",
-                locale: "en",
-              },
-            ],
-          },
-        ],
-        users: [organizer, hostAttendee],
-        apps: [TestData.apps["daily-video"]],
-      })
-    );
-
-    mockSuccessfulVideoMeetingCreation({
-      metadataLookupKey: "dailyvideo",
-      videoMeetingData: {
-        id: "MOCK_ID",
-        password: "MOCK_PASS",
-        url: `http://mock-dailyvideo.example.com/meeting-2`,
-      },
-    });
-
-    mockCalendarToHaveNoBusySlots("googlecalendar", {
-      create: {
-        id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID_2",
-      },
-    });
-
-    const result = await handleCancelBooking({
-      bookingData: {
-        id: idOfBookingToBeCancelled,
-        uid: uidOfBookingToBeCancelled,
-        cancelledBy: organizer.email,
-        cancellationReason: "Testing round robin cancellation with host as attendee",
-      },
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
-    });
-
-    expect(result.success).toBe(true);
-    expect(result.bookingId).toBe(idOfBookingToBeCancelled);
-    expect(result.bookingUid).toBe(uidOfBookingToBeCancelled);
-    expect(result.onlyRemovedAttendee).toBe(false);
-
-    expectBookingCancelledWebhookToHaveBeenFired({
-      booker: hostAttendee,
-      organizer,
-      location: BookingLocations.CalVideo,
-      subscriberUrl: "http://my-webhook.example.com",
-      payload: {
-        cancelledBy: organizer.email,
-        organizer: {
-          id: organizer.id,
-          username: organizer.username,
-          email: organizer.email,
-          name: organizer.name,
-          timeZone: organizer.timeZone,
-        },
-      },
-    });
-  });
-
-  test("Should send EMAIL_HOST cancel workflow notification to both primary and secondary hosts in round robin events", async ({
-    emails,
-  }) => {
+  test("Should pass all seat payments to processPaymentRefund when fully cancelling a paid seated booking", async () => {
     const handleCancelBooking = (await import("@calcom/features/bookings/lib/handleCancelBooking")).default;
 
     const booker = getBooker({
@@ -452,135 +297,101 @@ describe("Cancel Booking", () => {
       name: "Booker",
     });
 
-    const primaryHost = getOrganizer({
-      name: "Primary Host",
-      email: "primary-host@example.com",
+    const organizer = getOrganizer({
+      name: "Organizer",
+      email: "organizer@example.com",
       id: 101,
       schedules: [TestData.schedules.IstWorkHours],
       credentials: [getGoogleCalendarCredential()],
       selectedCalendars: [TestData.selectedCalendars.google],
     });
 
-    const secondaryHost = getOrganizer({
-      name: "Secondary Host",
-      email: "secondary-host@example.com",
-      id: 102,
-      schedules: [TestData.schedules.IstWorkHours],
-      credentials: [getGoogleCalendarCredential()],
-      selectedCalendars: [TestData.selectedCalendars.google],
-    });
-
-    const uidOfBookingToBeCancelled = "round-robin-email-host-workflow-uid";
-    const idOfBookingToBeCancelled = 2040;
+    const uidOfBookingToBeCancelled = "seated-multi-pay-cancel";
+    const idOfBookingToBeCancelled = 1099;
     const { dateString: plus1DateString } = getDate({ dateIncrement: 1 });
+    const booking = {
+      id: idOfBookingToBeCancelled,
+      uid: uidOfBookingToBeCancelled,
+      eventTypeId: 1,
+      userId: 101,
+      responses: {
+        email: booker.email,
+        name: booker.name,
+        location: { optionValue: "", value: BookingLocations.CalVideo },
+      },
+      status: BookingStatus.ACCEPTED,
+      startTime: `${plus1DateString}T05:00:00.000Z`,
+      endTime: `${plus1DateString}T05:15:00.000Z`,
+      metadata: {
+        videoCallUrl: "https://existing-daily-video-call-url.example.com",
+      },
+      attendees: [{ timeZone: "Asia/Kolkata", email: booker.email }],
+    };
 
     await createBookingScenario(
       getScenarioData({
         eventTypes: [
           {
-            id: 2,
+            id: 1,
             slotInterval: 30,
             length: 30,
-            schedulingType: "ROUND_ROBIN",
-            teamId: 1,
-            users: [
-              {
-                id: 101,
-              },
-              {
-                id: 102,
-              },
-            ],
-            hosts: [
-              {
-                userId: 101,
-                isFixed: false,
-              },
-              {
-                userId: 102,
-                isFixed: false,
-              },
-            ],
+            seatsPerTimeSlot: 3,
+            users: [{ id: 101 }],
           },
         ],
-        workflows: [
+        // Two seats on the same booking → two Payment rows sharing one bookingId.
+        payment: [
           {
-            id: 1,
-            name: "Cancel Email Host Workflow",
-            teamId: 1,
-            trigger: "EVENT_CANCELLED",
-            action: "EMAIL_HOST",
-            template: "REMINDER",
-            activeOn: [2],
+            amount: 1000,
+            bookingId: idOfBookingToBeCancelled,
+            currency: "usd",
+            data: {},
+            externalId: "ext_seat_1",
+            fee: 0,
+            refunded: false,
+            success: true,
+            uid: "seat-1-pay",
           },
-        ],
-        bookings: [
           {
-            id: idOfBookingToBeCancelled,
-            uid: uidOfBookingToBeCancelled,
-            eventTypeId: 2,
-            userId: 101,
-            responses: {
-              email: booker.email,
-              name: booker.name,
-              location: { optionValue: "", value: BookingLocations.CalVideo },
-            },
-            status: BookingStatus.ACCEPTED,
-            startTime: `${plus1DateString}T05:00:00.000Z`,
-            endTime: `${plus1DateString}T05:30:00.000Z`,
-            attendees: [
-              {
-                email: booker.email,
-                timeZone: "Asia/Kolkata",
-                locale: "en",
-              },
-              {
-                email: secondaryHost.email,
-                timeZone: "Asia/Kolkata",
-                locale: "en",
-              },
-            ],
+            amount: 5000,
+            bookingId: idOfBookingToBeCancelled,
+            currency: "usd",
+            data: {},
+            externalId: "ext_seat_2",
+            fee: 0,
+            refunded: false,
+            success: true,
+            uid: "seat-2-pay",
           },
         ],
-        users: [primaryHost, secondaryHost],
+        bookings: [booking],
+        organizer,
         apps: [TestData.apps["daily-video"]],
       })
     );
-
     mockSuccessfulVideoMeetingCreation({
       metadataLookupKey: "dailyvideo",
-      videoMeetingData: {
-        id: "MOCK_ID",
-        password: "MOCK_PASS",
-        url: `http://mock-dailyvideo.example.com/meeting-3`,
-      },
+      videoMeetingData: { id: "MOCK_ID", password: "MOCK_PASS", url: `http://mock-dailyvideo.example.com/meeting-1` },
     });
-
     mockCalendarToHaveNoBusySlots("googlecalendar", {
-      create: {
-        id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID_3",
-      },
+      create: { id: "MOCKED_GOOGLE_CALENDAR_EVENT_ID" },
     });
 
-    const result = await handleCancelBooking({
+    // Full cancel (no seatReferenceUid) by the host. Clear first so the count is order-independent.
+    vi.mocked(processPaymentRefund).mockClear();
+    await handleCancelBooking({
       bookingData: {
         id: idOfBookingToBeCancelled,
         uid: uidOfBookingToBeCancelled,
-        cancelledBy: primaryHost.email,
-        cancellationReason: "Testing EMAIL_HOST workflow sends to secondary host in round robin",
+        cancelledBy: organizer.email,
+        cancellationReason: "No reason",
       },
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
-    expect(result.success).toBe(true);
-    expect(result.bookingId).toBe(idOfBookingToBeCancelled);
-    expect(result.bookingUid).toBe(uidOfBookingToBeCancelled);
-
-    expectWorkflowToBeTriggered({
-      emailsToReceive: [primaryHost.email, secondaryHost.email],
-      emails,
-    });
+    expect(processPaymentRefund).toHaveBeenCalledTimes(1);
+    const refundArg = vi.mocked(processPaymentRefund).mock.calls[0][0];
+    expect(refundArg.booking.payment).toHaveLength(2);
+    expect(refundArg.booking.payment.map((p) => p.externalId).sort()).toEqual(["ext_seat_1", "ext_seat_2"]);
   });
 
   test("Should block cancelling past bookings", async () => {
@@ -648,8 +459,6 @@ describe("Cancel Booking", () => {
           cancelledBy: organizer.email,
           cancellationReason: "Testing past booking cancellation",
         },
-        impersonatedByUserUuid: null,
-        actionSource: "WEBAPP",
       })
     ).rejects.toThrow("Cannot cancel a booking that has already ended");
   });
@@ -718,8 +527,6 @@ describe("Cancel Booking", () => {
           uid: uidOfBookingToBeCancelled,
           cancelledBy: organizer.email,
         },
-        impersonatedByUserUuid: null,
-        actionSource: "WEBAPP",
       })
     ).rejects.toThrow("Cancellation reason is required");
   });
@@ -831,8 +638,6 @@ describe("Cancel Booking", () => {
         cancelledBy: organizer.email,
         cancellationReason: "No reason",
       },
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expect(result.success).toBe(true);
@@ -959,8 +764,6 @@ describe("Cancel Booking", () => {
         cancelledBy: organizer.email,
         cancellationReason: "No reason",
       },
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expect(result.success).toBe(true);
@@ -1078,14 +881,12 @@ describe("Cancel Booking", () => {
         cancellationReason: "Attendee cancelled within time threshold",
       },
       userId: 999,
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expect(result.success).toBe(true);
   });
 
-  test("Should trigger BOOKING_CANCELLED webhook with username and usernameInOrg for organization bookings", async () => {
+  test("Should trigger BOOKING_CANCELLED webhook with username for bookings", async () => {
     const handleCancelBooking = (await import("@calcom/features/bookings/lib/handleCancelBooking")).default;
 
     const booker = getBooker({
@@ -1188,16 +989,11 @@ describe("Cancel Booking", () => {
         cancelledBy: organizer.email,
         cancellationReason: "Organization booking cancellation test",
       },
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expectBookingCancelledWebhookToHaveBeenFired({
       booker,
-      organizer: {
-        ...organizer,
-        usernameInOrg: "username-in-org",
-      },
+      organizer,
       location: BookingLocations.CalVideo,
       subscriberUrl: "http://my-webhook.example.com",
       payload: {
@@ -1312,8 +1108,6 @@ describe("Cancel Booking", () => {
         cancellationReason: "Cancelling seated event",
       },
       userId: organizer.id,
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expect(result.success).toBe(true);
@@ -1435,8 +1229,6 @@ describe("Cancel Booking", () => {
         allRemainingBookings: true,
       },
       userId: organizer.id,
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expect(result.success).toBe(true);
@@ -1558,8 +1350,6 @@ describe("Cancel Booking", () => {
         cancelSubsequentBookings: true,
       },
       userId: organizer.id,
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expect(result.success).toBe(true);
@@ -1673,8 +1463,6 @@ describe("Cancel Booking", () => {
         cancellationReason: "Testing booking reference cleanup",
       },
       userId: organizer.id,
-      impersonatedByUserUuid: null,
-      actionSource: "WEBAPP",
     });
 
     expect(result.success).toBe(true);

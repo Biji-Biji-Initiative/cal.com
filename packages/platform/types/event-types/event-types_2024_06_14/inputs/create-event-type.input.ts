@@ -141,6 +141,7 @@ export class CalVideoSettings {
   @IsBoolean()
   @DocsPropertyOptional({
     description: "If true, the organizer will not be able to record the meeting",
+    default: false,
   })
   disableRecordingForOrganizer?: boolean;
 
@@ -148,6 +149,7 @@ export class CalVideoSettings {
   @IsBoolean()
   @DocsPropertyOptional({
     description: "If true, the guests will not be able to record the meeting",
+    default: false,
   })
   disableRecordingForGuests?: boolean;
 
@@ -162,6 +164,7 @@ export class CalVideoSettings {
   @IsBoolean()
   @DocsPropertyOptional({
     description: "If true, enables the automatic recording for the event when organizer joins the call",
+    default: false,
   })
   enableAutomaticRecordingForOrganizer?: boolean;
 
@@ -169,6 +172,7 @@ export class CalVideoSettings {
   @IsBoolean()
   @DocsPropertyOptional({
     description: "If true, enables the automatic transcription for the event whenever someone joins the call",
+    default: false,
   })
   enableAutomaticTranscription?: boolean;
 
@@ -176,6 +180,7 @@ export class CalVideoSettings {
   @IsBoolean()
   @DocsPropertyOptional({
     description: "If true, the guests will not be able to receive transcription of the meeting",
+    default: false,
   })
   disableTranscriptionForGuests?: boolean;
 
@@ -183,6 +188,7 @@ export class CalVideoSettings {
   @IsBoolean()
   @DocsPropertyOptional({
     description: "If true, the organizer will not be able to receive transcription of the meeting",
+    default: false,
   })
   disableTranscriptionForOrganizer?: boolean;
 
@@ -590,7 +596,7 @@ export class CreateEventTypeInput_2024_06_14 extends BaseCreateEventTypeInput {
   @ValidateLocations_2024_06_14()
   @DocsPropertyOptional({
     description:
-      "Locations where the event will take place. If not provided, cal video link will be used as the location. Note: Setting a location to a conferencing app does not install the app - the app must already be installed. Via API, only Google Meet (google-meet), Microsoft Teams (office365-video), and Zoom (zoom) can be installed. Cal Video (cal-video) is installed by default. All other conferencing apps must be connected via the Cal.com web app and are not available for Platform plan customers. You can only set an event type location to an app that has already been installed or connected.",
+      "Locations where the event will take place. If not provided, cal video link will be used as the location. Note: Setting a location to a conferencing app does not install the app - the app must already be installed. Via API, only Google Meet (google-meet), Microsoft Teams (office365-video), and Zoom (zoom) can be installed. Cal Video (cal-video) is installed by default. All other conferencing apps must be connected via the Cal.diy web app and are not available for Platform plan customers. You can only set an event type location to an app that has already been installed or connected.",
     oneOf: [
       { $ref: getSchemaPath(InputAddressLocation_2024_06_14) },
       { $ref: getSchemaPath(InputLinkLocation_2024_06_14) },
@@ -679,7 +685,7 @@ export class CreateTeamEventTypeInput_2024_06_14 extends BaseCreateEventTypeInpu
   @ValidateTeamLocations_2024_06_14()
   @DocsPropertyOptional({
     description:
-      "Locations where the event will take place. If not provided, cal video link will be used as the location. Note: Setting a location to a conferencing app does not install the app - the app must already be installed. Via API, only Google Meet (google-meet), Microsoft Teams (office365-video), and Zoom (zoom) can be installed. Cal Video (cal-video) is installed by default. All other conferencing apps must be connected via the Cal.com web app and are not available for Platform plan customers. You can only set an event type location to an app that has already been installed or connected.",
+      "Locations where the event will take place. If not provided, cal video link will be used as the location. Note: Setting a location to a conferencing app does not install the app - the app must already be installed. Via API, only Google Meet (google-meet), Microsoft Teams (office365-video), and Zoom (zoom) can be installed. Cal Video (cal-video) is installed by default. All other conferencing apps must be connected via the Cal.diy web app and are not available for Platform plan customers. You can only set an event type location to an app that has already been installed or connected.",
     oneOf: [
       { $ref: getSchemaPath(InputAddressLocation_2024_06_14) },
       { $ref: getSchemaPath(InputLinkLocation_2024_06_14) },

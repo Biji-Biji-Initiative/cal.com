@@ -1,30 +1,32 @@
-import { NextResponse } from "next/server";
-
-import { checkPremiumUsername } from "@calcom/ee/common/lib/checkPremiumUsername";
+import process from "node:process";
 import { sendEmailVerification } from "@calcom/features/auth/lib/verifyEmail";
+import { SIGNUP_ERROR_CODES } from "@calcom/features/auth/signup/constants";
 import { createOrUpdateMemberships } from "@calcom/features/auth/signup/utils/createOrUpdateMemberships";
-import { validateAndGetCorrectedUsernameAndEmail } from "@calcom/features/auth/signup/utils/validateUsername";
-import { hashPassword } from "@calcom/lib/auth/hashPassword";
-import { IS_PREMIUM_USERNAME_ENABLED } from "@calcom/lib/constants";
-import logger from "@calcom/lib/logger";
-import { isPrismaError } from "@calcom/lib/server/getServerErrorFromUnknown";
-import { isUsernameReservedDueToMigration } from "@calcom/lib/server/username";
-import slugify from "@calcom/lib/slugify";
-import prisma from "@calcom/prisma";
-import { IdentityProvider } from "@calcom/prisma/enums";
-import { signupSchema } from "@calcom/prisma/zod-utils";
-
 import { joinAnyChildTeamOnOrgInvite } from "@calcom/features/auth/signup/utils/organization";
 import { prefillAvatar } from "@calcom/features/auth/signup/utils/prefillAvatar";
-import { SIGNUP_ERROR_CODES } from "@calcom/features/auth/signup/constants";
 import {
   findTokenByToken,
   throwIfTokenExpired,
   validateAndGetCorrectedUsernameForTeam,
 } from "@calcom/features/auth/signup/utils/token";
+import { validateAndGetCorrectedUsernameAndEmail } from "@calcom/features/auth/signup/utils/validateUsername";
+import { hashPassword } from "@calcom/lib/auth/hashPassword";
+
+import logger from "@calcom/lib/logger";
+import { isPrismaError } from "@calcom/lib/server/getServerErrorFromUnknown";
+import { isUsernameReservedDueToMigration } from "@calcom/lib/server/username";
+import slugify from "@calcom/lib/slugify";
+import { prisma } from "@calcom/prisma";
+import { IdentityProvider } from "@calcom/prisma/enums";
+import { signupSchema } from "@calcom/prisma/zod-utils";
+import { NextResponse } from "next/server";
+import { getUserRepository } from "@calcom/features/di/containers/UserRepository";
+import { CreationSource } from "@calcom/prisma/enums";
 
 export default async function handler(body: Record<string, string>) {
   const { email, password, language, token } = signupSchema.parse(body);
+
+  const userRepository = getUserRepository()
 
   const username = slugify(body.username);
   const userEmail = email.toLowerCase();
@@ -46,10 +48,10 @@ export default async function handler(body: Record<string, string>) {
     });
 
     if (foundToken?.teamId) {
-      const existingUser = await prisma.user.findUnique({
-        where: { email: userEmail },
-        select: { invitedTo: true },
-      });
+      const existingUser = await userRepository.findByEmailWithInvitedTo({
+        email: userEmail
+      })
+
       if (existingUser && existingUser.invitedTo !== foundToken.teamId) {
         return NextResponse.json({ message: SIGNUP_ERROR_CODES.USER_ALREADY_EXISTS }, { status: 409 });
       }
@@ -72,7 +74,7 @@ export default async function handler(body: Record<string, string>) {
 
   const hashedPassword = await hashPassword(password);
 
-  if (foundToken && foundToken?.teamId) {
+  if (foundToken?.teamId) {
     const team = await prisma.team.findUnique({
       where: {
         id: foundToken.teamId,
@@ -102,44 +104,26 @@ export default async function handler(body: Record<string, string>) {
 
       const organizationId = team.isOrganization ? team.id : (team.parent?.id ?? null);
 
-      const existingUserByUsername = await prisma.user.findFirst({
-        where: {
-          username: correctedUsername,
-          organizationId,
-          NOT: { email: userEmail },
-        },
-        select: { id: true },
-      });
+      const existingUserByUsername = await userRepository.findByUsernameAndOrganizationId({
+        username: correctedUsername,
+        organizationId,
+        excludeEmail: userEmail
+      })
+
       if (existingUserByUsername) {
         return NextResponse.json({ message: SIGNUP_ERROR_CODES.USER_ALREADY_EXISTS }, { status: 409 });
       }
 
       let user: { id: number };
       try {
-        user = await prisma.user.upsert({
-          where: { email: userEmail },
-          update: {
-            username: correctedUsername,
-            emailVerified: new Date(Date.now()),
-            identityProvider: IdentityProvider.CAL,
-            password: {
-              upsert: {
-                create: { hash: hashedPassword },
-                update: { hash: hashedPassword },
-              },
-            },
-            organizationId,
-          },
-          create: {
-            username: correctedUsername,
-            email: userEmail,
-            emailVerified: new Date(Date.now()),
-            identityProvider: IdentityProvider.CAL,
-            password: { create: { hash: hashedPassword } },
-            organizationId,
-          },
-          select: { id: true },
-        });
+        user = await userRepository.upsertForSignup({
+          email: userEmail,
+          username: correctedUsername,
+          hashedPassword,
+          organizationId,
+          emailVerified: new Date(Date.now()),
+          identityProvider: IdentityProvider.CAL
+        })
       } catch (error) {
         if (isPrismaError(error) && error.code === "P2002") {
           const target = String(error.meta?.target ?? "");
@@ -175,26 +159,16 @@ export default async function handler(body: Record<string, string>) {
     if (!isUsernameAvailable) {
       return NextResponse.json({ message: "A user exists with that username" }, { status: 409 });
     }
-    if (IS_PREMIUM_USERNAME_ENABLED) {
-      const checkUsername = await checkPremiumUsername(correctedUsername);
-      if (checkUsername.premium) {
-        return NextResponse.json(
-          { message: "Sign up from https://cal.com/signup to claim your premium username" },
-          { status: 422 }
-        );
-      }
-    }
-
     try {
-      await prisma.user.create({
-        data: {
-          username: correctedUsername,
-          email: userEmail,
-          password: { create: { hash: hashedPassword } },
-          identityProvider: IdentityProvider.CAL,
-        },
-        select: { id: true },
-      });
+      await userRepository.create({
+        username: correctedUsername,
+        email: userEmail,
+        hashedPassword,
+        organizationId: null,
+        creationSource: CreationSource.WEBAPP,
+        identityProvider: IdentityProvider.CAL,
+        locked: false
+      })
     } catch (error) {
       // Fallback for race conditions where user was created between our check and create
       if (isPrismaError(error) && error.code === "P2002") {
