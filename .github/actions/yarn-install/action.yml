@@ -27,6 +27,14 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node_version }}
+    # Self-hosted ARC runner images ship Node but no global yarn (GitHub-hosted and
+    # Blacksmith images do). Corepack provides the yarn shim; .yarnrc.yml yarnPath
+    # then pins the exact yarn 4 release from .yarn/releases.
+    - name: Enable corepack (yarn)
+      shell: bash
+      run: |
+        corepack enable
+        yarn --version
     - name: Expose yarn config as "$GITHUB_OUTPUT"
       id: yarn-config
       shell: bash
