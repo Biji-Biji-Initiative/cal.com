@@ -43,4 +43,13 @@ runs:
     - name: Yarn playwright install
       if: ${{ (inputs.skip-install-if-cache-hit != 'true' && steps.playwright-cache.outputs.cache-hit != 'true') || (inputs.skip-install-if-cache-hit == 'true' && steps.playwright-cache-check.outputs.cache-hit != 'true') }}
       shell: bash
-      run: yarn playwright install --with-deps
+      # --with-deps apt-installs system libraries through sudo. mereka-k8s-runners
+      # pods run with no_new_privs, so sudo is refused there; install the browser
+      # binaries only and rely on the runner image for system libraries.
+      run: |
+        if sudo -n true 2>/dev/null; then
+          yarn playwright install --with-deps
+        else
+          echo "sudo unavailable on this runner; installing Playwright browsers without system deps"
+          yarn playwright install
+        fi
