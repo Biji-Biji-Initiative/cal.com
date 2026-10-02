@@ -6,7 +6,7 @@ on:
 
 jobs:
   cleanup:
-    runs-on: mereka-k8s-runners
+    runs-on: mereka-k8s-untrusted-ci
     steps:
       - name: Check out code
         uses: actions/checkout@v4
