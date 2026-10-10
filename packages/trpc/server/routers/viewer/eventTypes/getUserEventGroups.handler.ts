@@ -1,3 +1,4 @@
+import { PermissionCheckService } from "@calcom/features/community-enterprise/authorization/PermissionCheckService";
 import { MembershipRepository } from "@calcom/features/membership/repositories/MembershipRepository";
 import { ProfileRepository } from "@calcom/features/profile/repositories/ProfileRepository";
 import { checkRateLimitAndThrowError } from "@calcom/lib/checkRateLimitAndThrowError";
@@ -10,13 +11,6 @@ import { TeamAccessUseCase } from "./teamAccessUseCase";
 import { EventGroupBuilder } from "./usecases/EventGroupBuilder";
 import { ProfilePermissionProcessor } from "./usecases/ProfilePermissionProcessor";
 import { EventTypeGroupFilter } from "./utils/EventTypeGroupFilter";
-
-class PermissionCheckService {
-  constructor(_prisma?: unknown) {}
-  async checkPermission(..._args: unknown[]) { return true; }
-  async hasPermission(..._args: unknown[]) { return true; }
-  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> { return []; }
-}
 
 type GetByViewerOptions = {
   ctx: {
