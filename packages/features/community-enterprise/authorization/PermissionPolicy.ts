@@ -97,17 +97,17 @@ export class PermissionPolicy {
     if (!this.isActive(snapshot, query.userId)) return [];
     const memberships = snapshot.memberships.filter((m) => this.isAccepted(m, query.userId));
     if (memberships.length === 0) return [];
-    const direct = await this.store.teams([...new Set(memberships.map((m) => m.teamId))]);
+    const direct = await this.store.teams(Array.from(new Set(memberships.map((m) => m.teamId))));
     const parentIds = direct
       .filter((team) => team.isOrganization && team.parentId === null)
       .filter((team) => memberships.some((m) => m.teamId === team.id && this.isBuiltinAdmin(m)))
       .map((team) => team.id);
     const children = parentIds.length ? await this.store.children(parentIds) : [];
-    const candidates = [...new Map([...direct, ...children].map((team) => [team.id, team])).values()];
+    const candidates = Array.from(new Map([...direct, ...children].map((team) => [team.id, team])).values());
     const missingParents = candidates
       .map((team) => team.parentId)
       .filter((id): id is number => id !== null && !candidates.some((team) => team.id === id));
-    const parents = missingParents.length ? await this.store.teams([...new Set(missingParents)]) : [];
+    const parents = missingParents.length ? await this.store.teams(Array.from(new Set(missingParents))) : [];
     const scopes = [...candidates, ...parents];
     if (query.orgId !== undefined) {
       const organization = scopes.find((scope) => scope.id === query.orgId);
