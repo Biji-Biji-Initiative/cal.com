@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "owner": "Gurpreet",
+  "programme": "Open-source enterprise calendar",
+  "production_status": "unchanged; candidate not promotable",
+  "tasks": [
+    {
+      "id": "CAL-01",
+      "title": "Inspect and classify reusable upstream/fork code",
+      "depends_on": [],
+      "status": "in_progress",
+      "acceptance_or_current_evidence": "18 permission stubs and retained organization/membership models inventoried; broader reuse probing remains"
+    },
+    {
+      "id": "CAL-02",
+      "title": "Assemble pinned candidate and migration compatibility",
+      "depends_on": [
+        "CAL-01"
+      ],
+      "status": "in_progress",
+      "acceptance_or_current_evidence": "MIT source candidate prepared; complete dependency-locked build and migration compatibility unproven"
+    },
+    {
+      "id": "CAL-03",
+      "title": "Shared organizational authorization",
+      "depends_on": [
+        "CAL-01"
+      ],
+      "status": "in_progress",
+      "acceptance_or_current_evidence": "First policy/adapter and inventoried callers implemented; delegated listing and remaining guards blocked"
+    },
+    {
+      "id": "CAL-04",
+      "title": "Native Authentik identity, SCIM and revocation",
+      "depends_on": [
+        "CAL-02",
+        "CAL-03"
+      ],
+      "status": "open",
+      "acceptance_or_current_evidence": "Same-session and bearer revocation within 60 seconds across replicas; explicit identity linking"
+    },
+    {
+      "id": "CAL-05",
+      "title": "Organization/team admin UI and scoped API v2",
+      "depends_on": [
+        "CAL-02",
+        "CAL-03"
+      ],
+      "status": "open",
+      "acceptance_or_current_evidence": "Routine administration without SQL; identical UI/API permissions; no cross-org access"
+    },
+    {
+      "id": "CAL-06",
+      "title": "Round-robin, collective and managed scheduling",
+      "depends_on": [
+        "CAL-03",
+        "CAL-05"
+      ],
+      "status": "open",
+      "acceptance_or_current_evidence": "Reuse existing engine; lifecycle, host eligibility and concurrency proof"
+    },
+    {
+      "id": "CAL-07",
+      "title": "Durable audit and reminders",
+      "depends_on": [
+        "CAL-03",
+        "CAL-06"
+      ],
+      "status": "open",
+      "acceptance_or_current_evidence": "Transactional event evidence; retries, cancellation, reschedule and ambiguous delivery"
+    },
+    {
+      "id": "CAL-08",
+      "title": "Integrated, restore and upstream-update acceptance",
+      "depends_on": [
+        "CAL-04",
+        "CAL-05",
+        "CAL-06",
+        "CAL-07"
+      ],
+      "status": "open",
+      "acceptance_or_current_evidence": "Exact images, schema, identity, privacy, replay and recovery evidence"
+    },
+    {
+      "id": "CAL-09",
+      "title": "Controlled production team pilot",
+      "depends_on": [
+        "CAL-08"
+      ],
+      "status": "open",
+      "acceptance_or_current_evidence": "One writer, existing links preserved, approved promotion and real bookings"
+    },
+    {
+      "id": "CAL-10",
+      "title": "Routing, reporting and broader rollout",
+      "depends_on": [
+        "CAL-09"
+      ],
+      "status": "open",
+      "acceptance_or_current_evidence": "Operational dashboards, scoped exports and routing fallbacks; then full graph acceptance"
+    }
+  ]
+}
