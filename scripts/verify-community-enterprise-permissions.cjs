@@ -9,10 +9,13 @@ const inventory = JSON.parse(
 );
 const inventoryOnly = process.argv.includes("--inventory-only");
 const allowed = "packages/features/community-enterprise/authorization/PermissionCheckService.ts";
-const importPath = "@calcom/features/community-enterprise/authorization/PermissionCheckService";
+const featurePath = "@calcom/features/community-enterprise/authorization/";
 const files = inventoryOnly
   ? inventory.permission_stub_files
-  : execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" })
+  : execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], {
+      cwd: root,
+      encoding: "utf8",
+    })
       .split("\0")
       .filter(
         (file) =>
@@ -29,16 +32,28 @@ for (const relative of new Set([...files, ...inventory.permission_stub_files])) 
     failures.push(`${relative}: missing`);
     continue;
   }
-  const text = fs.readFileSync(absolute, "utf8");
-  const source = ts.createSourceFile(relative, text, ts.ScriptTarget.Latest, true);
+  const source = ts.createSourceFile(
+    relative,
+    fs.readFileSync(absolute, "utf8"),
+    ts.ScriptTarget.Latest,
+    true
+  );
   if (source.parseDiagnostics.length) failures.push(`${relative}: TypeScript parse errors`);
-  if (inventory.permission_stub_files.includes(relative)) {
-    const connected = source.statements.some(
-      (n) => ts.isImportDeclaration(n) && n.moduleSpecifier.text === importPath
-    );
-    if (!connected) failures.push(`${relative}: disconnected from shared policy`);
-  }
+  const imports = new Map(
+    source.statements.filter(ts.isImportDeclaration).map((node) => [node.moduleSpecifier.text, node])
+  );
+  let constructsSnapshotPolicy = false;
   const visit = (node) => {
+    if (ts.isNewExpression(node) && node.expression.getText(source) === "PermissionPolicy") {
+      const store = node.arguments?.[0];
+      if (
+        store &&
+        ts.isNewExpression(store) &&
+        store.expression.getText(source) === "KyselyPermissionStore"
+      ) {
+        constructsSnapshotPolicy = true;
+      }
+    }
     if (ts.isClassDeclaration(node) && node.name?.text === "PermissionCheckService" && relative !== allowed) {
       failures.push(`${relative}: duplicate permission service`);
     }
@@ -58,12 +73,20 @@ for (const relative of new Set([...files, ...inventory.permission_stub_files])) 
     ts.forEachChild(node, visit);
   };
   visit(source);
+  if (inventory.permission_stub_files.includes(relative)) {
+    const connected =
+      imports.has(`${featurePath}PermissionCheckService`) ||
+      (imports.has(`${featurePath}PermissionPolicy`) &&
+        imports.has(`${featurePath}KyselyPermissionStore`) &&
+        constructsSnapshotPolicy);
+    if (!connected) failures.push(`${relative}: disconnected from shared policy`);
+  }
 }
 console.log(
-  `Scope: ${inventoryOnly ? "declared integration inventory only" : "all tracked non-test TypeScript"}`
+  `Scope: ${inventoryOnly ? "declared integration inventory only" : "tracked and added non-test TypeScript"}`
 );
 console.log(
-  `Inspected ${files.length} source files; connected inventory: ${inventory.permission_stub_files.length}`
+  `Inspected ${new Set(files).size} source files; connected inventory: ${inventory.permission_stub_files.length}`
 );
 if (failures.length) {
   console.error(failures.join("\n"));

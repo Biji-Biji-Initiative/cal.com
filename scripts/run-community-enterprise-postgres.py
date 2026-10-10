@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+"""Run booking isolation tests against a new private, disposable PostgreSQL."""
+from __future__ import annotations
+
+import argparse
+import json
+import shlex
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+from urllib.parse import quote
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--pg-bin", type=Path, help="Directory containing initdb and pg_ctl")
+    parser.add_argument("--scratch-root", type=Path, help="Parent for the disposable fixture")
+    parser.add_argument("--prisma-cli", type=Path, help="Explicit installed Prisma CLI; its version must match the repo pin")
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parent.parent
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        parser.error("Run as an unprivileged developer, never root")
+    pg_bin = args.pg_bin
+    if pg_bin is None:
+        executable = shutil.which("initdb")
+        if not executable:
+            parser.error("Pass --pg-bin pointing to an installed PostgreSQL binary directory")
+        pg_bin = Path(executable).parent
+    for name in ("initdb", "pg_ctl"):
+        if not (pg_bin / name).is_file():
+            parser.error(f"Missing PostgreSQL binary: {pg_bin / name}")
+    node = shutil.which("node")
+    if not node:
+        parser.error("Node.js is required")
+    dependency_roots = [root / "node_modules", root / "packages/prisma/node_modules"]
+    dependency_roots.extend(Path(value) for value in os.environ.get("NODE_PATH", "").split(os.pathsep) if value)
+    prisma = next((path / "prisma/build/index.js" for path in dependency_roots if (path / "prisma/build/index.js").is_file()), None)
+    prisma = args.prisma_cli or prisma
+    if prisma is None or not prisma.is_file():
+        parser.error("Install the repository dependencies before running database tests")
+    expected = json.loads((root / "packages/prisma/package.json").read_text())["dependencies"]["prisma"]
+    actual = json.loads((prisma.resolve().parent.parent / "package.json").read_text())["version"]
+    if actual != expected:
+        parser.error(f"Prisma {actual} does not match repository pin {expected}")
+    print(f"Schema CLI: Prisma {actual} at {prisma}", flush=True)
+    environment = {name: os.environ[name] for name in ("PATH", "HOME", "USER", "LANG", "NODE_PATH") if name in os.environ}
+    environment["PRISMA_GENERATE_SKIP_AUTOINSTALL"] = "true"
+
+    with tempfile.TemporaryDirectory(prefix="cal-enterprise-", dir=args.scratch_root) as directory:
+        fixture = Path(directory)
+        pgdata, socket = fixture / "postgres", fixture / "pgsocket"
+        socket.mkdir(mode=0o700)
+        started = False
+        try:
+            subprocess.run([str(pg_bin / "initdb"), "-D", str(pgdata), "-U", "cal_enterprise_test",
+                            "--auth-local=trust", "--auth-host=reject", "--no-locale", "-E", "UTF8"],
+                           check=True, env=environment, timeout=60)
+            options = shlex.join(["-k", str(socket), "-p", "55439", "-c", "listen_addresses=", "-c", "max_connections=12", "-c", "shared_buffers=32MB", "-c", "statement_timeout=15000"])
+            subprocess.run([str(pg_bin / "pg_ctl"), "-D", str(pgdata), "-l", str(fixture / "postgres.log"),
+                            "-o", options, "-w", "-t", "30", "start"], check=True, env=environment, timeout=40)
+            started = True
+            database_url = "postgresql://cal_enterprise_test@localhost:55439/postgres?host=" + quote(str(socket), safe="")
+            environment.update(DATABASE_URL=database_url, DATABASE_DIRECT_URL=database_url,
+                               CAL_ENTERPRISE_TEST_SOCKET=str(socket), CAL_ENTERPRISE_TEST_PGDATA=str(pgdata))
+            # This creates a NEW test schema. It is deliberately not a migration,
+            # seed, restore, or connection to any configured application database.
+            subprocess.run([node, str(prisma), "db", "push", "--schema", str(root / "packages/prisma/schema.prisma"),
+                            "--skip-generate"], cwd=root, env=environment, check=True, timeout=180)
+            result = subprocess.run([node, "--test", "--test-reporter=spec",
+                                     "tests/community-enterprise/postgres-bookings.test.cjs"],
+                                    cwd=root, env=environment, timeout=300)
+            return result.returncode
+        finally:
+            if started:
+                subprocess.run([str(pg_bin / "pg_ctl"), "-D", str(pgdata), "-w", "-t", "30", "-m", "fast", "stop"],
+                               check=True, env=environment, timeout=40)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

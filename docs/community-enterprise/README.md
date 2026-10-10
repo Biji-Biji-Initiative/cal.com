@@ -1,5 +1,36 @@
 # Open-source enterprise calendar — implementation record
 
+## Latest slice: delegated booking visibility (2026-10-11)
+
+The booking-list safety hold described in the first-slice historical record below
+is now resolved for the shared `getBookings` path, which web and API v2 reuse.
+It requests `booking.readTeamBookings`, not the broad legacy `booking.read` or
+`booking.readOrgBookings` names; those broad names remain denied elsewhere.
+Delegation follows the actual event's team, including managed children with no
+contradictory explicit owner. A coworker's user ID or email is never a visibility
+grant. Filters only narrow authorized rows; no-match filters return no rows.
+
+Permissions, rows, totals, recurrence and reschedule metadata use one read-only
+repeatable-read PostgreSQL transaction. Role changes affect the next request;
+in-flight reads finish on their original committed snapshot. Hidden seated
+attendees are removed from both attendee rows and seat-reference payloads.
+This is not a claim of IdP revocation, identity verification or API-scope parity.
+
+40 tests execute the production query and policy against real PostgreSQL and the
+complete target schema; all pass. All 65 previous isolated tests pass. The AST
+guard now passes across 4,537 source files, not just the 18-file inventory. A
+deliberate broad-visibility mutation makes 21 database tests fail. Reproduction,
+limitations and install failure evidence are in
+[VALIDATION-2026-10-11.md](VALIDATION-2026-10-11.md).
+
+The candidate remains **not promotable**. The fresh immutable dependency install
+reached linking but exceeded its bounded run; complete web/API build and full
+type checks remain open. Native Authentik OIDC/SCIM, UI, remaining API permissions,
+team booking acceptance and production migration/restore are still to be built
+and proven. Existing main and runtime remain unchanged.
+
+## Historical first-slice record
+
 Owner direction: self-hosted, fully open source, Authentik, organizations, teams,
 roles, API v2 and team scheduling; keep consuming Cal.diy community updates.
 The destination is the existing BBI application repository plus its existing

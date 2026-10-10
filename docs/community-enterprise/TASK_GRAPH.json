@@ -18,7 +18,7 @@
         "CAL-01"
       ],
       "status": "in_progress",
-      "acceptance_or_current_evidence": "MIT source candidate prepared; complete dependency-locked build and migration compatibility unproven"
+      "acceptance_or_current_evidence": "Isolated full candidate checked out; full target schema and generated client/types succeed on disposable PostgreSQL 18. Immutable install resolved/fetched dependencies but linking exceeded its 600-second bound. Complete dependency-locked build, legacy migration and restore remain unproven."
     },
     {
       "id": "CAL-03",
@@ -27,7 +27,7 @@
         "CAL-01"
       ],
       "status": "in_progress",
-      "acceptance_or_current_evidence": "First policy/adapter and inventoried callers implemented; delegated listing and remaining guards blocked"
+      "acceptance_or_current_evidence": "Shared policy and 18 callers implemented. Delegated list now uses safe event/team resource ownership within one read-only repeatable-read snapshot; 40 real-PostgreSQL listing tests and 65 isolated tests pass. Whole-source AST guard passes on 4537 files. Remaining API/route breadth and mutation atomicity still open."
     },
     {
       "id": "CAL-04",
@@ -99,5 +99,6 @@
       "status": "open",
       "acceptance_or_current_evidence": "Operational dashboards, scoped exports and routing fallbacks; then full graph acceptance"
     }
-  ]
+  ],
+  "latest_evidence": "docs/community-enterprise/VALIDATION-2026-10-11.md"
 }
