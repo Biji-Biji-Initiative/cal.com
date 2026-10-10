@@ -7,6 +7,9 @@ import { createEventPbacProcedure, ensureEmailOrPhoneNumberIsPresent } from "../
 
 describe("createEventPbacProcedure", () => {
   const mockPrisma = {
+    user: { findUnique: vi.fn() },
+    membership: { findMany: vi.fn() },
+    team: { findMany: vi.fn() },
     eventType: {
       findUnique: vi.fn(),
     },
@@ -28,6 +31,17 @@ describe("createEventPbacProcedure", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPrisma.user.findUnique = vi.fn().mockResolvedValue({ id: 1, locked: false });
+    mockPrisma.membership.findMany = vi
+      .fn()
+      .mockResolvedValue([
+        { userId: 1, teamId: 10, accepted: true, role: "OWNER", customRoleId: null, customRole: null },
+      ]);
+    mockPrisma.team.findMany = vi
+      .fn()
+      .mockImplementation(async ({ where }: { where: { id: { in: number[] } } }) =>
+        [{ id: 10, parentId: null, isOrganization: false }].filter((team) => where.id.in.includes(team.id))
+      );
   });
 
   describe("personal events", () => {
@@ -202,7 +216,19 @@ describe("createEventPbacProcedure", () => {
       const procedure = createEventPbacProcedure("eventType.update");
       const middleware = getMiddleware(procedure);
 
-      // PermissionCheckService stub always returns true, so org admin access is always granted
+      mockPrisma.membership.findMany = vi
+        .fn()
+        .mockResolvedValue([
+          { userId: 1, teamId: 100, accepted: true, role: "OWNER", customRoleId: null, customRole: null },
+        ]);
+      mockPrisma.team.findMany = vi
+        .fn()
+        .mockImplementation(async ({ where }: { where: { id: { in: number[] } } }) =>
+          [
+            { id: 10, parentId: 100, isOrganization: false },
+            { id: 100, parentId: null, isOrganization: true },
+          ].filter((team) => where.id.in.includes(team.id))
+        );
       await expect(
         middleware({
           ctx: mockCtx,
@@ -419,7 +445,6 @@ describe("createEventPbacProcedure", () => {
       const procedure = createEventPbacProcedure("eventType.delete");
       const middleware = getMiddleware(procedure);
 
-      // PermissionCheckService stub always returns true
       await expect(
         middleware({
           ctx: mockCtx,
@@ -439,7 +464,6 @@ describe("createEventPbacProcedure", () => {
       const procedure = createEventPbacProcedure("eventType.create", [MembershipRole.OWNER]);
       const middleware = getMiddleware(procedure);
 
-      // PermissionCheckService stub always returns true
       await expect(
         middleware({
           ctx: mockCtx,

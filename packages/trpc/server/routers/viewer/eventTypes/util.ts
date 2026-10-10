@@ -1,3 +1,4 @@
+import { PermissionCheckService } from "@calcom/features/community-enterprise/authorization/PermissionCheckService";
 import type { EventTypeRepository } from "@calcom/features/eventtypes/repositories/eventTypeRepository";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import { markdownToSafeHTML } from "@calcom/lib/markdownToSafeHTML";
@@ -12,12 +13,6 @@ import authedProcedure from "../../../procedures/authedProcedure";
 import type { TUpdateInputSchema } from "./types";
 
 type PermissionString = string;
-class PermissionCheckService {
-  constructor(_prisma?: unknown) {}
-  async checkPermission(..._args: unknown[]) { return true; }
-  async hasPermission(..._args: unknown[]) { return true; }
-  async getTeamIdsWithPermission(..._args: unknown[]): Promise<number[]> { return []; }
-}
 
 type EventType = Awaited<ReturnType<EventTypeRepository["findAllByUpId"]>>[number];
 
@@ -25,14 +20,21 @@ export const eventOwnerProcedure = authedProcedure
   .input(
     z
       .object({
-        id: z.number().optional(),
-        eventTypeId: z.number().optional(),
-        users: z.array(z.number()).optional().default([]),
+        id: z.number().int().positive().optional(),
+        eventTypeId: z.number().int().positive().optional(),
+        users: z.array(z.number().int().positive()).optional().default([]),
       })
       .refine((data) => data.id !== undefined || data.eventTypeId !== undefined, {
         message: "At least one of 'id' or 'eventTypeId' must be present",
         path: ["id", "eventTypeId"],
       })
+      .refine(
+        (data) => data.id === undefined || data.eventTypeId === undefined || data.id === data.eventTypeId,
+        {
+          message: "Conflicting event identifiers",
+          path: ["id", "eventTypeId"],
+        }
+      )
   )
   .use(async ({ ctx, input, next }) => {
     const id = input.eventTypeId ?? input.id;
@@ -48,6 +50,7 @@ export const eventOwnerProcedure = authedProcedure
         team: {
           select: {
             members: {
+              where: { accepted: true, user: { locked: false } },
               select: {
                 userId: true,
                 role: true,
@@ -62,15 +65,14 @@ export const eventOwnerProcedure = authedProcedure
       throw new TRPCError({ code: "NOT_FOUND" });
     }
 
-    const isAuthorized = (() => {
-      if (event.team) {
-        const teamMember = event.team.members.find((member) => member.userId === ctx.user.id);
-        const isOwnerOrAdmin = teamMember?.role === "ADMIN" || teamMember?.role === "OWNER";
-
-        return isOwnerOrAdmin;
-      }
-      return event.userId === ctx.user.id || event.users.find((user) => user.id === ctx.user.id);
-    })();
+    const isAuthorized = event.teamId
+      ? await new PermissionCheckService(ctx.prisma).checkPermission({
+          userId: ctx.user.id,
+          teamId: event.teamId,
+          permission: "eventType.manage",
+          fallbackRoles: ["ADMIN", "OWNER"],
+        })
+      : event.userId === ctx.user.id || event.users.some((user) => user.id === ctx.user.id);
 
     if (!isAuthorized) {
       throw new TRPCError({ code: "FORBIDDEN" });
@@ -108,14 +110,21 @@ export const createEventPbacProcedure = (
     .input(
       z
         .object({
-          id: z.number().optional(),
-          eventTypeId: z.number().optional(),
-          users: z.array(z.number()).optional(),
+          id: z.number().int().positive().optional(),
+          eventTypeId: z.number().int().positive().optional(),
+          users: z.array(z.number().int().positive()).optional(),
         })
         .refine((data) => data.id !== undefined || data.eventTypeId !== undefined, {
           message: "At least one of 'id' or 'eventTypeId' must be present",
           path: ["id", "eventTypeId"],
         })
+        .refine(
+          (data) => data.id === undefined || data.eventTypeId === undefined || data.id === data.eventTypeId,
+          {
+            message: "Conflicting event identifiers",
+            path: ["id", "eventTypeId"],
+          }
+        )
     )
     .use(async ({ ctx, input, next }) => {
       const id = input.eventTypeId ?? input.id;
@@ -134,6 +143,7 @@ export const createEventPbacProcedure = (
           team: {
             select: {
               members: {
+                where: { accepted: true, user: { locked: false } },
                 select: {
                   userId: true,
                 },
@@ -158,7 +168,7 @@ export const createEventPbacProcedure = (
         }
       } else {
         // Team event - check PBAC/fallback permissions
-        const permissionCheckService = new PermissionCheckService();
+        const permissionCheckService = new PermissionCheckService(ctx.prisma);
         const hasPermission = await permissionCheckService.checkPermission({
           userId: ctx.user.id,
           teamId: event.teamId,
