@@ -1,0 +1,28 @@
+{
+  "upstream_sha": "54343aa685ae8f33159d2f485ec4a57bad5c574a",
+  "permission_stub_files": [
+    "packages/trpc/server/routers/viewer/ooo/outOfOffice.utils.ts",
+    "packages/trpc/server/procedures/pbacProcedures.ts",
+    "packages/trpc/server/routers/viewer/eventTypes/teamAccessUseCase.ts",
+    "packages/trpc/server/routers/viewer/me/checkForInvalidAppCredentials.ts",
+    "packages/trpc/server/routers/viewer/me/get.handler.ts",
+    "packages/features/di/watchlist/containers/watchlist.ts",
+    "packages/features/bookings/services/BookingAccessService.ts",
+    "packages/trpc/server/routers/viewer/eventTypes/util.ts",
+    "packages/features/eventtypes/lib/getPublicEvent.ts",
+    "packages/trpc/server/routers/viewer/eventTypes/getUserEventGroups.handler.ts",
+    "packages/features/eventtypes/lib/getEventTypesByViewer.ts",
+    "packages/features/watchlist/lib/service/OrganizationWatchlistQueryService.ts",
+    "packages/trpc/server/routers/viewer/eventTypes/heavy/create.handler.ts",
+    "packages/trpc/server/routers/viewer/bookings/get.handler.ts",
+    "packages/features/webhooks/lib/repository/WebhookRepository.ts",
+    "packages/trpc/server/routers/loggedInViewer/teamsAndUserProfilesQuery.handler.ts",
+    "packages/features/watchlist/lib/service/OrganizationWatchlistOperationsService.ts",
+    "packages/trpc/server/routers/viewer/eventTypes/getActiveOnOptions.handler.ts"
+  ],
+  "fork_base_sha": "e01d0d5f8cfec4dd910c2aae486b4857f6b8a256",
+  "upstream_repository": "calcom/cal.diy",
+  "license": "MIT",
+  "review_date": "2026-10-10",
+  "scope": "18 inline PermissionCheckService definitions; not a full enterprise/security audit"
+}
