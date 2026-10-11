@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Run booking isolation tests against a new private, disposable PostgreSQL."""
+"""Run enterprise tests against a new private, disposable PostgreSQL."""
 from __future__ import annotations
 
 import argparse
@@ -19,6 +19,7 @@ def main() -> int:
     parser.add_argument("--pg-bin", type=Path, help="Directory containing initdb and pg_ctl")
     parser.add_argument("--scratch-root", type=Path, help="Parent for the disposable fixture")
     parser.add_argument("--prisma-cli", type=Path, help="Explicit installed Prisma CLI; its version must match the repo pin")
+    parser.add_argument("--suite", choices=("bookings", "built-web"), default="bookings")
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
     if hasattr(os, "geteuid") and os.geteuid() == 0:
@@ -70,7 +71,7 @@ def main() -> int:
             subprocess.run([node, str(prisma), "db", "push", "--schema", str(root / "packages/prisma/schema.prisma"),
                             "--skip-generate"], cwd=root, env=environment, check=True, timeout=180)
             result = subprocess.run([node, "--test", "--test-reporter=spec",
-                                     "tests/community-enterprise/postgres-bookings.test.cjs"],
+                                     ("tests/community-enterprise/postgres-bookings.test.cjs" if args.suite == "bookings" else "tests/community-enterprise/built-web.test.cjs")],
                                     cwd=root, env=environment, timeout=300)
             return result.returncode
         finally:
