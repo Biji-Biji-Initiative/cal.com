@@ -2,6 +2,10 @@
   "$schema": "https://turborepo.org/schema.json",
   "globalDependencies": ["yarn.lock"],
   "globalEnv": [
+    "CAL_AUTHENTIK_ENABLED",
+    "CAL_AUTHENTIK_ISSUER",
+    "CAL_AUTHENTIK_CLIENT_ID",
+    "CAL_AUTHENTIK_CLIENT_SECRET",
     "ALLOWED_HOSTNAMES",
     "ANALYZE",
     "AWAITING_PAYMENT_EMAIL_DELAY_MINUTES",
