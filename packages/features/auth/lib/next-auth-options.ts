@@ -8,6 +8,14 @@ import {
   OUTLOOK_CLIENT_SECRET,
   OUTLOOK_LOGIN_ENABLED,
 } from "@calcom/features/auth/lib/outlook";
+import {
+  createAuthentikProvider,
+  readAuthentikConfig,
+} from "@calcom/features/community-enterprise/identity/AuthentikConfig";
+import {
+  authorizeAuthentikSignIn,
+  refreshAuthentikToken,
+} from "@calcom/features/community-enterprise/identity/AuthentikIdentity";
 import { CredentialRepository } from "@calcom/features/credentials/repositories/CredentialRepository";
 import { buildCredentialCreateData } from "@calcom/features/credentials/services/CredentialDataService";
 import { ProfileRepository } from "@calcom/features/profile/repositories/ProfileRepository";
@@ -301,6 +309,8 @@ export const CalComCredentialsProvider = CredentialsProvider({
 });
 
 const providers: Provider[] = [CalComCredentialsProvider];
+const authentikConfig = readAuthentikConfig(process.env);
+if (authentikConfig) providers.push(createAuthentikProvider(authentikConfig));
 type SamlIdpUser = {
   id: number;
   userId: number;
@@ -427,6 +437,19 @@ export const getOptions = ({
       // Available only in the first call once the user signs in. Not available in subsequent calls
       account,
     }) {
+      if (account?.provider === "authentik" || token.authentik !== undefined) {
+        return refreshAuthentikToken(
+          prisma,
+          authentikConfig,
+          {
+            token,
+            account,
+            user,
+            requestedUpId: trigger === "update" ? session?.upId : undefined,
+          },
+          WEBAPP_URL
+        );
+      }
       log.debug("callbacks:jwt", safeStringify({ token, user, account, trigger, session }));
       // The data available in 'session' depends on what data was supplied in update method call of session
       if (trigger === "update") {
@@ -798,6 +821,9 @@ export const getOptions = ({
         account,
       } = params;
 
+      if (account?.provider === "authentik") {
+        return authorizeAuthentikSignIn(prisma, authentikConfig, { user, account, profile });
+      }
       log.debug("callbacks:signin", safeStringify(params));
 
       if (account?.provider === "email") {

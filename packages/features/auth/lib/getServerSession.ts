@@ -1,30 +1,34 @@
+import process from "node:process";
+import { readAuthentikConfig } from "@calcom/features/community-enterprise/identity/AuthentikConfig";
+import { refreshAuthentikToken } from "@calcom/features/community-enterprise/identity/AuthentikIdentity";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
+import { WEBAPP_URL } from "@calcom/lib/constants";
 import { getUserAvatarUrl } from "@calcom/lib/getAvatarUrl";
 import logger from "@calcom/lib/logger";
-import { safeStringify } from "@calcom/lib/safeStringify";
 import prisma from "@calcom/prisma";
-import { LRUCache } from "lru-cache";
 import type { GetServerSidePropsContext, NextApiRequest } from "next";
 import type { AuthOptions, Session } from "next-auth";
 import { getToken } from "next-auth/jwt";
 
 class LicenseKeySingleton {
-  static async getInstance(..._args: unknown[]) { return new LicenseKeySingleton(); }
-  async checkLicense() { return true; }
-  async validateLicenseKey() { return true; }
+  static async getInstance(..._args: unknown[]) {
+    return new LicenseKeySingleton();
+  }
+  async checkLicense() {
+    return true;
+  }
+  async validateLicenseKey() {
+    return true;
+  }
 }
 class DeploymentRepository {
   constructor(_prisma?: unknown) {}
-  async findFirst(..._args: unknown[]) { return null; }
+  async findFirst(..._args: unknown[]) {
+    return null;
+  }
 }
 
 const log = logger.getSubLogger({ prefix: ["getServerSession"] });
-/**
- * Stores the session in memory using the stringified token as the key.
- *
- */
-const CACHE = new LRUCache<string, Session>({ max: 1000 });
-
 /**
  * This is a slimmed down version of the `getServerSession` function from
  * `next-auth`.
@@ -42,23 +46,22 @@ export async function getServerSession(options: {
 }) {
   const { req, authOptions: { secret } = {} } = options;
 
-  const token = await getToken({
+  let token = await getToken({
     req,
     secret,
   });
 
-  log.debug("Getting server session", safeStringify({ token }));
+  if (token?.authentik !== undefined) {
+    try {
+      token = await refreshAuthentikToken(prisma, readAuthentikConfig(process.env), { token }, WEBAPP_URL);
+    } catch {
+      return null;
+    }
+  }
 
   if (!token || !token.email || !token.sub) {
     log.debug("Couldn't get token");
     return null;
-  }
-
-  const cachedSession = CACHE.get(JSON.stringify(token));
-
-  if (cachedSession) {
-    log.debug("Returning cached session", safeStringify(cachedSession));
-    return cachedSession;
   }
 
   const userId = token.sub ? Number(token.sub) : null;
@@ -72,7 +75,7 @@ export async function getServerSession(options: {
     where: { id: userId },
   });
 
-  if (!userFromDb) {
+  if (!userFromDb || userFromDb.locked) {
     log.warn("No user found for valid token", { userId });
     return null;
   }
@@ -144,8 +147,6 @@ export async function getServerSession(options: {
     }
   }
 
-  CACHE.set(JSON.stringify(token), session);
-
-  log.debug("Returned session", safeStringify(session));
+  log.debug("Returned session", { userId: session.user.id });
   return session;
 }
