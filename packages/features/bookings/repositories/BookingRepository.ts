@@ -75,7 +75,6 @@ export type ManagedEventCancellationResult = {
   status: BookingStatus;
 };
 
-
 type TeamBookingsParamsBase = {
   user: { id: number; email: string };
   teamId: number;
@@ -484,6 +483,7 @@ export class BookingRepository implements IBookingRepository {
         uid: bookingUid,
       },
       select: {
+        id: true,
         userId: true,
         user: {
           select: {
@@ -532,6 +532,7 @@ export class BookingRepository implements IBookingRepository {
         id: bookingId,
       },
       select: {
+        id: true,
         userId: true,
         user: {
           select: {

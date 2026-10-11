@@ -660,3 +660,32 @@ test("organization filter must name an actual organization", async () => {
     []
   );
 });
+
+for (const method of ["findByUidIncludeEventType", "findByIdIncludeEventType"]) {
+  test(`production repository ${method} selects the ID required by access validation`, async () => {
+    const source = read("packages/features/bookings/repositories/BookingRepository.ts");
+    const ast = ts.createSourceFile("repository.ts", source, ts.ScriptTarget.Latest, true);
+    const declaration = ast.statements.find(
+      (node) => ts.isClassDeclaration(node) && node.name?.text === "BookingRepository"
+    );
+    const member = declaration.members.find(
+      (node) => ts.isMethodDeclaration(node) && node.name.getText(ast) === method
+    );
+    assert.ok(member);
+    const { Repository } = compile(
+      `export class Repository { constructor(private prismaClient: unknown) {} ${member.getText(ast)} }`
+    );
+    let selected;
+    const repository = new Repository({
+      booking: {
+        findUnique: async (query) => {
+          selected = query;
+          return { id: 77 };
+        },
+      },
+    });
+    const result = await repository[method]({ bookingUid: "fixture-booking", bookingId: 77 });
+    assert.equal(selected.select.id, true);
+    assert.equal(result.id, 77);
+  });
+}

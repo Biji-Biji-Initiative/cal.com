@@ -431,7 +431,13 @@ async function getBookingsInSnapshot({
     pending: "PENDING",
     awaiting_host: "AWAITING_HOST",
   } as const;
-  const recurringInfo = seriesIds.map((id) => {
+  // Preserve the established nullable public contract consumed by the booking UI.
+  const recurringInfo: {
+    recurringEventId: string | null;
+    count: number;
+    firstDate: Date | null;
+    bookings: { [key: string]: Date[] };
+  }[] = seriesIds.map((id) => {
     const rows = seriesBookings.filter((row) => row.recurringEventId === id);
     const bookings: Record<BookingStatus, Date[]> = {
       ACCEPTED: [],
