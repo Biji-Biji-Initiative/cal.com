@@ -1,104 +1,1034 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "owner": "Gurpreet",
   "programme": "Open-source enterprise calendar",
+  "decision_date": "2026-10-12",
+  "goal": "One self-hosted fully open-source enterprise calendar, native Authentik, organizations/teams/roles/scoped APIs, team scheduling, audit/reminders, routing/reporting and repeatable community updates.",
   "production_status": "unchanged; candidate not promotable",
+  "tracking": {
+    "canonical_source": "docs/community-enterprise/TASK_GRAPH.json",
+    "handover_issue": 78,
+    "native_tracker": {
+      "backend": "Beads",
+      "status": "blocked",
+      "observed_schema": 5,
+      "required_schema": 17,
+      "migration_plan_result": "Installed reviewed migration supports only 13..16 to 17; source 5 rejected. No unsupported migration or reset performed."
+    },
+    "rule": "Keep these stable CAL IDs. Reconcile once into the existing tracker after supported recovery; do not create another tracker."
+  },
+  "execution": {
+    "max_concurrent_agents": 4,
+    "integration_wip": 1,
+    "lanes": [
+      "access",
+      "coordination",
+      "identity",
+      "integration",
+      "product",
+      "scheduling"
+    ],
+    "rule": "One build/integration owner; other work is disjoint. Do not claim workers are dispatched without actual registration and evidence.",
+    "ready_command": "node scripts/verify-community-enterprise-task-graph.cjs --ready",
+    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task\u2019s own required level.",
+    "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
+    "focus_order": [
+      "CAL-02.BUILD",
+      "CAL-02.PREVIEW",
+      "CAL-04.LINK",
+      "CAL-05.CORE",
+      "CAL-06.REUSE"
+    ],
+    "priority_rule": "0 means the next runnable journey, 1 enabling/release work, 2 later full-rollout work. Dependencies and evidence gates always take precedence."
+  },
+  "milestones": [
+    {
+      "id": "M1",
+      "title": "Runnable preview staff-to-invitee journey",
+      "requires": [
+        "CAL-06.JOURNEY"
+      ],
+      "production_authorization": false
+    },
+    {
+      "id": "M2",
+      "title": "Team-complete core enterprise pilot",
+      "requires": [
+        "CAL-09.PILOT"
+      ],
+      "production_authorization": "Only through existing release acceptance and GitOps lane"
+    },
+    {
+      "id": "M3",
+      "title": "Full enterprise rollout including routing/reporting",
+      "requires": [
+        "CAL-10.ROLLOUT"
+      ],
+      "production_authorization": "Same existing lane, no implicit promotion"
+    }
+  ],
+  "recalibration": [
+    "Do not spend another tranche on broad permission refactoring without advancing a runnable journey.",
+    "CAL-06 engine proof no longer waits for all CAL-05 administration.",
+    "Migration inventory begins early; audit is not postponed until after all booking work.",
+    "SCIM and the 60-second IdP requirement remain production prerequisites, not prerequisites to a synthetic OIDC/booking proof.",
+    "Routing/reporting source work does not wait for production to be running.",
+    "A completed source test is not installed, browser, real-IdP, runtime or release acceptance.",
+    "Web preview and API v2 build are separate tasks: the first staff booking does not wait for API packaging, but team production acceptance does."
+  ],
   "tasks": [
     {
       "id": "CAL-01",
+      "kind": "epic",
       "title": "Inspect and classify reusable upstream/fork code",
-      "depends_on": [],
-      "status": "in_progress",
-      "acceptance_or_current_evidence": "18 permission stubs and retained organization/membership models inventoried; broader reuse probing remains"
+      "state": "in_progress",
+      "requires": [],
+      "children": [
+        "CAL-01.REUSE",
+        "CAL-01.TRACKER"
+      ],
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
     },
     {
       "id": "CAL-02",
+      "kind": "epic",
       "title": "Assemble pinned candidate and migration compatibility",
-      "depends_on": [
-        "CAL-01"
+      "state": "in_progress",
+      "requires": [],
+      "children": [
+        "CAL-02.INSTALL",
+        "CAL-02.BUILD",
+        "CAL-02.API",
+        "CAL-02.PREVIEW"
       ],
-      "status": "in_progress",
-      "acceptance_or_current_evidence": "Isolated full candidate checked out; full target schema and generated client/types succeed on disposable PostgreSQL 18. Immutable install resolved/fetched dependencies but linking exceeded its 600-second bound. Complete dependency-locked build, legacy migration and restore remain unproven."
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
     },
     {
       "id": "CAL-03",
+      "kind": "epic",
       "title": "Shared organizational authorization",
-      "depends_on": [
-        "CAL-01"
+      "state": "in_progress",
+      "requires": [],
+      "children": [
+        "CAL-03.POLICY",
+        "CAL-03.LIST",
+        "CAL-03.ROUTES"
       ],
-      "status": "in_progress",
-      "acceptance_or_current_evidence": "Shared policy and 18 callers implemented. Delegated list now uses safe event/team resource ownership within one read-only repeatable-read snapshot; 40 real-PostgreSQL listing tests and 65 isolated tests pass. Whole-source AST guard passes on 4537 files. Remaining API/route breadth and mutation atomicity still open."
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
     },
     {
       "id": "CAL-04",
+      "kind": "epic",
       "title": "Native Authentik identity, SCIM and revocation",
-      "depends_on": [
-        "CAL-02",
-        "CAL-03"
+      "state": "in_progress",
+      "requires": [],
+      "children": [
+        "CAL-04.OIDC",
+        "CAL-04.SESSION",
+        "CAL-04.LINK",
+        "CAL-04.SCIM",
+        "CAL-04.REVOCATION"
       ],
-      "status": "open",
-      "acceptance_or_current_evidence": "Same-session and bearer revocation within 60 seconds across replicas; explicit identity linking"
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
     },
     {
       "id": "CAL-05",
+      "kind": "epic",
       "title": "Organization/team admin UI and scoped API v2",
-      "depends_on": [
-        "CAL-02",
-        "CAL-03"
+      "state": "open",
+      "requires": [],
+      "children": [
+        "CAL-05.CORE",
+        "CAL-05.UI",
+        "CAL-05.API"
       ],
-      "status": "open",
-      "acceptance_or_current_evidence": "Routine administration without SQL; identical UI/API permissions; no cross-org access"
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
     },
     {
       "id": "CAL-06",
+      "kind": "epic",
       "title": "Round-robin, collective and managed scheduling",
-      "depends_on": [
-        "CAL-03",
-        "CAL-05"
+      "state": "open",
+      "requires": [],
+      "children": [
+        "CAL-06.REUSE",
+        "CAL-06.JOURNEY"
       ],
-      "status": "open",
-      "acceptance_or_current_evidence": "Reuse existing engine; lifecycle, host eligibility and concurrency proof"
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
     },
     {
       "id": "CAL-07",
+      "kind": "epic",
       "title": "Durable audit and reminders",
-      "depends_on": [
-        "CAL-03",
-        "CAL-06"
+      "state": "open",
+      "requires": [],
+      "children": [
+        "CAL-07.AUDIT",
+        "CAL-07.REMINDERS"
       ],
-      "status": "open",
-      "acceptance_or_current_evidence": "Transactional event evidence; retries, cancellation, reschedule and ambiguous delivery"
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
     },
     {
       "id": "CAL-08",
+      "kind": "epic",
       "title": "Integrated, restore and upstream-update acceptance",
-      "depends_on": [
-        "CAL-04",
-        "CAL-05",
-        "CAL-06",
-        "CAL-07"
+      "state": "open",
+      "requires": [],
+      "children": [
+        "CAL-08.BASELINE",
+        "CAL-08.MIGRATE",
+        "CAL-08.UPDATE"
       ],
-      "status": "open",
-      "acceptance_or_current_evidence": "Exact images, schema, identity, privacy, replay and recovery evidence"
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
     },
     {
       "id": "CAL-09",
+      "kind": "epic",
       "title": "Controlled production team pilot",
-      "depends_on": [
-        "CAL-08"
+      "state": "open",
+      "requires": [],
+      "children": [
+        "CAL-09.ACCEPT",
+        "CAL-09.PILOT"
       ],
-      "status": "open",
-      "acceptance_or_current_evidence": "One writer, existing links preserved, approved promotion and real bookings"
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
     },
     {
       "id": "CAL-10",
+      "kind": "epic",
       "title": "Routing, reporting and broader rollout",
-      "depends_on": [
-        "CAL-09"
+      "state": "open",
+      "requires": [],
+      "children": [
+        "CAL-10.ROUTING",
+        "CAL-10.REPORTS",
+        "CAL-10.ROLLOUT"
       ],
-      "status": "open",
-      "acceptance_or_current_evidence": "Operational dashboards, scoped exports and routing fallbacks; then full graph acceptance"
+      "completion_rule": "Every child accepted at its specified level; never infer deployment from source evidence."
+    },
+    {
+      "id": "CAL-01.REUSE",
+      "parent": "CAL-01",
+      "kind": "task",
+      "title": "Reconcile MIT baseline and the actual BBI application/deployment delta",
+      "state": "in_progress",
+      "requires": [],
+      "lane": "integration",
+      "owner_role": "commander",
+      "owned_paths": [
+        "docs/community-enterprise",
+        "packages/lib/constants.ts"
+      ],
+      "acceptance": [
+        "Classify each carried change as retained, obsolete, replaced or unresolved with exact source/license provenance.",
+        "Keep existing domains, database identities and encrypted credentials; no new tenant model or copied commercial modules."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-01.TRACKER",
+      "parent": "CAL-01",
+      "kind": "task",
+      "title": "Recover the existing legacy Beads database through a supported migration",
+      "state": "blocked",
+      "requires": [],
+      "lane": "coordination",
+      "owner_role": "tracker maintainer",
+      "owned_paths": [
+        ".beads"
+      ],
+      "acceptance": [
+        "Back up and inspect schema 5 without writes; supported migration plan, content comparison and rollback before applying.",
+        "Import these stable CAL IDs once, preserving existing records; no fresh competing database."
+      ],
+      "evidence": [],
+      "required_for_team_release": false,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-02.INSTALL",
+      "parent": "CAL-02",
+      "kind": "task",
+      "title": "Complete immutable candidate dependency installation",
+      "state": "source_proven",
+      "requires": [],
+      "lane": "integration",
+      "owner_role": "build owner",
+      "owned_paths": [
+        "package.json",
+        "yarn.lock"
+      ],
+      "acceptance": [
+        "Yarn immutable install exits zero, lock hash unchanged, lifecycle execution separately recorded.",
+        "Use the candidate dependency graph, not the previous checkout as a silent substitute."
+      ],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/VALIDATION-2026-10-12.md",
+          "level": "source",
+          "command": "node .yarn/releases/yarn-4.12.0.cjs install --immutable --mode=skip-build",
+          "exit_code": 0,
+          "summary": "Completed with scripts disabled and hardlinks-global; lock unchanged. Native generation/build are separate tasks."
+        }
+      ],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-02.BUILD",
+      "parent": "CAL-02",
+      "kind": "task",
+      "title": "Generate, type-check, build and start the web candidate",
+      "state": "runtime_proven",
+      "requires": [
+        "CAL-02.INSTALL"
+      ],
+      "lane": "integration",
+      "owner_role": "build owner",
+      "owned_paths": [
+        "packages/prisma",
+        "packages/app-store",
+        "apps/web",
+        "packages/trpc"
+      ],
+      "acceptance": [
+        "Actual target generators, web/tRPC compiler and web build exit zero; no replacement aliases or skipped checks counted as success.",
+        "Start the built web artifact with synthetic data; this is not production or API v2 build acceptance."
+      ],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/VALIDATION-2026-10-12.md",
+          "level": "runtime",
+          "exit_code": 0,
+          "command": "yarn test:community-enterprise:web-smoke --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "summary": "Actual tRPC build, web type-check and Next production build pass on the clean immutable install. Built localhost server with synthetic PostgreSQL passes four HTTP checks; not an OCI image, deployed preview or real IdP proof."
+        }
+      ],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 0
+    },
+    {
+      "id": "CAL-02.API",
+      "parent": "CAL-02",
+      "kind": "task",
+      "title": "Build and start API v2 with the same source/schema",
+      "state": "open",
+      "requires": [
+        "CAL-02.INSTALL"
+      ],
+      "lane": "integration",
+      "owner_role": "build owner",
+      "owned_paths": [
+        "apps/api/v2",
+        "packages/platform",
+        "packages/trpc"
+      ],
+      "acceptance": [
+        "Build the pinned platform dependencies, API v2 and runtime from the same candidate revision.",
+        "Prove API startup and schema compatibility with synthetic data; the web preview need not wait for this, but production does."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "Exact build/start commands and artifacts proven; never infer API acceptance from a web build.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-02.PREVIEW",
+      "parent": "CAL-02",
+      "kind": "task",
+      "title": "Admit one isolated nonproduction candidate using existing infrastructure",
+      "state": "open",
+      "requires": [
+        "CAL-02.BUILD"
+      ],
+      "lane": "integration",
+      "owner_role": "platform owner",
+      "owned_paths": [
+        "bbi-infrastructure:apps/calcom"
+      ],
+      "acceptance": [
+        "Resource/volume placement admitted without new hardware or policy bypass; no overwrite of existing staging.",
+        "Test-only users and credentials, isolated database, outbound email/calendar effects disabled until deliberate tests."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 0
+    },
+    {
+      "id": "CAL-03.POLICY",
+      "parent": "CAL-03",
+      "kind": "task",
+      "title": "Default-deny organization/team permission service",
+      "state": "source_proven",
+      "requires": [],
+      "lane": "access",
+      "owner_role": "access owner",
+      "owned_paths": [
+        "packages/features/community-enterprise/authorization"
+      ],
+      "acceptance": [
+        "Accepted membership, disabled users, foreign/global/custom-role negatives and list/detail agreement.",
+        "Guard the known 18 inline replacements without claiming this inventories every authorization route."
+      ],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/VALIDATION.md",
+          "level": "source",
+          "command": "node --test tests/community-enterprise/authorization.test.cjs",
+          "exit_code": 0,
+          "summary": "65 isolated tests; deliberate allow-all negative control fails. This is the already-reviewed MIT policy slice; the wider fork reconciliation is a separate unfinished deliverable."
+        }
+      ],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-03.LIST",
+      "parent": "CAL-03",
+      "kind": "task",
+      "title": "Scope shared booking lists and metadata to actual event ownership",
+      "state": "source_proven",
+      "requires": [
+        "CAL-03.POLICY"
+      ],
+      "lane": "access",
+      "owner_role": "access owner",
+      "owned_paths": [
+        "packages/trpc/server/routers/viewer/bookings/get.handler.ts",
+        "packages/features/community-enterprise/authorization"
+      ],
+      "acceptance": [
+        "Real PostgreSQL proves team/managed visibility without coworker-private leaks, including counts, filters, metadata and seats.",
+        "One read snapshot, deterministic tie ordering and committed role-change behavior tested."
+      ],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/VALIDATION-2026-10-11.md",
+          "level": "source",
+          "command": "yarn test:community-enterprise:postgres",
+          "exit_code": 0,
+          "summary": "40 real PostgreSQL tests; not a browser/IdP proof."
+        }
+      ],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-03.ROUTES",
+      "parent": "CAL-03",
+      "kind": "task",
+      "title": "Audit remaining app/API authorization and bind mutation checks to writes",
+      "state": "open",
+      "requires": [
+        "CAL-03.POLICY",
+        "CAL-02.INSTALL"
+      ],
+      "lane": "access",
+      "owner_role": "access owner",
+      "owned_paths": [
+        "packages/trpc",
+        "apps/api/v2",
+        "packages/features"
+      ],
+      "acceptance": [
+        "Inventory production route permissions by AST and actual call reachability, including direct JWT readers.",
+        "Concurrent permission removal versus protected mutation, owner/member/global-admin and cross-org cases pass.",
+        "Do not broaden booking.read/booking.readOrgBookings aliases to make tests pass."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-04.OIDC",
+      "parent": "CAL-04",
+      "kind": "task",
+      "title": "Native Authentik provider and exact issuer/subject linkage",
+      "state": "source_proven",
+      "requires": [
+        "CAL-02.INSTALL"
+      ],
+      "lane": "identity",
+      "owner_role": "identity owner",
+      "owned_paths": [
+        "packages/features/community-enterprise/identity",
+        "packages/features/auth",
+        "apps/web/modules/auth"
+      ],
+      "acceptance": [
+        "Use existing NextAuth OIDC verification and Account binding; never email-autolink or request proprietary SAML services.",
+        "Signed loopback protocol succeeds and rejects wrong state, nonce, audience, signature and unlinked subject.",
+        "Visible translated login action; provider configuration off by default; calendar OAuth remains independent."
+      ],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/VALIDATION-2026-10-12.md",
+          "level": "source",
+          "command": "node --test tests/community-enterprise/authentik.test.cjs",
+          "exit_code": 0,
+          "summary": "37 tests, including six real NextAuth-to-loopback-OIDC exchanges; no live Authentik or browser proof."
+        }
+      ],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-04.SESSION",
+      "parent": "CAL-04",
+      "kind": "task",
+      "title": "Fresh local session identity and safe profile switching",
+      "state": "in_progress",
+      "requires": [
+        "CAL-04.OIDC"
+      ],
+      "lane": "identity",
+      "owner_role": "identity owner",
+      "owned_paths": [
+        "packages/features/auth/lib/getServerSession.ts",
+        "packages/features/auth/lib/next-auth-options.ts"
+      ],
+      "acceptance": [
+        "The same native session is rejected after account lock/unlink/rebind; no unbounded session-cache return before validation.",
+        "Client session updates cannot change identity, roles, email or impersonation; profiles require accepted ownership.",
+        "Inventory direct JWT readers separately; do not claim this proves all bearer routes or IdP revocation."
+      ],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/VALIDATION-2026-10-12.md",
+          "level": "source",
+          "command": "node --test tests/community-enterprise/authentik.test.cjs",
+          "exit_code": 0,
+          "summary": "Local token/binding/profile and linkage-service tests pass. Live identity enforcement, full direct-reader inventory and operator transaction integration remain open."
+        }
+      ],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-04.LINK",
+      "parent": "CAL-04",
+      "kind": "task",
+      "title": "Link reviewed synthetic and migrated accounts without SQL hand edits",
+      "state": "in_progress",
+      "requires": [
+        "CAL-04.OIDC"
+      ],
+      "lane": "identity",
+      "owner_role": "identity owner",
+      "owned_paths": [
+        "packages/features/community-enterprise/identity/LinkAuthentikAccount.ts"
+      ],
+      "acceptance": [
+        "Dry-run first; explicit user ID plus expected UUID and issuer/subject; refuse rebind and concurrent conflicting identity.",
+        "Write only Account linkage in an admitted transaction, audit the action, preserve account/calendar ownership."
+      ],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/VALIDATION-2026-10-12.md",
+          "level": "source",
+          "command": "node --test tests/community-enterprise/authentik.test.cjs",
+          "exit_code": 0,
+          "summary": "Local token/binding/profile and linkage-service tests pass. Live identity enforcement, full direct-reader inventory and operator transaction integration remain open."
+        }
+      ],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 0
+    },
+    {
+      "id": "CAL-04.SCIM",
+      "parent": "CAL-04",
+      "kind": "task",
+      "title": "Authentik-managed user/group provisioning and deprovisioning",
+      "state": "open",
+      "requires": [
+        "CAL-04.OIDC",
+        "CAL-05.CORE"
+      ],
+      "lane": "identity",
+      "owner_role": "identity owner",
+      "owned_paths": [
+        "packages/features/community-enterprise/identity",
+        "apps/api/v2"
+      ],
+      "acceptance": [
+        "Use scoped SCIM 2.0 token; implement Authentik discovery, user PUT, group PATCH, paging and exact externalId mapping.",
+        "Record grant source; preserve local grants and booking history; disabled staff stop new assignment and enter reassignment queue.",
+        "Changing IdP group-sync filters must not be mistaken for revocation of previously provisioned membership."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-04.REVOCATION",
+      "parent": "CAL-04",
+      "kind": "task",
+      "title": "Prove IdP revocation within the approved 60-second bound",
+      "state": "open",
+      "requires": [
+        "CAL-04.SESSION",
+        "CAL-04.SCIM",
+        "CAL-05.API",
+        "CAL-02.PREVIEW"
+      ],
+      "lane": "identity",
+      "owner_role": "identity and security reviewer",
+      "owned_paths": [
+        "packages/features/community-enterprise/identity",
+        "bbi-infrastructure:authentik"
+      ],
+      "acceptance": [
+        "Disable user, remove app access and downgrade role at real Authentik; replay the same browser session and bearer on every replica.",
+        "At most 60 seconds, including missed/delayed provisioning notifications and stale-authority failure behavior.",
+        "Separate IdP revocation, local database changes, logout and token expiry evidence.",
+        "Verify the configured Authentik MFA/application-access policy and prohibit alternate staff-login paths that bypass the intended lifecycle controls."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-05.CORE",
+      "parent": "CAL-05",
+      "kind": "task",
+      "title": "Small organization/team membership service using retained models",
+      "state": "open",
+      "requires": [
+        "CAL-03.POLICY",
+        "CAL-02.INSTALL"
+      ],
+      "lane": "product",
+      "owner_role": "product engineer",
+      "owned_paths": [
+        "packages/features/community-enterprise",
+        "packages/trpc"
+      ],
+      "acceptance": [
+        "Use Team/Membership/Profile/Role; no second tenant directory or SaaS license/billing dependencies.",
+        "Create team, accept/invite members, assign existing/custom permissions, preserve last owner and provenance.",
+        "No automatic mapping of brand/email domain to a new organization without actual owner data."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 0
+    },
+    {
+      "id": "CAL-05.UI",
+      "parent": "CAL-05",
+      "kind": "task",
+      "title": "Routine team administration through the existing UI",
+      "state": "open",
+      "requires": [
+        "CAL-05.CORE",
+        "CAL-04.OIDC"
+      ],
+      "lane": "product",
+      "owner_role": "product engineer",
+      "owned_paths": [
+        "apps/web/modules",
+        "packages/trpc",
+        "packages/i18n"
+      ],
+      "acceptance": [
+        "Organization switch, team/members, event ownership and actionable errors work without operator SQL.",
+        "Permission checks on server actions and route data; keyboard/accessibility and denied-state tests."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-05.API",
+      "parent": "CAL-05",
+      "kind": "task",
+      "title": "Scope existing API v2 and integration principals",
+      "state": "open",
+      "requires": [
+        "CAL-05.CORE",
+        "CAL-03.ROUTES",
+        "CAL-02.API"
+      ],
+      "lane": "access",
+      "owner_role": "API engineer",
+      "owned_paths": [
+        "apps/api/v2",
+        "packages/platform/libraries"
+      ],
+      "acceptance": [
+        "API authority is the intersection of active principal, scope and resource membership.",
+        "No global shared administrator key; key revocation/disabled owner, listing/detail/export and mutation negatives.",
+        "Use the same domain services; preserve established booking API contracts."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-06.REUSE",
+      "parent": "CAL-06",
+      "kind": "task",
+      "title": "Prove retained round-robin/collective/managed scheduling before replacing it",
+      "state": "open",
+      "requires": [
+        "CAL-03.POLICY",
+        "CAL-02.INSTALL"
+      ],
+      "lane": "scheduling",
+      "owner_role": "scheduling engineer",
+      "owned_paths": [
+        "packages/features/bookings",
+        "packages/features/di",
+        "packages/trpc/server/routers/viewer/eventTypes"
+      ],
+      "acceptance": [
+        "Seed synthetic existing models to exercise retained scheduling engine directly; classify missing routing/UI versus algorithm.",
+        "Real concurrency across event types and overlapping host sets, availability recheck, disabled/removed hosts, cancel/reschedule.",
+        "Do not wait for every administration screen to test the booking engine."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 0
+    },
+    {
+      "id": "CAL-06.JOURNEY",
+      "parent": "CAL-06",
+      "kind": "task",
+      "title": "First authenticated staff-to-external-invitee team booking in preview",
+      "state": "open",
+      "requires": [
+        "CAL-02.PREVIEW",
+        "CAL-04.OIDC",
+        "CAL-04.SESSION",
+        "CAL-04.LINK",
+        "CAL-05.CORE",
+        "CAL-06.REUSE"
+      ],
+      "lane": "integration",
+      "owner_role": "commander plus independent reviewer",
+      "owned_paths": [
+        "apps/web",
+        "apps/api/v2",
+        "bbi-infrastructure:apps/calcom"
+      ],
+      "acceptance": [
+        "Real Authentik login, reviewed identity/team, connected test calendar, public invitee booking, invitation, reschedule and cancellation.",
+        "Second organization denied; guest booking does not require staff login; visible admin errors not operator guesswork.",
+        "This is preview-only proof, not permission to promote incomplete enterprise controls."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-07.AUDIT",
+      "parent": "CAL-07",
+      "kind": "task",
+      "title": "Persist administrative and booking audit before side effects",
+      "state": "open",
+      "requires": [
+        "CAL-03.POLICY",
+        "CAL-05.CORE"
+      ],
+      "lane": "scheduling",
+      "owner_role": "backend engineer",
+      "owned_paths": [
+        "packages/features/community-enterprise",
+        "packages/features/bookings"
+      ],
+      "acceptance": [
+        "Actor/resource/org/time and redacted changes persisted with successful mutation; no secret or complete attendee payload logging.",
+        "Transactional outbox or equivalent durable existing mechanism; crash/retry proof."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-07.REMINDERS",
+      "parent": "CAL-07",
+      "kind": "task",
+      "title": "Reliable reminders on the existing task/notification infrastructure",
+      "state": "open",
+      "requires": [
+        "CAL-06.REUSE",
+        "CAL-07.AUDIT"
+      ],
+      "lane": "scheduling",
+      "owner_role": "backend engineer",
+      "owned_paths": [
+        "packages/features/bookings",
+        "packages/lib/tasker"
+      ],
+      "acceptance": [
+        "No duplicate sender; cancel/reschedule invalidates stale jobs; duplicate/retry/ambiguous external delivery tested.",
+        "One test message delivered to an explicitly controlled recipient; receipt separates internal queue success from delivery."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-08.BASELINE",
+      "parent": "CAL-08",
+      "kind": "task",
+      "title": "Inventory actual deployed artifacts, data ownership and restore ability",
+      "state": "open",
+      "requires": [],
+      "lane": "integration",
+      "owner_role": "platform owner",
+      "owned_paths": [
+        "bbi-infrastructure:apps/calcom",
+        "docs/community-enterprise"
+      ],
+      "acceptance": [
+        "Read-only image/source/migration/user/event/integration inventory; never infer running fork from a manifest.",
+        "Authorized backup restored in isolation; counts, stable IDs, encryption/decryption and existing booking URLs reconcile."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-08.MIGRATE",
+      "parent": "CAL-08",
+      "kind": "task",
+      "title": "Rehearse preservation-first legacy-to-candidate migration",
+      "state": "open",
+      "requires": [
+        "CAL-08.BASELINE",
+        "CAL-02.BUILD",
+        "CAL-02.API"
+      ],
+      "lane": "integration",
+      "owner_role": "data migration owner",
+      "owned_paths": [
+        "packages/prisma",
+        "bbi-infrastructure:apps/calcom"
+      ],
+      "acceptance": [
+        "Review exact schema path; stable user/profile/booking and provider references; preserve credential encryption keys.",
+        "One explicit migration operator, no automatic destructive changes on ordinary pod restart.",
+        "Rollback covers writes accepted after cutover; no old backup restored over new bookings."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-08.UPDATE",
+      "parent": "CAL-08",
+      "kind": "task",
+      "title": "Prove an actual Cal.diy upstream update with enterprise contracts",
+      "state": "open",
+      "requires": [
+        "CAL-02.BUILD",
+        "CAL-03.LIST",
+        "CAL-04.OIDC",
+        "CAL-06.REUSE",
+        "CAL-02.API"
+      ],
+      "lane": "integration",
+      "owner_role": "maintenance owner",
+      "owned_paths": [
+        "docs/community-enterprise",
+        "tests/community-enterprise"
+      ],
+      "acceptance": [
+        "Compare two real upstream revisions, merge/cherry-pick explicit changes, re-run enterprise contract suite.",
+        "Keep a small owned integration map; push generic fixes upstream when reviewed, without waiting for enterprise feature acceptance."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 1
+    },
+    {
+      "id": "CAL-09.ACCEPT",
+      "parent": "CAL-09",
+      "kind": "task",
+      "title": "Team-ready release acceptance on exact candidate artifacts",
+      "state": "open",
+      "requires": [
+        "CAL-06.JOURNEY",
+        "CAL-03.ROUTES",
+        "CAL-04.REVOCATION",
+        "CAL-05.UI",
+        "CAL-05.API",
+        "CAL-07.AUDIT",
+        "CAL-07.REMINDERS",
+        "CAL-08.MIGRATE",
+        "CAL-08.UPDATE",
+        "CAL-01.REUSE"
+      ],
+      "lane": "integration",
+      "owner_role": "independent release reviewer",
+      "owned_paths": [
+        "docs/community-enterprise",
+        "bbi-infrastructure:apps/calcom"
+      ],
+      "acceptance": [
+        "Exact source/image/migration/config and runtime proof; all named core enterprise journeys pass.",
+        "No waiver of security, privacy, data preservation or supported recovery to make the first pilot green.",
+        "Dependency and secret scans, runtime policy compliance, and no credential/PII leakage in the exercised paths; all exceptions explicit and release-reviewed."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-09.PILOT",
+      "parent": "CAL-09",
+      "kind": "task",
+      "title": "Promote a team-complete pilot through existing GitOps",
+      "state": "open",
+      "requires": [
+        "CAL-09.ACCEPT"
+      ],
+      "lane": "integration",
+      "owner_role": "platform release owner",
+      "owned_paths": [
+        "bbi-infrastructure:apps/calcom"
+      ],
+      "acceptance": [
+        "Existing promotion lane, immutable web/API/worker artifacts, one booking writer and runtime readback.",
+        "Preserve public URLs; supervised initial team journeys and operational owner; no new hardware or parallel release controller."
+      ],
+      "evidence": [],
+      "required_for_team_release": true,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 1
+    },
+    {
+      "id": "CAL-10.ROUTING",
+      "parent": "CAL-10",
+      "kind": "task",
+      "title": "Explainable routing rules and tested fallbacks",
+      "state": "open",
+      "requires": [
+        "CAL-06.REUSE",
+        "CAL-05.CORE"
+      ],
+      "lane": "product",
+      "owner_role": "product engineer",
+      "owned_paths": [
+        "packages/features/community-enterprise",
+        "apps/web/modules"
+      ],
+      "acceptance": [
+        "Programme/service/language rules select eligible teams; fallbacks and no-match behavior clear.",
+        "Do not block source development on the production pilot."
+      ],
+      "evidence": [],
+      "required_for_team_release": false,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 2
+    },
+    {
+      "id": "CAL-10.REPORTS",
+      "parent": "CAL-10",
+      "kind": "task",
+      "title": "Scoped operational reporting and export",
+      "state": "open",
+      "requires": [
+        "CAL-03.LIST",
+        "CAL-07.AUDIT",
+        "CAL-05.CORE"
+      ],
+      "lane": "product",
+      "owner_role": "product engineer",
+      "owned_paths": [
+        "packages/features/community-enterprise",
+        "apps/web/modules"
+      ],
+      "acceptance": [
+        "Bookings, cancellations, no-shows, host distribution and delivery failures; org/team privacy enforced on exports.",
+        "Figures reconcile to scoped booking data, not global totals."
+      ],
+      "evidence": [],
+      "required_for_team_release": false,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "source",
+      "priority": 2
+    },
+    {
+      "id": "CAL-10.ROLLOUT",
+      "parent": "CAL-10",
+      "kind": "task",
+      "title": "Complete routing/reporting acceptance and broader team rollout",
+      "state": "open",
+      "requires": [
+        "CAL-09.PILOT",
+        "CAL-10.ROUTING",
+        "CAL-10.REPORTS"
+      ],
+      "lane": "integration",
+      "owner_role": "programme owner",
+      "owned_paths": [
+        "docs/community-enterprise",
+        "bbi-infrastructure:apps/calcom"
+      ],
+      "acceptance": [
+        "All agreed enterprise capabilities demonstrated and operational handover accepted.",
+        "Parent graph remains open until this full target, not merely the first booking."
+      ],
+      "evidence": [],
+      "required_for_team_release": false,
+      "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
+      "completion_evidence_level": "runtime",
+      "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/VALIDATION-2026-10-11.md"
+  "latest_evidence": "docs/community-enterprise/VALIDATION-2026-10-12.md"
 }
