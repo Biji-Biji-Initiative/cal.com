@@ -1,5 +1,42 @@
 # Open-source enterprise calendar — implementation record
 
+## Current direction: runnable enterprise journeys (2026-10-12)
+
+[Recalibration](REALIGNMENT-2026-10-12.md) keeps the MIT Cal.diy foundation and
+existing infrastructure but replaces the coarse sequence with an executable
+39-node graph: the same 10 parent IDs and 29 child tasks. The outcomes are a
+runnable preview staff-to-invitee journey, a team-complete production pilot, and
+full rollout including routing/reporting. No source test closes a runtime milestone.
+
+The candidate now has a native NextAuth Authentik provider, translated login action,
+explicit issuer/subject Account linkage, safe profile selection and fresh local
+session checks. It does not auto-create/merge users from email and does not mint
+proxy cookies. Configuration is disabled by default. See [AUTHENTIK.md](AUTHENTIK.md)
+for the current boundary: SCIM, real IdP revocation, other login/API enforcement
+and operator provisioning remain open, not silently supplied by this source slice.
+
+The immutable dependency install now completes with an unchanged lockfile.
+The native tRPC build, full web type check and optimized Next production build
+now pass. The built server has been started against isolated synthetic PostgreSQL:
+the Authentik login action, provider metadata, CSRF and unauthenticated-session
+checks pass. This closes the local web-build/start task, not the deployed preview,
+real identity lifecycle, API v2 build or team-booking journey. The ready queue now
+starts with CAL-02.PREVIEW, followed by reviewed linkage, minimal team operations
+and retained scheduling-engine proof.
+Application generators and protocol/source tests use that actual installed
+candidate rather than the previous checkout's dependency tree. See the current
+[validation receipt](VALIDATION-2026-10-12.md) for complete compiler/build results
+and unresolved release gates. The wider build also exposed a prior booking-ID
+projection mismatch; both repository projections and regression tests were repaired.
+
+The existing Beads schema cannot be migrated by the installed supported plan.
+Do not reset it or create a competing tracker. Preserve the stable CAL IDs in
+TASK_GRAPH.json and issue #78 until supported recovery. This is still a
+**non-promotable candidate**: no production client, database, user, ingress or
+image has been changed.
+
+## Prior slice record
+
 ## Latest slice: delegated booking visibility (2026-10-11)
 
 The booking-list safety hold described in the first-slice historical record below
