@@ -1677,11 +1677,16 @@ async function handler(
     originalRescheduledBooking?.user?.name &&
     organizerUser?.name
   ) {
-    evt.title = updateHostInEventName(
-      originalRescheduledBooking.title,
-      originalRescheduledBooking.user.name,
-      organizerUser.name
-    );
+    // Re-render a configured template with the selected host. Replacing text in
+    // an old generic title loses dynamic fields and can retain the wrong host.
+    // Untemplated/custom booking titles retain the existing replacement behavior.
+    evt.title = eventType.eventName
+      ? eventName
+      : updateHostInEventName(
+          originalRescheduledBooking.title,
+          originalRescheduledBooking.user.name,
+          organizerUser.name
+        );
   }
 
   let results: EventResult<AdditionalInformation & { url?: string; iCalUID?: string }>[] = [];

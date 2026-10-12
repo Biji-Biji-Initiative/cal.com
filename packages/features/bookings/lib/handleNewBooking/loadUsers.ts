@@ -1,7 +1,6 @@
 import {
   findMatchingHostsWithEventSegment,
   getNormalizedHosts,
-  getRoutedUsersWithContactOwnerAndFixedUsers,
 } from "@calcom/features/users/lib/getRoutedUsers";
 import { UserRepository, withSelectedCalendars } from "@calcom/features/users/repositories/UserRepository";
 import { HttpError } from "@calcom/lib/http-error";
@@ -12,7 +11,10 @@ import { Prisma } from "@calcom/prisma/client";
 import { credentialForCalendarServiceSelect } from "@calcom/prisma/selects/credential";
 import type { NewBookingEventType } from "./getEventTypesFromDB";
 
-const getOrgDomainConfig = (..._args: unknown[]) => ({ currentOrgDomain: null as string | null, isValidOrgDomain: false });
+const getOrgDomainConfig = (..._args: unknown[]) => ({
+  currentOrgDomain: null as string | null,
+  isValidOrgDomain: false,
+});
 
 const log = logger.getSubLogger({ prefix: ["[loadUsers]:handleNewBooking "] });
 
@@ -56,16 +58,9 @@ export const loadUsers = async ({
       ? await loadUsersByEventType(eventType)
       : await loadDynamicUsers(dynamicUserList, currentOrgDomain);
 
-    const routedUsers = getRoutedUsersWithContactOwnerAndFixedUsers({
-      users,
-      routedTeamMemberIds,
-      contactOwnerEmail,
-    });
-
-    if (routedUsers.length) {
-      return routedUsers;
-    }
-
+    // Routing is evaluated once by the shared qualified-host service. Applying
+    // a second, permissive route filter here can erase fixed participants or
+    // disagree with the availability page on a routing miss.
     return users;
   } catch (error) {
     log.error("Unable to load users", safeStringify(error));

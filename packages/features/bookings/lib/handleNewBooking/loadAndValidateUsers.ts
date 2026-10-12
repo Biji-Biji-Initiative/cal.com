@@ -1,10 +1,8 @@
-import { enrichUsersWithDelegationCredentials } from "@calcom/app-store/delegationCredential";
 import { getQualifiedHostsService } from "@calcom/features/di/containers/QualifiedHosts";
 import { ProfileRepository } from "@calcom/features/profile/repositories/ProfileRepository";
 import { withSelectedCalendars } from "@calcom/features/users/repositories/UserRepository";
 import { sentrySpan } from "@calcom/features/watchlist/lib/telemetry";
 import { filterBlockedUsers } from "@calcom/features/watchlist/operations/filter-blocked-users.controller";
-import getOrgIdFromMemberOrTeamId from "@calcom/lib/getOrgIdFromMemberOrTeamId";
 import { HttpError } from "@calcom/lib/http-error";
 import { getPiiFreeUser } from "@calcom/lib/piiFreeData";
 import { safeStringify } from "@calcom/lib/safeStringify";
@@ -163,7 +161,8 @@ const _loadAndValidateUsers = async ({
   const qualifiedHostsService = getQualifiedHostsService();
   const { qualifiedRRHosts, allFallbackRRHosts, fixedHosts } =
     await qualifiedHostsService.findQualifiedHostsWithDelegationCredentials({
-      eventType,
+      eventType: { ...eventType, users },
+      eligibleUserIds: users.map((user) => user.id),
       routedTeamMemberIds: routedTeamMemberIds || [],
       rescheduleUid,
       contactOwnerEmail,
@@ -192,21 +191,48 @@ const _loadAndValidateUsers = async ({
     const qualifiedHostIds = new Set(qualifiedRRHosts.map((qualifiedHost) => qualifiedHost.user.id));
     qualifiedRRUsers = users
       .filter((user) => qualifiedHostIds.has(user.id))
-      .map((user) => ({ ...user, credentials: allQualifiedHostsHashMap[user.id].user.credentials }));
+      .map((user) => {
+        const host = allQualifiedHostsHashMap[user.id];
+        return {
+          ...user,
+          email: host.user.email,
+          isFixed: host.isFixed,
+          groupId: host.groupId,
+          credentials: host.user.credentials,
+        };
+      });
   }
 
   if (allFallbackRRHosts?.length) {
     const fallbackHostIds = new Set(allFallbackRRHosts.map((fallbackHost) => fallbackHost.user.id));
     allFallbackRRUsers = users
       .filter((user) => fallbackHostIds.has(user.id))
-      .map((user) => ({ ...user, credentials: allQualifiedHostsHashMap[user.id].user.credentials }));
+      .map((user) => {
+        const host = allQualifiedHostsHashMap[user.id];
+        return {
+          ...user,
+          email: host.user.email,
+          isFixed: host.isFixed,
+          groupId: host.groupId,
+          credentials: host.user.credentials,
+        };
+      });
   }
 
   if (fixedHosts?.length) {
     const fixedHostIds = new Set(fixedHosts.map((fixedHost) => fixedHost.user.id));
     fixedUsers = users
       .filter((user) => fixedHostIds.has(user.id))
-      .map((user) => ({ ...user, credentials: allQualifiedHostsHashMap[user.id].user.credentials }));
+      .map((user) => {
+        const host = allQualifiedHostsHashMap[user.id];
+        return {
+          ...user,
+          email: host.user.email,
+          isFixed: host.isFixed,
+          groupId: host.groupId,
+          credentials: host.user.credentials,
+        };
+      });
   }
 
   logger.debug(
@@ -221,20 +247,7 @@ const _loadAndValidateUsers = async ({
   );
 
   if (!qualifiedRRUsers.length && !fixedUsers.length) {
-    const firstUser = users[0];
-    const firstUserOrgId = await getOrgIdFromMemberOrTeamId({
-      memberId: firstUser.id ?? null,
-      teamId: eventType.teamId,
-    });
-    const usersEnrichedWithDelegationCredential = await enrichUsersWithDelegationCredentials({
-      orgId: firstUserOrgId ?? null,
-      users,
-    });
-    return {
-      qualifiedRRUsers,
-      additionalFallbackRRUsers, // without qualified
-      fixedUsers: usersEnrichedWithDelegationCredential,
-    };
+    throw new HttpError({ statusCode: 404, message: "No eligible hosts for this event" });
   }
 
   return {

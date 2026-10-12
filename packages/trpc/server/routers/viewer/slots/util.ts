@@ -11,30 +11,10 @@ import type {
 import type { IGetAvailableSlots } from "@calcom/features/bookings/Booker/hooks/useAvailableTimeSlots";
 import type { CheckBookingLimitsService } from "@calcom/features/bookings/lib/checkBookingLimits";
 import { checkForConflicts } from "@calcom/features/bookings/lib/conflictChecker/checkForConflicts";
-
-type QualifiedHostsService = {
-  findQualifiedHostsWithDelegationCredentials: (...args: unknown[]) => Promise<{
-    qualifiedRRHosts: {
-      isFixed?: boolean;
-      groupId?: string | null;
-      user: GetAvailabilityUserWithDelegationCredentials;
-    }[];
-    allFallbackRRHosts: {
-      isFixed?: boolean;
-      groupId?: string | null;
-      user: GetAvailabilityUserWithDelegationCredentials;
-    }[];
-    fixedHosts: {
-      isFixed?: boolean;
-      groupId?: string | null;
-      user: GetAvailabilityUserWithDelegationCredentials;
-    }[];
-  }>;
-};
-
 import { isEventTypeLoggingEnabled } from "@calcom/features/bookings/lib/isEventTypeLoggingEnabled";
 import type { BookingRepository } from "@calcom/features/bookings/repositories/BookingRepository";
 import type { BusyTimesService } from "@calcom/features/busyTimes/services/getBusyTimes";
+import type { QualifiedHostsService } from "@calcom/features/community-enterprise/scheduling/QualifiedHostsService";
 import type { getBusyTimesService } from "@calcom/features/di/containers/BusyTimes";
 import { getDefaultEvent } from "@calcom/features/eventtypes/lib/defaultEvents";
 import type { EventTypeRepository } from "@calcom/features/eventtypes/repositories/eventTypeRepository";
@@ -569,7 +549,10 @@ export class AvailableSlotsService {
 
             const selectedDuration = (duration || eventType.length) ?? 0;
 
-            const { title: durationTitle, source: durationSource } = LimitSources.eventDurationLimit({ limit, unit });
+            const { title: durationTitle, source: durationSource } = LimitSources.eventDurationLimit({
+              limit,
+              unit,
+            });
 
             if (selectedDuration > limit) {
               limitManager.addBusyTime({
@@ -989,7 +972,16 @@ export class AvailableSlotsService {
     const allHosts = [...eligibleQualifiedRRHosts, ...eligibleFixedHosts];
 
     // If all hosts are blocked, return empty slots
-    if (allHosts.length === 0) {
+    const requiredRRGroups = new Set(qualifiedRRHosts.map((host) => host.groupId).filter(Boolean));
+    const lostRRGroup = Array.from(requiredRRGroups).some(
+      (group) => !eligibleQualifiedRRHosts.some((host) => host.groupId === group)
+    );
+    if (
+      allHosts.length === 0 ||
+      eligibleFixedHosts.length !== fixedHosts.length ||
+      (qualifiedRRHosts.length > 0 && eligibleQualifiedRRHosts.length === 0) ||
+      lostRRGroup
+    ) {
       loggerWithEventDetails.info("All hosts are blocked by watchlist, returning empty slots");
       return {
         slots: {},
