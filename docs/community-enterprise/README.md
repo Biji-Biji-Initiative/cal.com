@@ -1,5 +1,23 @@
 # Open-source enterprise calendar — implementation record
 
+## Current slice: teams, audit and a local complete booking lifecycle
+
+[Team journey evidence](TEAM-JOURNEY-2026-10-12.md) records the recovered and
+completed implementation: authenticated organization/team administration, basic
+membership roles, atomic administrative audit/idempotency, and public team routes
+using the existing Booker. A packaged local application with synthetic PostgreSQL
+and a TLS OIDC test issuer completes team creation/member saving and a single-host
+guest booking, reschedule and cancellation. Six expected notifications are
+captured through real loopback SMTP; no message leaves the test host.
+
+This does **not** establish a shared preview, real Authentik/calendar integration,
+API v2 or full multi-host scheduling. Stronger retained tests expose an empty
+booking-side qualified-host service and missing same-host behavior; CAL-06.REUSE
+remains unfinished. The unchanged stable task graph now records those precise
+remaining requirements rather than reporting all scheduler tests green.
+
+## Earlier implementation records
+
 ## Current direction: runnable enterprise journeys (2026-10-12)
 
 [Recalibration](REALIGNMENT-2026-10-12.md) keeps the MIT Cal.diy foundation and

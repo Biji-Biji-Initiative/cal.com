@@ -4,7 +4,7 @@
   "programme": "Open-source enterprise calendar",
   "decision_date": "2026-10-12",
   "goal": "One self-hosted fully open-source enterprise calendar, native Authentik, organizations/teams/roles/scoped APIs, team scheduling, audit/reminders, routing/reporting and repeatable community updates.",
-  "production_status": "unchanged; candidate not promotable",
+  "production_status": "unchanged; local single-host journey exercised; candidate not promotable",
   "tracking": {
     "canonical_source": "docs/community-enterprise/TASK_GRAPH.json",
     "handover_issue": 78,
@@ -135,7 +135,7 @@
       "id": "CAL-05",
       "kind": "epic",
       "title": "Organization/team admin UI and scoped API v2",
-      "state": "open",
+      "state": "in_progress",
       "requires": [],
       "children": [
         "CAL-05.CORE",
@@ -148,7 +148,7 @@
       "id": "CAL-06",
       "kind": "epic",
       "title": "Round-robin, collective and managed scheduling",
-      "state": "open",
+      "state": "in_progress",
       "requires": [],
       "children": [
         "CAL-06.REUSE",
@@ -160,7 +160,7 @@
       "id": "CAL-07",
       "kind": "epic",
       "title": "Durable audit and reminders",
-      "state": "open",
+      "state": "in_progress",
       "requires": [],
       "children": [
         "CAL-07.AUDIT",
@@ -310,6 +310,13 @@
           "exit_code": 0,
           "command": "yarn test:community-enterprise:web-smoke --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "summary": "Actual tRPC build, web type-check and Next production build pass on the clean immutable install. Built localhost server with synthetic PostgreSQL passes four HTTP checks; not an OCI image, deployed preview or real IdP proof."
+        },
+        {
+          "file": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md",
+          "level": "runtime",
+          "command": "yarn test:community-enterprise:journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Rebuilt standalone Next candidate completes local TLS-fixture OIDC and single-host booking lifecycle with real PostgreSQL and SMTP capture. Not deployed preview, live IdP/calendar or complete multi-host acceptance."
         }
       ],
       "required_for_team_release": true,
@@ -348,7 +355,7 @@
       "parent": "CAL-02",
       "kind": "task",
       "title": "Admit one isolated nonproduction candidate using existing infrastructure",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-02.BUILD"
       ],
@@ -365,7 +372,9 @@
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
-      "priority": 0
+      "priority": 0,
+      "progress": "Packaged local application journey is the candidate for preview admission. No shared environment or existing parked Cal workload is changed; image/public-origin, admission, real IdP and secret delivery still require realization.",
+      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
     },
     {
       "id": "CAL-03.POLICY",
@@ -621,7 +630,7 @@
       "parent": "CAL-05",
       "kind": "task",
       "title": "Small organization/team membership service using retained models",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-03.POLICY",
         "CAL-02.INSTALL"
@@ -641,14 +650,16 @@
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 0
+      "priority": 0,
+      "progress": "Organization-scoped team creation, active-member basic roles, last-owner protection, replay safety and atomic administrative audit implemented. Invitations, custom-role editing and complete directory-provenance operations remain open.",
+      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
     },
     {
       "id": "CAL-05.UI",
       "parent": "CAL-05",
       "kind": "task",
       "title": "Routine team administration through the existing UI",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-05.CORE",
         "CAL-04.OIDC"
@@ -668,7 +679,9 @@
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
-      "priority": 1
+      "priority": 1,
+      "progress": "Built Chromium test creates a team and saves membership through the actual authenticated UI; organization selector and public links are wired. Full onboarding, event creation/editing, all permission states and accessibility acceptance remain open.",
+      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
     },
     {
       "id": "CAL-05.API",
@@ -703,7 +716,7 @@
       "parent": "CAL-06",
       "kind": "task",
       "title": "Prove retained round-robin/collective/managed scheduling before replacing it",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-03.POLICY",
         "CAL-02.INSTALL"
@@ -718,20 +731,31 @@
       "acceptance": [
         "Seed synthetic existing models to exercise retained scheduling engine directly; classify missing routing/UI versus algorithm.",
         "Real concurrency across event types and overlapping host sets, availability recheck, disabled/removed hosts, cancel/reschedule.",
-        "Do not wait for every administration screen to test the booking engine."
+        "Do not wait for every administration screen to test the booking engine.",
+        "Unify actual available-slot and booking qualified-host resolution; prove legacy and explicit hosts, same-host reschedule, explicit rerouting, unavailable/removed hosts and wrong-tenant negatives. Do not retain an always-empty booking service or weaken email assertions."
       ],
       "evidence": [],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 0
+      "priority": 0,
+      "progress": "Retained engine probe exposed no-op booking-side QualifiedHosts container and removed same-host behavior. Awaited rescheduling assertions now expose failures rather than silently passing. The existing managed-event TODO is not proof; single-host success does not close this task.",
+      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md",
+      "open_findings": [
+        "booking-side QualifiedHosts container returns noOpService",
+        "availability uses a separate QualifiedHosts module",
+        "same-host enterprise behavior removed from current candidate",
+        "unawaited rescheduling assertions previously hid failures",
+        "managed-event acceptance test remains TODO"
+      ],
+      "observed_remaining_failures": "Focused retained rescheduling file: 16 passed, 2 failed after awaited assertion repair and bounded cold setup. Same-host/host selection contracts require restoration; managed-event TODO is still open."
     },
     {
       "id": "CAL-06.JOURNEY",
       "parent": "CAL-06",
       "kind": "task",
       "title": "First authenticated staff-to-external-invitee team booking in preview",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-02.PREVIEW",
         "CAL-04.OIDC",
@@ -756,14 +780,16 @@
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
-      "priority": 1
+      "priority": 1,
+      "progress": "Local packaged application with real PostgreSQL, TLS OIDC fixture and browser administration completed a single-host guest book/reschedule/cancel flow with six captured SMTP messages. Not deployed Authentik, an external calendar, or a shared preview.",
+      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
     },
     {
       "id": "CAL-07.AUDIT",
       "parent": "CAL-07",
       "kind": "task",
       "title": "Persist administrative and booking audit before side effects",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-03.POLICY",
         "CAL-05.CORE"
@@ -782,7 +808,9 @@
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 1
+      "priority": 1,
+      "progress": "Administrative team/member writes and audit records commit atomically; rollback and idempotency are tested. Booking outbox, external audit retention, broader mutations and delivery crash/retry proof remain open.",
+      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
     },
     {
       "id": "CAL-07.REMINDERS",
@@ -1030,5 +1058,5 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/VALIDATION-2026-10-12.md"
+  "latest_evidence": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
 }
