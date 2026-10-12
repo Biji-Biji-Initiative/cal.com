@@ -5,7 +5,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["tests/community-enterprise/postgres-teams.test.ts"],
+    include: [
+      "tests/community-enterprise/postgres-teams.test.ts",
+      "tests/community-enterprise/postgres-hosts.test.ts",
+    ],
     pool: "forks",
     maxWorkers: 1,
     fileParallelism: false,

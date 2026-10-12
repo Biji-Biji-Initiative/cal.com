@@ -88,7 +88,10 @@
     "test:community-enterprise:build-config": "node --test tests/community-enterprise/build-config.test.cjs",
     "test:community-enterprise:web-smoke": "python3 scripts/run-community-enterprise-postgres.py --suite built-web",
     "test:community-enterprise:teams": "python3 scripts/run-community-enterprise-postgres.py --suite teams",
-    "test:community-enterprise:journey": "python3 scripts/run-community-enterprise-postgres.py --suite team-journey"
+    "test:community-enterprise:journey": "python3 scripts/run-community-enterprise-postgres.py --suite team-journey",
+    "test:community-enterprise:host-policy": "vitest run --config tests/community-enterprise/vitest.qualified-hosts.config.mts",
+    "test:community-enterprise:host-db": "python3 scripts/run-community-enterprise-postgres.py --suite hosts",
+    "test:community-enterprise:retained-scheduler": "node scripts/generate-prismock-client.cjs && vitest run packages/features/bookings/lib/handleNewBooking/test/reschedule.test.ts packages/features/bookings/lib/getLuckyUser.test.ts packages/features/bookings/lib/handleNewBooking/test/fresh-booking.test.ts packages/features/bookings/lib/handleNewBooking/test/dynamic-group-booking.test.ts --maxWorkers=1 --no-file-parallelism"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.10",
