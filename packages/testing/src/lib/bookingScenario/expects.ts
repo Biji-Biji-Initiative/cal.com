@@ -98,6 +98,13 @@ expect.extend({
       if (subject) {
         filterConditions.push(email.subject === subject);
       }
+      // A booking lifecycle can send several notifications to one recipient.
+      // Select the requested kind instead of comparing with the first message.
+      if (expectedEmail.heading !== undefined) {
+        filterConditions.push(
+          parse(email.html).querySelector('[data-testid="heading"]')?.innerText === expectedEmail.heading
+        );
+      }
 
       return filterConditions.every((condition) => condition);
     });
@@ -707,7 +714,7 @@ export function expectCalendarEventCreationFailureEmails({
   );
 }
 
-export function expectSuccessfulRoundRobinReschedulingEmails({
+export async function expectSuccessfulRoundRobinReschedulingEmails({
   emails,
   newOrganizer,
   prevOrganizer,
@@ -718,8 +725,8 @@ export function expectSuccessfulRoundRobinReschedulingEmails({
   prevOrganizer: { email: string; name: string };
   bookerReschedule?: boolean;
 }) {
-  if (newOrganizer !== prevOrganizer) {
-    vi.waitFor(() => {
+  if (newOrganizer.email.toLowerCase() !== prevOrganizer.email.toLowerCase()) {
+    await vi.waitFor(() => {
       // new organizer should receive scheduling emails
       expect(emails).toHaveEmail(
         {
@@ -730,7 +737,7 @@ export function expectSuccessfulRoundRobinReschedulingEmails({
       );
     });
 
-    vi.waitFor(() => {
+    await vi.waitFor(() => {
       // old organizer should receive cancelled emails
       expect(emails).toHaveEmail(
         {
@@ -743,7 +750,7 @@ export function expectSuccessfulRoundRobinReschedulingEmails({
 
     // if booking is rescheduled by booker, old organizer should receive reassigned emails
     if (bookerReschedule) {
-      vi.waitFor(() => {
+      await vi.waitFor(() => {
         expect(emails).toHaveEmail(
           {
             heading: "event_request_reassigned",
@@ -754,7 +761,7 @@ export function expectSuccessfulRoundRobinReschedulingEmails({
       });
     }
   } else {
-    vi.waitFor(() => {
+    await vi.waitFor(() => {
       // organizer should receive rescheduled emails
       expect(emails).toHaveEmail(
         {

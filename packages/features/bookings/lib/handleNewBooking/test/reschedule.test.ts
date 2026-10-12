@@ -1,50 +1,47 @@
 import prismaMock from "@calcom/testing/lib/__mocks__/prisma";
-
 import {
+  BookingLocations,
   createBookingScenario,
+  getBooker,
   getDate,
+  getDefaultBookingFields,
   getGoogleCalendarCredential,
   getGoogleMeetCredential,
-  getStripeAppCredential,
-  TestData,
-  getOrganizer,
-  getBooker,
-  getScenarioData,
-  mockSuccessfulVideoMeetingCreation,
-  mockCalendarToHaveNoBusySlots,
-  mockCalendarToCrashOnUpdateEvent,
-  BookingLocations,
-  getMockBookingReference,
   getMockBookingAttendee,
+  getMockBookingReference,
   getMockFailingAppStatus,
   getMockPassingAppStatus,
-  getDefaultBookingFields,
+  getOrganizer,
+  getScenarioData,
+  getStripeAppCredential,
+  mockCalendarToCrashOnUpdateEvent,
+  mockCalendarToHaveNoBusySlots,
+  mockSuccessfulVideoMeetingCreation,
+  TestData,
 } from "@calcom/testing/lib/bookingScenario/bookingScenario";
-import {
-  expectBookingToBeInDatabase,
-  expectBookingRescheduledWebhookToHaveBeenFired,
-  expectSuccessfulBookingRescheduledEmails,
-  expectSuccessfulCalendarEventUpdationInCalendar,
-  expectSuccessfulVideoMeetingUpdationInCalendar,
-  expectBookingInDBToBeRescheduledFromTo,
-  expectBookingRequestedEmails,
-  expectBookingRequestedWebhookToHaveBeenFired,
-  expectSuccessfulCalendarEventDeletionInCalendar,
-  expectSuccessfulVideoMeetingDeletionInCalendar,
-  expectSuccessfulRoundRobinReschedulingEmails,
-} from "@calcom/testing/lib/bookingScenario/expects";
-import { getMockRequestDataForBooking } from "@calcom/testing/lib/bookingScenario/getMockRequestDataForBooking";
-import { setupAndTeardown } from "@calcom/testing/lib/bookingScenario/setupAndTeardown";
-
-import { describe, expect, beforeEach } from "vitest";
-
+import process from "node:process";
 import { appStoreMetadata } from "@calcom/app-store/apps.metadata.generated";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import logger from "@calcom/lib/logger";
 import { resetTestSMS } from "@calcom/lib/testSMS";
 import { BookingStatus, SchedulingType } from "@calcom/prisma/enums";
+import {
+  expectBookingInDBToBeRescheduledFromTo,
+  expectBookingRequestedEmails,
+  expectBookingRequestedWebhookToHaveBeenFired,
+  expectBookingRescheduledWebhookToHaveBeenFired,
+  expectBookingToBeInDatabase,
+  expectSuccessfulBookingRescheduledEmails,
+  expectSuccessfulCalendarEventDeletionInCalendar,
+  expectSuccessfulCalendarEventUpdationInCalendar,
+  expectSuccessfulRoundRobinReschedulingEmails,
+  expectSuccessfulVideoMeetingDeletionInCalendar,
+  expectSuccessfulVideoMeetingUpdationInCalendar,
+} from "@calcom/testing/lib/bookingScenario/expects";
+import { getMockRequestDataForBooking } from "@calcom/testing/lib/bookingScenario/getMockRequestDataForBooking";
+import { setupAndTeardown } from "@calcom/testing/lib/bookingScenario/setupAndTeardown";
 import { test } from "@calcom/testing/lib/fixtures/fixtures";
-
+import { beforeAll, beforeEach, describe, expect } from "vitest";
 import { getNewBookingHandler } from "./getNewBookingHandler";
 
 // Local test runs sometime gets too slow
@@ -52,6 +49,12 @@ const timeout = process.env.CI ? 5000 : 20000;
 
 describe("handleNewBooking", () => {
   setupAndTeardown();
+
+  // Keep cold module transformation outside each booking's existing time budget.
+  // Otherwise a timed-out first test continues into subsequent fixture resets.
+  beforeAll(async () => {
+    await import("@calcom/features/bookings/di/RegularBookingService.container");
+  }, 120000);
 
   beforeEach(() => {
     resetTestSMS();
@@ -448,7 +451,6 @@ describe("handleNewBooking", () => {
             },
           });
 
-
           expectSuccessfulVideoMeetingUpdationInCalendar(videoMock, {
             calEvent: {
               location: "http://mock-dailyvideo.example.com",
@@ -631,7 +633,6 @@ describe("handleNewBooking", () => {
               ],
             },
           });
-
 
           expectSuccessfulBookingRescheduledEmails({
             booker,
@@ -818,7 +819,6 @@ describe("handleNewBooking", () => {
               },
             });
 
-  
             expectBookingRequestedEmails({
               booker,
               organizer,
@@ -1038,7 +1038,6 @@ describe("handleNewBooking", () => {
               },
             });
 
-  
             expectSuccessfulVideoMeetingUpdationInCalendar(videoMock, {
               calEvent: {
                 location: "http://mock-dailyvideo.example.com",
@@ -1270,7 +1269,6 @@ describe("handleNewBooking", () => {
               },
             });
 
-  
             expectSuccessfulCalendarEventUpdationInCalendar(calendarMock, {
               externalCalendarId: "MOCK_EXTERNAL_CALENDAR_ID",
               calEvent: {
@@ -1483,7 +1481,6 @@ describe("handleNewBooking", () => {
               },
             });
 
-  
             expectBookingRequestedEmails({
               booker,
               organizer,
@@ -1716,7 +1713,6 @@ describe("handleNewBooking", () => {
               },
             });
 
-  
             expectSuccessfulVideoMeetingUpdationInCalendar(videoMock, {
               calEvent: {
                 location: "http://mock-dailyvideo.example.com",
@@ -1790,10 +1786,7 @@ describe("handleNewBooking", () => {
               email: "organizer@example.com",
               id: 101,
               schedules: [TestData.schedules.IstWorkHours],
-              credentials: [
-                getGoogleCalendarCredential(),
-                getStripeAppCredential(),
-              ],
+              credentials: [getGoogleCalendarCredential(), getStripeAppCredential()],
               selectedCalendars: [TestData.selectedCalendars.google],
             });
 
@@ -1803,72 +1796,72 @@ describe("handleNewBooking", () => {
 
             const subscriberUrl = "http://my-webhook.example.com";
             const scenarioData = getScenarioData({
-                webhooks: [
-                  {
-                    userId: organizer.id,
-                    eventTriggers: ["BOOKING_CREATED"],
-                    subscriberUrl,
-                    active: true,
-                    eventTypeId: 1,
-                    appId: null,
-                  },
-                ],
-                eventTypes: [
-                  {
-                    id: 1,
-                    slotInterval: 15,
-                    length: 15,
-                    price: 100,
-                    requiresConfirmation: false,
-                    metadata: {
-                      apps: {
-                        stripe: {
-                          price: 100,
-                          enabled: true,
-                          currency: "usd",
-                        },
+              webhooks: [
+                {
+                  userId: organizer.id,
+                  eventTriggers: ["BOOKING_CREATED"],
+                  subscriberUrl,
+                  active: true,
+                  eventTypeId: 1,
+                  appId: null,
+                },
+              ],
+              eventTypes: [
+                {
+                  id: 1,
+                  slotInterval: 15,
+                  length: 15,
+                  price: 100,
+                  requiresConfirmation: false,
+                  metadata: {
+                    apps: {
+                      stripe: {
+                        price: 100,
+                        enabled: true,
+                        currency: "usd",
                       },
                     },
-                    users: [{ id: 101 }],
                   },
-                ],
-                bookings: [
-                  {
-                    uid: uidOfBookingToBeRescheduled,
-                    eventTypeId: 1,
-                    user: { id: organizer.id },
-                    status: BookingStatus.ACCEPTED,
-                    startTime: `${plus1DateString}T05:00:00.000Z`,
-                    endTime: `${plus1DateString}T05:15:00.000Z`,
-                    references: [
-                      getMockBookingReference({
-                        type: appStoreMetadata.dailyvideo.type,
-                        uid: "MOCK_ID",
-                        meetingId: "MOCK_ID",
-                        meetingPassword: "MOCK_PASS",
-                        meetingUrl: "http://mock-dailyvideo.example.com",
-                        credentialId: 0,
-                      }),
-                      getMockBookingReference({
-                        type: appStoreMetadata.googlecalendar.type,
-                        uid: "MOCK_ID",
-                        meetingId: "MOCK_ID",
-                        meetingPassword: "MOCK_PASSWORD",
-                        meetingUrl: "https://UNUSED_URL",
-                        externalCalendarId: "MOCK_EXTERNAL_CALENDAR_ID",
-                        credentialId: 1,
-                      }),
-                    ],
-                    iCalUID,
-                  },
-                ],
-                organizer,
-                apps: [
-                  TestData.apps["google-calendar"],
-                  TestData.apps["daily-video"],
-                  TestData.apps["stripe-payment"],
-                ],
-              });
+                  users: [{ id: 101 }],
+                },
+              ],
+              bookings: [
+                {
+                  uid: uidOfBookingToBeRescheduled,
+                  eventTypeId: 1,
+                  user: { id: organizer.id },
+                  status: BookingStatus.ACCEPTED,
+                  startTime: `${plus1DateString}T05:00:00.000Z`,
+                  endTime: `${plus1DateString}T05:15:00.000Z`,
+                  references: [
+                    getMockBookingReference({
+                      type: appStoreMetadata.dailyvideo.type,
+                      uid: "MOCK_ID",
+                      meetingId: "MOCK_ID",
+                      meetingPassword: "MOCK_PASS",
+                      meetingUrl: "http://mock-dailyvideo.example.com",
+                      credentialId: 0,
+                    }),
+                    getMockBookingReference({
+                      type: appStoreMetadata.googlecalendar.type,
+                      uid: "MOCK_ID",
+                      meetingId: "MOCK_ID",
+                      meetingPassword: "MOCK_PASSWORD",
+                      meetingUrl: "https://UNUSED_URL",
+                      externalCalendarId: "MOCK_EXTERNAL_CALENDAR_ID",
+                      credentialId: 1,
+                    }),
+                  ],
+                  iCalUID,
+                },
+              ],
+              organizer,
+              apps: [
+                TestData.apps["google-calendar"],
+                TestData.apps["daily-video"],
+                TestData.apps["stripe-payment"],
+              ],
+            });
             await createBookingScenario(scenarioData);
 
             const existingBooking = await prismaMock.booking.findFirst({
@@ -1968,10 +1961,7 @@ describe("handleNewBooking", () => {
               email: "organizer@example.com",
               id: 101,
               schedules: [TestData.schedules.IstWorkHours],
-              credentials: [
-                getGoogleCalendarCredential(),
-                getStripeAppCredential(),
-              ],
+              credentials: [getGoogleCalendarCredential(), getStripeAppCredential()],
               selectedCalendars: [TestData.selectedCalendars.google],
             });
 
@@ -2440,7 +2430,7 @@ describe("handleNewBooking", () => {
             },
           });
 
-          expectSuccessfulRoundRobinReschedulingEmails({
+          await expectSuccessfulRoundRobinReschedulingEmails({
             prevOrganizer: roundRobinHost1,
             newOrganizer: roundRobinHost2,
             emails,
@@ -2589,7 +2579,7 @@ describe("handleNewBooking", () => {
             },
           });
 
-          expectSuccessfulRoundRobinReschedulingEmails({
+          await expectSuccessfulRoundRobinReschedulingEmails({
             prevOrganizer: roundRobinHost1,
             newOrganizer: roundRobinHost1, // Round robin host 2 is not available and it will be rescheduled to same user
             emails,
@@ -2790,7 +2780,7 @@ describe("handleNewBooking", () => {
             },
           });
 
-          expectSuccessfulRoundRobinReschedulingEmails({
+          await expectSuccessfulRoundRobinReschedulingEmails({
             prevOrganizer: roundRobinHost1,
             newOrganizer: roundRobinHost1, // Round robin host 2 is not available and it will be rescheduled to same user
             emails,
@@ -2948,7 +2938,7 @@ describe("handleNewBooking", () => {
             },
           });
 
-          expectSuccessfulRoundRobinReschedulingEmails({
+          await expectSuccessfulRoundRobinReschedulingEmails({
             prevOrganizer: roundRobinHost1,
             newOrganizer: roundRobinHost1,
             emails,
@@ -3105,7 +3095,7 @@ describe("handleNewBooking", () => {
             },
           });
 
-          expectSuccessfulRoundRobinReschedulingEmails({
+          await expectSuccessfulRoundRobinReschedulingEmails({
             prevOrganizer: hostOfOriginalBooking,
             newOrganizer: otherHost,
             emails,
