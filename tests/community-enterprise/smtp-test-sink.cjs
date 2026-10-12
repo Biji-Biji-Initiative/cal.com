@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 async function startSmtpTestSink() {
   const messages = [];
   const clients = new Set();
-  const permitted = new Set(["smoke@example.test", "invitee@example.test"]);
+  const permitted = new Set(["smoke@example.test", "invitee@example.test", "colleague@example.test"]);
   const server = net.createServer((socket) => {
     clients.add(socket);
     socket.on("close", () => clients.delete(socket));
@@ -81,7 +81,8 @@ async function startSmtpTestSink() {
       EMAIL_SERVER_PORT: String(server.address().port),
     },
     count: () => messages.length,
-    async expectDeliverySince(index, phase) {
+    async expectDeliverySince(index, phase, required = ["smoke@example.test", "invitee@example.test"]) {
+      assert.ok(required.length && required.every((recipient) => permitted.has(recipient)));
       const deadline = Date.now() + 15000;
       const matches = (message) =>
         message.subject.toLowerCase().includes("preview advisory call") &&
@@ -97,12 +98,22 @@ async function startSmtpTestSink() {
             .filter(matches)
             .flatMap((message) => message.recipients)
         );
-        if ([...permitted].every((recipient) => found.has(recipient))) return;
+        if (required.every((recipient) => found.has(recipient))) return;
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
       assert.fail(
         `Missing ${phase} notification to synthetic organizer/invitee; captured subjects: ${JSON.stringify(messages.slice(index).map((message) => message.subject))}`
       );
+    },
+    async expectRecipientsSince(index, required) {
+      assert.ok(required.length && required.every((recipient) => permitted.has(recipient)));
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        const received = new Set(messages.slice(index).flatMap((message) => message.recipients));
+        if (required.every((recipient) => received.has(recipient))) return;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      assert.fail("Missing notifications to the explicitly required synthetic recipients");
     },
     close: () =>
       new Promise((resolve) => {

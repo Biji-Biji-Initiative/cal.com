@@ -1,3 +1,4 @@
+const { runMultiHostJourney } = require("./multi-host-journey.cjs");
 // SPDX-License-Identifier: MIT
 const assert = require("node:assert/strict");
 const { randomUUID } = require("node:crypto");
@@ -277,6 +278,11 @@ async function runTeamBrowserJourney({ pool, fixture, t }) {
         capturedSmtpMessages: fixture.smtp.count(),
       })
     );
+    await runMultiHostJourney({ pool, guest, fixture, teamId, bookingInput, t });
+    if (process.env.CAL_BOOKING_CONCURRENCY_PROBE === "true") {
+      const { runConcurrentBookingJourney } = require("./concurrent-booking-journey.cjs");
+      await runConcurrentBookingJourney({ pool, guest, fixture, teamId, bookingInput, t });
+    }
     await guest.close();
     await context.close();
   } finally {
