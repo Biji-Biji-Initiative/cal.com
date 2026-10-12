@@ -48,30 +48,24 @@ export function processWorkingHours(
   const utcDateTo = dateTo.utc();
   let endTimeToKeyMap: Map<number, number[]> | undefined;
 
-  for (let date = dateFrom.startOf("day"); utcDateTo.isAfter(date); date = date.add(1, "day")) {
-    const fromOffset = dateFrom.startOf("day").utcOffset();
-
+  // Iterate organizer calendar dates, then resolve each wall-clock boundary in
+  // its explicit zone. startOf() and elapsed-hour addition can inherit the host
+  // process zone or yesterday's DST offset and erase otherwise valid hours.
+  const firstDay = dayjs.utc(dateFrom.format("YYYY-MM-DD"));
+  for (let day = firstDay; ; day = day.add(1, "day")) {
+    const dateKey = day.format("YYYY-MM-DD");
+    // Keep the caller's calendar-day anchor for existing travel-boundary semantics.
+    const date = dayjs.utc(day.valueOf()).utcOffset(dateFrom.utcOffset(), true);
+    if (!utcDateTo.isAfter(date)) break;
     const adjustedTimezone = getAdjustedTimezone(date, timeZone, travelSchedules);
-
-    const offset = date.tz(adjustedTimezone).utcOffset();
-
-    // it always has to be start of the day (midnight) even when DST changes
-    const dateInTz = date.add(fromOffset - offset, "minutes").tz(adjustedTimezone);
-    if (!item.days.includes(dateInTz.day())) {
-      continue;
-    }
-
-    let start = dateInTz
-      .add(item.startTime.getUTCHours(), "hours")
-      .add(item.startTime.getUTCMinutes(), "minutes");
-
-    let end = dateInTz.add(item.endTime.getUTCHours(), "hours").add(item.endTime.getUTCMinutes(), "minutes");
-
-    const offsetBeginningOfDay = dayjs(start.format("YYYY-MM-DD hh:mm")).tz(adjustedTimezone).utcOffset();
-    const offsetDiff = start.utcOffset() - offsetBeginningOfDay; // there will be 60 min offset on the day day of DST change
-
-    start = start.add(offsetDiff, "minute");
-    end = end.add(offsetDiff, "minute");
+    const dateInTz = dayjs.tz(`${dateKey} 00:00:00`, adjustedTimezone);
+    if (!item.days.includes(dateInTz.day())) continue;
+    const wallClock = (time: Date) =>
+      `${dateKey} ${String(time.getUTCHours()).padStart(2, "0")}:${String(time.getUTCMinutes()).padStart(2, "0")}:00`;
+    const start = dayjs
+      .utc(dayjs.tz(wallClock(item.startTime), adjustedTimezone).valueOf())
+      .tz(adjustedTimezone);
+    const end = dayjs.utc(dayjs.tz(wallClock(item.endTime), adjustedTimezone).valueOf()).tz(adjustedTimezone);
 
     const startResult = dayjs.max(start, dateFrom);
     let endResult = dayjs.min(end, dateTo.tz(adjustedTimezone));
