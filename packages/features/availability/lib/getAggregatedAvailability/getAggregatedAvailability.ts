@@ -2,7 +2,6 @@ import type { DateRange } from "@calcom/features/schedules/lib/date-ranges";
 import { intersect } from "@calcom/features/schedules/lib/date-ranges";
 import { DEFAULT_GROUP_ID } from "@calcom/lib/constants";
 import { SchedulingType } from "@calcom/prisma/enums";
-
 import { filterRedundantDateRanges } from "./date-range-utils/filterRedundantDateRanges";
 import { mergeOverlappingDateRanges } from "./date-range-utils/mergeOverlappingDateRanges";
 
@@ -42,6 +41,9 @@ export const getAggregatedAvailability = (
   const fixedDateRanges = mergeOverlappingDateRanges(
     intersect(fixedHosts.map((s) => (!isTeamEvent ? s.dateRanges : s.oooExcludedDateRanges)))
   );
+  // An empty required-host intersection is a veto, not permission to omit
+  // those participants and offer only the rotating hosts' availability.
+  if (fixedHosts.length > 0 && fixedDateRanges.length === 0) return [];
   const dateRangesToIntersect = fixedDateRanges.length ? [fixedDateRanges] : [];
   const roundRobinHosts = userAvailability.filter(({ user }) => user?.isFixed !== true);
   if (roundRobinHosts.length) {
