@@ -13,6 +13,7 @@ import { calendarsRouter } from "./calendars/_router";
 import { calVideoRouter } from "./calVideo/_router";
 import { credentialsRouter } from "./credentials/_router";
 import { deploymentSetupRouter } from "./deploymentSetup/_router";
+import { enterpriseTeamsRouter } from "./enterpriseTeams/_router";
 import { eventTypesRouter } from "./eventTypes/_router";
 import { eventTypesRouter as heavyEventTypesRouter } from "./eventTypes/heavy/_router";
 import { feedbackRouter } from "./feedback/_router";
@@ -28,6 +29,7 @@ import { userAdminRouter } from "./users/_router";
 import { webhookRouter } from "./webhook/_router";
 
 export const viewerRouter = router({
+  enterpriseTeams: enterpriseTeamsRouter,
   loggedInViewerRouter,
   apps: appsRouter,
   me: meRouter,
