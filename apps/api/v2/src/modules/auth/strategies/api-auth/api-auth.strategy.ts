@@ -1,3 +1,5 @@
+import { NextAuthSessionService } from "@/modules/auth/services/next-auth-session.service";
+import { isUsableApiKeyExpiry, parseBearerHeader } from "@/modules/auth/services/credential-policy";
 import { sha256Hash, isApiKey, stripApiKey } from "@/lib/api-key";
 import { AuthMethods } from "@/lib/enums/auth-methods";
 import { isOriginAllowed } from "@/lib/is-origin-allowed/is-origin-allowed";
@@ -9,13 +11,13 @@ import { OAuthFlowService } from "@/modules/oauth-clients/services/oauth-flow.se
 import { TokensRepository } from "@/modules/tokens/tokens.repository";
 import { TokensService } from "@/modules/tokens/tokens.service";
 import { UsersService } from "@/modules/users/services/users.service";
-import { UserWithProfile, UsersRepository } from "@/modules/users/users.repository";
+import { type UserWithProfile, UsersRepository } from "@/modules/users/users.repository";
 import { Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import type { Request } from "express";
-import { getToken } from "next-auth/jwt";
+import { getToken, type JWT } from "next-auth/jwt";
 
 import { INVALID_ACCESS_TOKEN, X_CAL_CLIENT_ID, X_CAL_SECRET_KEY } from "@calcom/platform-constants";
 
@@ -47,7 +49,8 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
     private readonly apiKeyRepository: ApiKeysRepository,
     private readonly oauthRepository: OAuthClientRepository,
     private readonly usersService: UsersService,
-    private readonly membershipsRepository: MembershipsRepository
+    private readonly membershipsRepository: MembershipsRepository,
+    private readonly sessions: NextAuthSessionService
   ) {
     super();
   }
@@ -57,7 +60,12 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
       const { params } = request;
       const oAuthClientSecret = request.get(X_CAL_SECRET_KEY);
       const oAuthClientId = params.clientId || request.get(X_CAL_CLIENT_ID);
-      const bearerToken = request.get("Authorization")?.replace("Bearer ", "");
+      let bearerToken: string | undefined;
+      try {
+        bearerToken = parseBearerHeader(request.get("Authorization"));
+      } catch {
+        throw new UnauthorizedException("Invalid Authorization header");
+      }
 
       const allowedMethods = request.allowedAuthMethods;
       const noSpecificAuthExpected = !allowedMethods || !allowedMethods.length;
@@ -75,43 +83,30 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
       }
 
       if (bearerToken) {
-        if (!apiKeyAllowed && !accessTokenAllowed && thirdPartyAccessTokenAllowed) {
+        const key = isApiKey(bearerToken, this.config.get<string>("api.keyPrefix") ?? "cal_");
+        if ((key && apiKeyAllowed) || (!key && accessTokenAllowed)) {
+          try {
+            request.authMethod = key ? AuthMethods["API_KEY"] : AuthMethods["ACCESS_TOKEN"];
+            return await this.authenticateBearerToken(bearerToken, request, request.get("Origin"));
+          } catch (error) {
+            // A key cannot be reinterpreted as another credential type. Only
+            // the explicitly enabled external-token verifier may handle tokens.
+            if (key || !thirdPartyAccessTokenAllowed) throw error;
+          }
+        }
+        if (!key && thirdPartyAccessTokenAllowed) {
           request.authMethod = AuthMethods["THIRD_PARTY_ACCESS_TOKEN"];
           const result = await this.validateThirdPartyAccessToken(bearerToken, request);
-          if (result.success) {
-            return this.success(this.getSuccessUser(result.data));
-          }
+          if (result.success) return this.success(this.getSuccessUser(result.data));
         }
-
-        if (apiKeyAllowed || accessTokenAllowed) {
-          try {
-            const requestOrigin = request.get("Origin");
-            request.authMethod = isApiKey(bearerToken, this.config.get<string>("api.apiKeyPrefix") ?? "cal_")
-              ? AuthMethods["API_KEY"]
-              : AuthMethods["ACCESS_TOKEN"];
-            return await this.authenticateBearerToken(bearerToken, request, requestOrigin);
-          } catch (err) {
-            // failed to validate access token, try to validate third party token
-            if (thirdPartyAccessTokenAllowed && request.authMethod === AuthMethods["ACCESS_TOKEN"]) {
-              request.authMethod = AuthMethods["THIRD_PARTY_ACCESS_TOKEN"];
-              const result = await this.validateThirdPartyAccessToken(bearerToken, request);
-
-              if (result.success) {
-                return this.success(this.getSuccessUser(result.data));
-              }
-            }
-            // token was not third party token, rethrow error from authenticateBearerToken
-            if (err instanceof Error) {
-              return this.error(err);
-            }
-          }
-        }
-
-        throw new UnauthorizedException(`ApiAuthStrategy - Invalid Bearer token`);
+        throw new UnauthorizedException("ApiAuthStrategy - Invalid or disallowed Bearer token");
       }
 
       const nextAuthSecret = this.config.get("next.authSecret", { infer: true });
-      const nextAuthToken = await getToken({ req: request, secret: nextAuthSecret });
+      if (nextAuthAllowed && (typeof nextAuthSecret !== "string" || nextAuthSecret.length === 0)) {
+        throw new UnauthorizedException("Native session authentication is unavailable");
+      }
+      const nextAuthToken = nextAuthAllowed ? await getToken({ req: request, secret: nextAuthSecret }) : null;
       if (nextAuthToken && nextAuthAllowed) {
         request.authMethod = AuthMethods["NEXT_AUTH"];
         return await this.authenticateNextAuth(nextAuthToken, request);
@@ -151,12 +146,13 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
     }
   }
 
-  async authenticateNextAuth(token: { email?: string | null }, request: ApiAuthGuardRequest) {
+  async authenticateNextAuth(token: JWT, request: ApiAuthGuardRequest) {
     const user = await this.nextAuthStrategy(token, request);
     return this.success(this.getSuccessUser(user));
   }
 
   getSuccessUser(user: UserWithProfile): ApiAuthGuardUser {
+    if (!user || user.locked !== false) throw new UnauthorizedException("Account is unavailable");
     return {
       ...user,
       isSystemAdmin: user.role === "ADMIN",
@@ -214,7 +210,7 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
     requestOrigin: string | undefined
   ) {
     try {
-      const user = isApiKey(authString, this.config.get<string>("api.apiKeyPrefix") ?? "cal_")
+      const user = isApiKey(authString, this.config.get<string>("api.keyPrefix") ?? "cal_")
         ? await this.apiKeyStrategy(authString, request)
         : await this.accessTokenStrategy(authString, request, requestOrigin);
 
@@ -241,9 +237,7 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
       throw new UnauthorizedException("ApiAuthStrategy - api key - Your api key is not valid");
     }
 
-    const isKeyExpired =
-      keyData.expiresAt && new Date().setHours(0, 0, 0, 0) > keyData.expiresAt.setHours(0, 0, 0, 0);
-    if (isKeyExpired) {
+    if (!isUsableApiKeyExpiry(keyData.expiresAt, Date.now())) {
       throw new UnauthorizedException("ApiAuthStrategy - api key - Your api key is expired");
     }
 
@@ -298,22 +292,9 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
     return user;
   }
 
-  async nextAuthStrategy(token: { email?: string | null }, request: ApiAuthGuardRequest) {
-    if (!token.email) {
-      throw new UnauthorizedException(
-        "ApiAuthStrategy - next auth - Email not found in the authentication token."
-      );
-    }
-
-    const user = await this.userRepository.findByEmailWithProfile(token.email);
-    if (!user) {
-      throw new UnauthorizedException(
-        "ApiAuthStrategy - next auth - User associated with the authentication token email not found."
-      );
-    }
-    const organizationId = this.usersService.getUserMainOrgId(user) as number;
+  async nextAuthStrategy(token: JWT, request: ApiAuthGuardRequest) {
+    const { user, organizationId } = await this.sessions.resolve(token);
     request.organizationId = organizationId;
-
     return user;
   }
 
