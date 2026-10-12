@@ -36,6 +36,7 @@ const getTabs = (
   } | null
 ) => {
   const tabs: VerticalTabItemProps[] = [
+    { name: "enterprise_teams_title", href: "/settings/enterprise/teams", icon: "users" },
     {
       name: "my_account",
       href: "/settings/my-account",
