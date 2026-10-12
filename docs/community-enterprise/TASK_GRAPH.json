@@ -734,21 +734,43 @@
         "Do not wait for every administration screen to test the booking engine.",
         "Unify actual available-slot and booking qualified-host resolution; prove legacy and explicit hosts, same-host reschedule, explicit rerouting, unavailable/removed hosts and wrong-tenant negatives. Do not retain an always-empty booking service or weaken email assertions."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/MULTI-HOST-2026-10-12.md",
+          "level": "runtime",
+          "command": "yarn test:community-enterprise:booking-concurrency --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Rebuilt local packaged web proves directed/same-host/rerouted and collective booking, rejection of removed/locked required hosts, and deterministic overlapping HTTP requests with one 200, one 409, one booking and only winner notifications. Not deployed IdP, external calendars or all write paths."
+        },
+        {
+          "file": "docs/community-enterprise/BOOKING-CONCURRENCY-2026-10-12.md",
+          "level": "source",
+          "command": "yarn test:community-enterprise:host-db --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "42 real-PostgreSQL eligibility/commit tests; shared collective host conflicts, reverse lock order, competing reschedules, buffers and independent-host controls."
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 0,
-      "progress": "Retained engine probe exposed no-op booking-side QualifiedHosts container and removed same-host behavior. Awaited rescheduling assertions now expose failures rather than silently passing. The existing managed-event TODO is not proof; single-host success does not close this task.",
-      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md",
+      "progress": "The final rebuilt multi-host and deterministic conflict journey passes. Qualification, exact collective slots and regular booking write races are protected at the tested scope. Remaining write paths and real infrastructure/provider acceptance stay open.",
+      "progress_reference": "docs/community-enterprise/MULTI-HOST-2026-10-12.md",
       "open_findings": [
-        "booking-side QualifiedHosts container returns noOpService",
-        "availability uses a separate QualifiedHosts module",
-        "same-host enterprise behavior removed from current candidate",
-        "unawaited rescheduling assertions previously hid failures",
-        "managed-event acceptance test remains TODO"
+        "Seat-capacity mutations, pending-booking confirmation, direct API/repository writes, manual reassignment and intentional overbooking need explicit path coverage; a shared table does not automatically adopt the regular-save guard.",
+        "A complete atomic policy for assignment, membership and schedule changes racing a write, plus real external calendar changes, remains outside this bounded local booking conflict proof.",
+        "Full managed-event acceptance, grouped-host fairness/quotas and unsupported automatic/segment host expansion remain unaccepted.",
+        "Deployed Authentik, scoped bearer behavior, actual multi-replica workload and admitted shared preview remain separate runtime gates."
       ],
-      "observed_remaining_failures": "Focused retained rescheduling file: 16 passed, 2 failed after awaited assertion repair and bounded cold setup. Same-host/host selection contracts require restoration; managed-event TODO is still open."
+      "observed_remaining_failures": "The former focused rescheduling failures are resolved: 18 of 18 now pass inside the 79-case retained scheduler suite. One retained TODO and two legacy calendar skips remain explicitly outside acceptance.",
+      "resolved_findings": [
+        "Booking and slot availability now use the same current-membership qualified-host service; the old no-op and unrelated fallback are removed.",
+        "Same-host rescheduling, explicit rerouting, legacy assignments and fixed/group eligibility pass the retained source and real-database suites.",
+        "Required fixed participants cannot disappear when the common availability intersection is empty.",
+        "Working-hour construction resolves explicit organizer wall times independently of the server process timezone; existing travel and return-type contracts are preserved.",
+        "Deterministic PostgreSQL tests cover overlapping cross-event bookings, shared collective hosts, reversed host order, competing reschedules and independent hosts using ordered row locks in the existing transaction.",
+        "The regular write rechecks selected identities, current eligibility, local overlaps and buffers before committing or cancelling the original appointment."
+      ]
     },
     {
       "id": "CAL-06.JOURNEY",
@@ -776,13 +798,21 @@
         "Second organization denied; guest booking does not require staff login; visible admin errors not operator guesswork.",
         "This is preview-only proof, not permission to promote incomplete enterprise controls."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/MULTI-HOST-2026-10-12.md",
+          "level": "runtime",
+          "command": "yarn test:community-enterprise:booking-concurrency --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Verified local packaged multi-host journey and notification capture. This is explicitly not the required shared preview, real Authentik or connected external calendar journey."
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 1,
-      "progress": "Local packaged application with real PostgreSQL, TLS OIDC fixture and browser administration completed a single-host guest book/reschedule/cancel flow with six captured SMTP messages. Not deployed Authentik, an external calendar, or a shared preview.",
-      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
+      "progress": "Packaged native OIDC through a TLS fixture, Chromium team administration, directed/same-host/rerouted bookings and collective availability are locally proven with PostgreSQL and non-relaying SMTP. Not deployed Authentik, connected external calendars or shared preview admission.",
+      "progress_reference": "docs/community-enterprise/MULTI-HOST-2026-10-12.md"
     },
     {
       "id": "CAL-07.AUDIT",
@@ -1058,5 +1088,5 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
+  "latest_evidence": "docs/community-enterprise/MULTI-HOST-2026-10-12.md"
 }

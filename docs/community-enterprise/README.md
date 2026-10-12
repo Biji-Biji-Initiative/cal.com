@@ -1,5 +1,39 @@
 # Open-source enterprise calendar — implementation record
 
+## Latest: multi-host runtime and atomic regular booking writes
+
+The rebuilt local application now proves directed round-robin selection,
+same-host rescheduling, explicit rerouting, removed/locked host rejection and
+exact collective availability. A deterministic concurrent-request test first
+reproduced two overlapping accepted appointments for one host. The repair uses
+ordered participant locks and a fresh final conflict check in the existing
+booking/cancellation transaction; the rebuilt test returns one success and one
+409, with only the winner's notifications. No separate scheduler or lock service.
+
+[Final artifact and tests](MULTI-HOST-2026-10-12.md) ·
+[Commit contract and limitations](BOOKING-CONCURRENCY-2026-10-12.md).
+The preserved task graph remains open for unreviewed write paths, real IdP and
+external calendar integration, shared preview admission, API v2 and production
+migration/release. Source proof is not a production rollout.
+
+## Prior verification records
+
+## Current wave: shared host selection and calendar correctness
+
+The booking and available-slot paths now use one membership-aware host service.
+The retained same-host/rerouting suite is green rather than relying on the earlier
+empty-service fallback. Runtime investigation also found and repaired required-host
+intersection and process-timezone-dependent working-hour defects. See
+[MULTI-HOST-2026-10-12.md](MULTI-HOST-2026-10-12.md) for current source and rebuilt
+artifact evidence, including the limits of synthetic multi-host acceptance.
+
+CAL-06.REUSE remains open for commit-time concurrent booking/revocation races,
+remaining managed/automatic-host behavior and real provider acceptance. The shared
+preview, live Authentik/SCIM/MFA lifecycle, scoped API v2, migration and production
+release gates are not closed by a local test. No shared environment was changed.
+
+## Earlier implementation record
+
 ## Current slice: teams, audit and a local complete booking lifecycle
 
 [Team journey evidence](TEAM-JOURNEY-2026-10-12.md) records the recovered and
