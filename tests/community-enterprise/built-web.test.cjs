@@ -9,10 +9,13 @@ const { randomBytes, randomUUID, createHash } = require("node:crypto");
 const { test } = require("node:test");
 const { Pool } = require("pg");
 const root = path.resolve(__dirname, "../..");
+const { seedTeamBrowserFixture, runTeamBrowserJourney } = require("./team-browser-journey.cjs");
+const { startOidcTestProvider } = require("./oidc-test-provider.cjs");
+const { startSmtpTestSink } = require("./smtp-test-sink.cjs");
 
 test(
   "built web renders native Authentik login without authenticating an anonymous visitor",
-  { timeout: 90000 },
+  { timeout: 420000 },
   async (t) => {
     const socket = process.env.CAL_ENTERPRISE_TEST_SOCKET;
     const pgdata = process.env.CAL_ENTERPRISE_TEST_PGDATA;
@@ -39,6 +42,10 @@ test(
       max: 2,
     });
     let server;
+    let oidcProvider;
+    let smtpSink;
+    let runtimeOutput = "";
+    let sensitiveValues = [];
     try {
       const identity = (
         await pool.query("SELECT current_setting('data_directory') AS directory, current_user AS username")
@@ -53,6 +60,8 @@ test(
         "Synthetic Smoke User",
         "synthetic-smoke-user",
       ]);
+      const teamFixture =
+        process.env.CAL_TEAM_BROWSER_JOURNEY === "true" ? await seedTeamBrowserFixture(pool) : null;
       const environment = Object.fromEntries(
         ["PATH", "HOME", "USER", "LANG"]
           .filter((name) => process.env[name])
@@ -62,6 +71,7 @@ test(
       Object.assign(environment, {
         DATABASE_URL: databaseUrl,
         DATABASE_DIRECT_URL: databaseUrl,
+        USE_POOL: "true",
         NEXTAUTH_SECRET: randomBytes(32).toString("hex"),
         CALENDSO_ENCRYPTION_KEY: randomBytes(16).toString("hex"),
         NEXT_PUBLIC_WEBAPP_URL: "http://127.0.0.1:38917",
@@ -73,11 +83,35 @@ test(
         NEXT_TELEMETRY_DISABLED: "1",
         NODE_OPTIONS: "--max-old-space-size=4096",
       });
+      if (teamFixture) {
+        oidcProvider = await startOidcTestProvider({ directory: path.dirname(socket), pool });
+        teamFixture.oidc = oidcProvider;
+        Object.assign(environment, oidcProvider.environment);
+        smtpSink = await startSmtpTestSink();
+        teamFixture.smtp = smtpSink;
+        Object.assign(environment, smtpSink.environment);
+      }
+      sensitiveValues = [
+        environment.CAL_AUTHENTIK_CLIENT_SECRET,
+        environment.NEXTAUTH_SECRET,
+        environment.CALENDSO_ENCRYPTION_KEY,
+      ];
+      const standalone = path.join(root, "apps/web/.next/standalone/apps/web");
+      const packaged = fs.existsSync(path.join(standalone, "server.js"));
+      if (packaged) {
+        fs.cpSync(path.join(root, "apps/web/public"), path.join(standalone, "public"), { recursive: true });
+        fs.cpSync(path.join(root, "apps/web/.next/static"), path.join(standalone, ".next/static"), {
+          recursive: true,
+        });
+      }
+      Object.assign(environment, { PORT: "38917", HOSTNAME: "127.0.0.1", NEXT_PUBLIC_LOGGER_LEVEL: "4" });
       server = spawn(
         process.execPath,
-        ["../../node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", "38917"],
+        packaged
+          ? [path.join(standalone, "server.js")]
+          : ["../../node_modules/next/dist/bin/next", "start", "--hostname", "127.0.0.1", "--port", "38917"],
         {
-          cwd: path.join(root, "apps/web"),
+          cwd: packaged ? standalone : path.join(root, "apps/web"),
           env: environment,
           stdio: ["ignore", "pipe", "pipe"],
           detached: true,
@@ -88,6 +122,7 @@ test(
         let text = "";
         const collect = (chunk) => {
           text = (text + chunk.toString()).slice(-8000);
+          runtimeOutput = text;
           if (text.includes("Ready in")) {
             clearTimeout(timer);
             resolve();
@@ -106,10 +141,12 @@ test(
       });
       const request = async (route) => {
         assert.equal(server.exitCode, null);
+        const started = performance.now();
         const response = await fetch(`http://127.0.0.1:38917${route}`, {
           redirect: "manual",
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(route === "/api/auth/providers" ? 120000 : 45000),
         });
+        console.error("SMOKE_REQUEST", route, response.status, Math.round(performance.now() - started));
         assert.equal(response.status, 200, `Unexpected status for ${route}`);
         return response.text();
       };
@@ -122,6 +159,7 @@ test(
       assert.ok(!html.includes(environment.NEXTAUTH_SECRET));
       assert.ok(!JSON.parse(await request("/api/auth/session")).user);
       assert.equal(typeof JSON.parse(await request("/api/auth/csrf")).csrfToken, "string");
+      if (teamFixture) await runTeamBrowserJourney({ pool, fixture: teamFixture, t });
       t.diagnostic(
         JSON.stringify({
           buildId,
@@ -132,6 +170,11 @@ test(
             .digest("hex"),
         })
       );
+    } catch (error) {
+      for (const value of sensitiveValues)
+        if (value) runtimeOutput = runtimeOutput.split(value).join("[fixture-secret-redacted]");
+      console.error("BUILT_RUNTIME_FAILURE", runtimeOutput.slice(-5000));
+      throw error;
     } finally {
       if (server?.pid && server.exitCode === null) {
         const exited = once(server, "exit");
@@ -145,6 +188,8 @@ test(
           clearTimeout(timer);
         }
       }
+      if (smtpSink) await smtpSink.close();
+      if (oidcProvider) await oidcProvider.close();
       await pool.end();
     }
   }

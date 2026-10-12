@@ -19,7 +19,7 @@ def main() -> int:
     parser.add_argument("--pg-bin", type=Path, help="Directory containing initdb and pg_ctl")
     parser.add_argument("--scratch-root", type=Path, help="Parent for the disposable fixture")
     parser.add_argument("--prisma-cli", type=Path, help="Explicit installed Prisma CLI; its version must match the repo pin")
-    parser.add_argument("--suite", choices=("bookings", "built-web"), default="bookings")
+    parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "team-journey"), default="bookings")
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
     if hasattr(os, "geteuid") and os.geteuid() == 0:
@@ -49,6 +49,8 @@ def main() -> int:
     print(f"Schema CLI: Prisma {actual} at {prisma}", flush=True)
     environment = {name: os.environ[name] for name in ("PATH", "HOME", "USER", "LANG", "NODE_PATH") if name in os.environ}
     environment["PRISMA_GENERATE_SKIP_AUTOINSTALL"] = "true"
+    if args.suite == "team-journey":
+        environment["CAL_TEAM_BROWSER_JOURNEY"] = "true"
 
     with tempfile.TemporaryDirectory(prefix="cal-enterprise-", dir=args.scratch_root) as directory:
         fixture = Path(directory)
@@ -59,7 +61,10 @@ def main() -> int:
             subprocess.run([str(pg_bin / "initdb"), "-D", str(pgdata), "-U", "cal_enterprise_test",
                             "--auth-local=trust", "--auth-host=reject", "--no-locale", "-E", "UTF8"],
                            check=True, env=environment, timeout=60)
-            options = shlex.join(["-k", str(socket), "-p", "55439", "-c", "listen_addresses=", "-c", "max_connections=12", "-c", "shared_buffers=32MB", "-c", "statement_timeout=15000"])
+            # Full Next server tests use several bounded Prisma/Kysely pools;
+            # service-only suites retain the smaller fixture limit.
+            connections = 40 if args.suite in ("built-web", "team-journey") else 12
+            options = shlex.join(["-k", str(socket), "-p", "55439", "-c", "listen_addresses=", "-c", f"max_connections={connections}", "-c", "shared_buffers=32MB", "-c", "statement_timeout=15000"])
             subprocess.run([str(pg_bin / "pg_ctl"), "-D", str(pgdata), "-l", str(fixture / "postgres.log"),
                             "-o", options, "-w", "-t", "30", "start"], check=True, env=environment, timeout=40)
             started = True
@@ -70,9 +75,10 @@ def main() -> int:
             # seed, restore, or connection to any configured application database.
             subprocess.run([node, str(prisma), "db", "push", "--schema", str(root / "packages/prisma/schema.prisma"),
                             "--skip-generate"], cwd=root, env=environment, check=True, timeout=180)
-            result = subprocess.run([node, "--test", "--test-reporter=spec",
-                                     ("tests/community-enterprise/postgres-bookings.test.cjs" if args.suite == "bookings" else "tests/community-enterprise/built-web.test.cjs")],
-                                    cwd=root, env=environment, timeout=300)
+            command = ([node, "node_modules/vitest/vitest.mjs", "run", "--config", "tests/community-enterprise/vitest.postgres.config.mts"]
+                       if args.suite == "teams" else
+                       [node, "--test", "--test-reporter=spec", {"bookings": "tests/community-enterprise/postgres-bookings.test.cjs", "built-web": "tests/community-enterprise/built-web.test.cjs", "team-journey": "tests/community-enterprise/built-web.test.cjs"}[args.suite]])
+            result = subprocess.run(command, cwd=root, env=environment, timeout=480 if args.suite == "team-journey" else 300)
             return result.returncode
         finally:
             if started:
