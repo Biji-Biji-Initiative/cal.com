@@ -20,7 +20,10 @@ def main() -> int:
     parser.add_argument("--scratch-root", type=Path, help="Parent for the disposable fixture")
     parser.add_argument("--prisma-cli", type=Path, help="Explicit installed Prisma CLI; its version must match the repo pin")
     parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "hosts", "team-journey"), default="bookings")
+    parser.add_argument("--concurrency", action="store_true", help="Run the additional deterministic booking-conflict acceptance probe")
     args = parser.parse_args()
+    if args.concurrency and args.suite != "team-journey":
+        parser.error("--concurrency requires --suite team-journey")
     root = Path(__file__).resolve().parent.parent
     if hasattr(os, "geteuid") and os.geteuid() == 0:
         parser.error("Run as an unprivileged developer, never root")
@@ -51,6 +54,8 @@ def main() -> int:
     environment["PRISMA_GENERATE_SKIP_AUTOINSTALL"] = "true"
     if args.suite == "team-journey":
         environment["CAL_TEAM_BROWSER_JOURNEY"] = "true"
+    if args.concurrency:
+        environment["CAL_BOOKING_CONCURRENCY_PROBE"] = "true"
 
     with tempfile.TemporaryDirectory(prefix="cal-enterprise-", dir=args.scratch_root) as directory:
         fixture = Path(directory)
