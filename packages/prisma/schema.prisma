@@ -2849,3 +2849,20 @@ model AttributeSyncFieldMapping {
   @@unique([integrationAttributeSyncId, attributeId])
   @@index([integrationAttributeSyncId])
 }
+
+// Administrative events remain independent of mutable users and teams so their
+// deletion cannot silently erase the operational history.
+model EnterpriseAuditEvent {
+  id             String   @id @default(cuid())
+  operationId    String   @unique
+  operationHash  String
+  actorUserId    Int
+  organizationId Int
+  entityId       Int?
+  action         String
+  details        Json
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([actorUserId, createdAt])
+}
