@@ -1,32 +1,9 @@
-import type { CredentialForCalendarService } from "@calcom/types/Credential";
+import { CommunityQualifiedHostsService } from "@calcom/features/community-enterprise/scheduling/QualifiedHostsService";
+import prisma from "@calcom/prisma";
 
-type QualifiedHost = {
-  user: {
-    id: number;
-    credentials: CredentialForCalendarService[];
-  };
-  isFixed?: boolean;
-  groupId?: string | null;
-};
+export type { QualifiedHostsService } from "@calcom/features/community-enterprise/scheduling/QualifiedHostsService";
 
-type QualifiedHostsResult = {
-  qualifiedRRHosts: QualifiedHost[];
-  allFallbackRRHosts: QualifiedHost[];
-  fixedHosts: QualifiedHost[];
-};
-
-export type QualifiedHostsService = {
-  findQualifiedHostsWithDelegationCredentials: (..._args: unknown[]) => Promise<QualifiedHostsResult>;
-};
-
-const noOpService: QualifiedHostsService = {
-  findQualifiedHostsWithDelegationCredentials: async () => ({
-    qualifiedRRHosts: [],
-    allFallbackRRHosts: [],
-    fixedHosts: [],
-  }),
-};
-
-export function getQualifiedHostsService(): QualifiedHostsService {
-  return noOpService;
+const qualifiedHostsService = new CommunityQualifiedHostsService(prisma);
+export function getQualifiedHostsService() {
+  return qualifiedHostsService;
 }
