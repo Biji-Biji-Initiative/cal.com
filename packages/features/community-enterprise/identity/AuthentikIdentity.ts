@@ -90,7 +90,7 @@ export async function authorizeAuthentikSignIn(
 
 export async function refreshAuthentikToken(
   database: Database,
-  config: AuthentikConfig | null,
+  config: Pick<AuthentikConfig, "issuer"> | null,
   input: { token: JWT; account?: Account | null; user?: { id: number | string }; requestedUpId?: unknown },
   webappUrl: string
 ): Promise<JWT> {
