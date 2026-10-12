@@ -1,4 +1,5 @@
 import dayjs from "@calcom/dayjs";
+import { assertBookingCanCommit } from "@calcom/features/community-enterprise/scheduling/BookingCommitGuard";
 import { isPrismaObjOrUndefined } from "@calcom/lib/isPrismaObj";
 import { withReporting } from "@calcom/lib/sentryWrapper";
 import prisma from "@calcom/prisma";
@@ -18,6 +19,7 @@ type ReqBodyWithEnd = TgetBookingDataSchema & { end: string };
 
 type CreateBookingParams = {
   uid: short.SUUID;
+  selectedHosts: readonly { id: number; email: string }[];
   rescheduledBy: string | undefined;
   reqBody: {
     user: ReqBodyWithEnd["user"];
@@ -60,6 +62,7 @@ function updateEventDetails(
 // Define the function with underscore prefix
 const _createBooking = async ({
   uid,
+  selectedHosts,
   reqBody,
   eventType,
   input,
@@ -73,6 +76,7 @@ const _createBooking = async ({
 
   const bookingAndAssociatedData = buildNewBookingData({
     uid,
+    selectedHosts,
     rescheduledBy,
     reqBody,
     eventType,
@@ -87,7 +91,15 @@ const _createBooking = async ({
     bookingAndAssociatedData,
     originalRescheduledBooking,
     eventType.paymentAppData,
-    eventType.organizerUser
+    eventType.organizerUser,
+    {
+      eventTypeId: eventType.id || null,
+      schedulingType: eventType.eventTypeData.schedulingType,
+      selectedHosts,
+      startTime: dayjs.utc(evt.startTime).toDate(),
+      endTime: dayjs.utc(evt.endTime).toDate(),
+      original: originalRescheduledBooking,
+    }
   );
 };
 
@@ -97,7 +109,8 @@ async function saveBooking(
   bookingAndAssociatedData: ReturnType<typeof buildNewBookingData>,
   originalRescheduledBooking: OriginalRescheduledBooking,
   paymentAppData: PaymentAppData,
-  organizerUser: CreateBookingParams["eventType"]["organizerUser"]
+  organizerUser: CreateBookingParams["eventType"]["organizerUser"],
+  commitInput: Parameters<typeof assertBookingCanCommit>[1]
 ) {
   const { newBookingData, originalBookingUpdateDataForCancellation } = bookingAndAssociatedData;
   const createBookingObj = {
@@ -136,15 +149,17 @@ async function saveBooking(
     });
   }
 
-  return prisma.$transaction(async (tx) => {
-    if (originalBookingUpdateDataForCancellation) {
-      await tx.booking.update(originalBookingUpdateDataForCancellation);
-    }
-
-    const booking = await tx.booking.create(createBookingObj);
-
-    return { ...booking, userUuid: booking.user?.uuid ?? null };
-  });
+  return prisma.$transaction(
+    async (tx) => {
+      await assertBookingCanCommit(tx, commitInput);
+      if (originalBookingUpdateDataForCancellation) {
+        await tx.booking.update(originalBookingUpdateDataForCancellation);
+      }
+      const booking = await tx.booking.create(createBookingObj);
+      return { ...booking, userUuid: booking.user?.uuid ?? null };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, maxWait: 5000, timeout: 15000 }
+  );
 }
 
 function getEventTypeRel(eventTypeId: EventTypeId) {

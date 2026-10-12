@@ -1711,6 +1711,7 @@ async function handler(
     if (!isDryRun) {
       booking = await createBooking({
         uid,
+        selectedHosts: users.map((user) => ({ id: user.id, email: user.email })),
         rescheduledBy: reqBody.rescheduledBy,
         reqBody: {
           user: reqBody.user,
