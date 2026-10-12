@@ -1,3 +1,5 @@
+import process from "node:process";
+import { restrictLocalAccountRoute } from "@calcom/features/community-enterprise/identity/StaffLoginPolicy";
 import { defaultResponderForAppDir } from "app/api/defaultResponderForAppDir";
 import { parseRequestData } from "app/api/parseRequestData";
 import type { NextRequest } from "next/server";
@@ -59,4 +61,4 @@ async function handler(req: NextRequest) {
   return NextResponse.json({ message: "First admin user created successfully." });
 }
 
-export const POST = defaultResponderForAppDir(handler);
+export const POST = restrictLocalAccountRoute(defaultResponderForAppDir(handler), () => process.env);
