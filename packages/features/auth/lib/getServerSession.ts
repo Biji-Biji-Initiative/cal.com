@@ -51,6 +51,13 @@ export async function getServerSession(options: {
     secret,
   });
 
+  if (process.env.CAL_AUTHENTIK_ONLY !== undefined) {
+    const { hasAuthentikMarker, isAuthentikOnly } = await import(
+      "@calcom/features/community-enterprise/identity/StaffLoginPolicy"
+    );
+    if (isAuthentikOnly(process.env) && !hasAuthentikMarker(token)) return null;
+  }
+
   if (token?.authentik !== undefined) {
     try {
       token = await refreshAuthentikToken(prisma, readAuthentikConfig(process.env), { token }, WEBAPP_URL);
