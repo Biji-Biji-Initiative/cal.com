@@ -9,14 +9,16 @@ export interface AuthentikConfig {
   clientSecret: string;
 }
 
-export function readAuthentikConfig(env: Record<string, string | undefined>): AuthentikConfig | null {
+// API consumers only need the issuer to revalidate an existing session. They
+// must not receive the OAuth client secret just to check an Account binding.
+export function readAuthentikSessionConfig(
+  env: Record<string, string | undefined>
+): Pick<AuthentikConfig, "issuer"> | null {
   const enabled = env.CAL_AUTHENTIK_ENABLED;
   if (enabled === undefined || enabled === "false") return null;
   if (enabled !== "true") throw new Error("CAL_AUTHENTIK_ENABLED must be true or false");
   const issuer = env.CAL_AUTHENTIK_ISSUER?.replace(/\/$/, "");
-  const clientId = env.CAL_AUTHENTIK_CLIENT_ID;
-  const clientSecret = env.CAL_AUTHENTIK_CLIENT_SECRET;
-  if (!issuer || !clientId || !clientSecret) throw new Error("Incomplete Authentik configuration");
+  if (!issuer) throw new Error("Incomplete Authentik configuration");
   const url = new URL(issuer);
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   if (
@@ -28,7 +30,16 @@ export function readAuthentikConfig(env: Record<string, string | undefined>): Au
   ) {
     throw new Error("Invalid Authentik issuer URL");
   }
-  return { issuer, clientId, clientSecret };
+  return { issuer };
+}
+
+export function readAuthentikConfig(env: Record<string, string | undefined>): AuthentikConfig | null {
+  const sessionConfig = readAuthentikSessionConfig(env);
+  if (!sessionConfig) return null;
+  const clientId = env.CAL_AUTHENTIK_CLIENT_ID;
+  const clientSecret = env.CAL_AUTHENTIK_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw new Error("Incomplete Authentik configuration");
+  return { ...sessionConfig, clientId, clientSecret };
 }
 
 export function authentikAccountId(issuer: string, subject: string): string {
