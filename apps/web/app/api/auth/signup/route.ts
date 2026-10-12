@@ -1,3 +1,5 @@
+import process from "node:process";
+import { restrictLocalAccountRoute } from "@calcom/features/community-enterprise/identity/StaffLoginPolicy";
 import { defaultResponderForAppDir } from "app/api/defaultResponderForAppDir";
 import { parseRequestData } from "app/api/parseRequestData";
 import { NextResponse, type NextRequest } from "next/server";
@@ -60,7 +62,7 @@ async function handler(req: NextRequest) {
      * Calcom handles things like creating a stripe customer - which we don't need to do for self hosted.
      * It also handles things like premium username.
      * TODO: (SEAN) - Extract a lot of the logic from calcomHandler into a separate file and import it into both handlers.
-     * @zomars: We need to be able to test this with E2E. They way it's done RN it will never run on CI.
+     * @zomars: We need to be able to test this with e2e. They way it's done RN it will never run on CI.
      */
     if (IS_PREMIUM_USERNAME_ENABLED) {
       return await calcomSignupHandler(body, query);
@@ -76,4 +78,4 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const POST = defaultResponderForAppDir(handler);
+export const POST = restrictLocalAccountRoute(defaultResponderForAppDir(handler), () => process.env);
