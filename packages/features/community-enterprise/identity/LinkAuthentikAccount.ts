@@ -14,7 +14,7 @@ export interface LinkAuthentikInput {
 // endpoint. The UUID prevents an accidentally reused numeric ID from being linked.
 export async function linkAuthentikAccount(
   database: LinkDatabase,
-  config: AuthentikConfig,
+  config: Pick<AuthentikConfig, "issuer">,
   input: LinkAuthentikInput,
   apply = false
 ) {
