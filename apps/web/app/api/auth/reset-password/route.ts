@@ -1,3 +1,5 @@
+import process from "node:process";
+import { restrictLocalAccountRoute } from "@calcom/features/community-enterprise/identity/StaffLoginPolicy";
 import { defaultResponderForAppDir } from "app/api/defaultResponderForAppDir";
 import { parseRequestData } from "app/api/parseRequestData";
 import { cookies } from "next/headers";
@@ -101,4 +103,4 @@ async function expireResetPasswordRequest(rawRequestId: string) {
   });
 }
 
-export const POST = defaultResponderForAppDir(handler);
+export const POST = restrictLocalAccountRoute(defaultResponderForAppDir(handler), () => process.env);
