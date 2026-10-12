@@ -1,6 +1,18 @@
 # Open-source enterprise calendar — implementation record
 
-## Latest: multi-host runtime and atomic regular booking writes
+## Current: reviewed identity onboarding (2026-10-13)
+
+The existing account-link helper now has an operator-only plan/apply workflow,
+with exact user UUIDs, current instance-administrator checks, deployment-bound
+expiring plans, conflicting-identity protection and atomic batch audit. It reuses
+Account and EnterpriseAuditEvent; no schema change or public API was introduced.
+24 real PostgreSQL/CLI checks and 132 enterprise regressions pass. See
+[identity onboarding](IDENTITY-ONBOARDING-2026-10-13.md) for commands, evidence,
+reviewed scanner warnings and boundaries. Real preview mappings and execution
+remain in CAL-04.LINK; no staff account or deployed environment was changed.
+
+
+## Prior: multi-host runtime and atomic regular booking writes
 
 The rebuilt local application now proves directed round-robin selection,
 same-host rescheduling, explicit rerouting, removed/locked host rejection and

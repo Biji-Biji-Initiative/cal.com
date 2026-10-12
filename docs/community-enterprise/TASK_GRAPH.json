@@ -548,7 +548,10 @@
       "lane": "identity",
       "owner_role": "identity owner",
       "owned_paths": [
-        "packages/features/community-enterprise/identity/LinkAuthentikAccount.ts"
+        "packages/features/community-enterprise/identity/LinkAuthentikAccount.ts",
+        "packages/features/community-enterprise/identity/AuditedIdentityLinkService.ts",
+        "packages/features/community-enterprise/identity/IdentityLinkPlan.ts",
+        "scripts/link-enterprise-identity.cjs"
       ],
       "acceptance": [
         "Dry-run first; explicit user ID plus expected UUID and issuer/subject; refuse rebind and concurrent conflicting identity.",
@@ -561,12 +564,21 @@
           "command": "node --test tests/community-enterprise/authentik.test.cjs",
           "exit_code": 0,
           "summary": "Local token/binding/profile and linkage-service tests pass. Live identity enforcement, full direct-reader inventory and operator transaction integration remain open."
+        },
+        {
+          "file": "docs/community-enterprise/IDENTITY-ONBOARDING-2026-10-13.md",
+          "level": "runtime",
+          "command": "yarn test:community-enterprise:identity-link --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "24 real database/CLI checks in an isolated synthetic database. Not a deployed preview, real IdP provisioning or migrated-staff acceptance."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
-      "priority": 0
+      "priority": 0,
+      "progress": "Reviewed operator plan/apply CLI and atomic batch linkage/audit implemented. 24 real PostgreSQL checks pass, including native sign-in compatibility and actual CLI. Live preview mappings and operator execution remain open; no staff identity changed.",
+      "progress_reference": "docs/community-enterprise/IDENTITY-ONBOARDING-2026-10-13.md"
     },
     {
       "id": "CAL-04.SCIM",
@@ -1088,5 +1100,5 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/MULTI-HOST-2026-10-12.md"
+  "latest_evidence": "docs/community-enterprise/IDENTITY-ONBOARDING-2026-10-13.md"
 }
