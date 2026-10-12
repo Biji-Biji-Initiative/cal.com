@@ -212,3 +212,7 @@ export async function verifyPhoneNumber(
 ): Promise<boolean> {
   throw new Error("Phone verification is not available in community edition");
 }
+
+export { readAuthentikSessionConfig } from "@calcom/features/community-enterprise/identity/AuthentikConfig";
+export { refreshAuthentikToken } from "@calcom/features/community-enterprise/identity/AuthentikIdentity";
+export { hasAuthentikMarker, isAuthentikOnly } from "@calcom/features/community-enterprise/identity/StaffLoginPolicy";
