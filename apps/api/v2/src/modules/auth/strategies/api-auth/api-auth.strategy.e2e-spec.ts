@@ -21,6 +21,7 @@ import {
   ONLY_CLIENT_SECRET_PROVIDED_MESSAGE,
 } from "./api-auth.strategy";
 import appConfig from "@/config/app";
+import { NextAuthSessionService } from "@/modules/auth/services/next-auth-session.service";
 import { AuthMethods } from "@/lib/enums/auth-methods";
 import { ApiKeysRepository } from "@/modules/api-keys/api-keys-repository";
 import { DeploymentsRepository } from "@/modules/deployments/deployments.repository";
@@ -74,6 +75,7 @@ describe("ApiAuthStrategy", () => {
       providers: [
         MockedRedisService,
         ApiAuthStrategy,
+        NextAuthSessionService,
         ConfigService,
         OAuthFlowService,
         UsersRepository,
