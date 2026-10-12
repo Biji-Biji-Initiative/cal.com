@@ -83,7 +83,7 @@
     "changesets-version": "yarn changeset version",
     "changesets-release": "NODE_OPTIONS='--max_old_space_size=12288' turbo run build-npm --filter=@calcom/atoms && yarn changeset publish",
     "lint-staged": "lint-staged",
-    "test:community-enterprise": "node scripts/verify-community-enterprise-permissions.cjs && node scripts/verify-community-enterprise-task-graph.cjs && node --test tests/community-enterprise/authorization.test.cjs tests/community-enterprise/authentik.test.cjs tests/community-enterprise/task-graph.test.cjs tests/community-enterprise/booking-expectations.test.cjs",
+    "test:community-enterprise": "node scripts/verify-community-enterprise-permissions.cjs && node scripts/verify-community-enterprise-task-graph.cjs && node --test tests/community-enterprise/authorization.test.cjs tests/community-enterprise/authentik.test.cjs tests/community-enterprise/task-graph.test.cjs tests/community-enterprise/booking-expectations.test.cjs tests/community-enterprise/identity-link-cli.test.cjs",
     "test:community-enterprise:postgres": "python3 scripts/run-community-enterprise-postgres.py",
     "test:community-enterprise:build-config": "node --test tests/community-enterprise/build-config.test.cjs",
     "test:community-enterprise:web-smoke": "python3 scripts/run-community-enterprise-postgres.py --suite built-web",
@@ -93,7 +93,9 @@
     "test:community-enterprise:host-db": "python3 scripts/run-community-enterprise-postgres.py --suite hosts",
     "test:community-enterprise:retained-scheduler": "node scripts/generate-prismock-client.cjs && vitest run packages/features/bookings/lib/handleNewBooking/test/reschedule.test.ts packages/features/bookings/lib/getLuckyUser.test.ts packages/features/bookings/lib/handleNewBooking/test/fresh-booking.test.ts packages/features/bookings/lib/handleNewBooking/test/dynamic-group-booking.test.ts --maxWorkers=1 --no-file-parallelism",
     "test:community-enterprise:calendar": "node --test tests/community-enterprise/timezone-date-ranges.test.cjs && TZ=UTC vitest run packages/features/schedules/lib/date-ranges.test.ts packages/features/availability/lib/getAggregatedAvailability/getAggregatedAvailability.test.ts packages/features/availability/lib/getAggregatedAvailability/required-hosts.test.ts --maxWorkers=1 --no-file-parallelism",
-    "test:community-enterprise:booking-concurrency": "python3 scripts/run-community-enterprise-postgres.py --suite team-journey --concurrency"
+    "test:community-enterprise:booking-concurrency": "python3 scripts/run-community-enterprise-postgres.py --suite team-journey --concurrency",
+    "test:community-enterprise:identity-link": "python3 scripts/run-community-enterprise-postgres.py --suite identity-link",
+    "enterprise:identity-link": "node scripts/link-enterprise-identity.cjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.10",

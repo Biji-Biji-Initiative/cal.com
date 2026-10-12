@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: [
+      "tests/community-enterprise/postgres-identity-link.test.ts",
       "tests/community-enterprise/postgres-teams.test.ts",
       "tests/community-enterprise/postgres-hosts.test.ts",
     ],
