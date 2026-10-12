@@ -1,3 +1,5 @@
+import { NextAuthSessionService } from "@/modules/auth/services/next-auth-session.service";
+import { PrismaModule } from "@/modules/prisma/prisma.module";
 import { ApiKeysModule } from "@/modules/api-keys/api-keys.module";
 import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
 import { NextAuthGuard } from "@/modules/auth/guards/next-auth/next-auth.guard";
@@ -15,6 +17,7 @@ import { PassportModule } from "@nestjs/passport";
 @Module({
   imports: [
     PassportModule,
+    PrismaModule,
     RedisModule,
     ApiKeysModule,
     UsersModule,
@@ -22,7 +25,7 @@ import { PassportModule } from "@nestjs/passport";
     TokensModule,
     DeploymentsModule,
   ],
-  providers: [NextAuthGuard, NextAuthStrategy, ApiAuthGuard, ApiAuthStrategy, OAuthFlowService],
+  providers: [NextAuthSessionService, NextAuthGuard, NextAuthStrategy, ApiAuthGuard, ApiAuthStrategy, OAuthFlowService],
   exports: [NextAuthGuard, ApiAuthGuard],
 })
 export class AuthModule {}
