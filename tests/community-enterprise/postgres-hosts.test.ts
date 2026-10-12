@@ -357,3 +357,384 @@ test("cancelled booking same-host policy follows the configured rebooking settin
     []
   );
 });
+
+// Real PostgreSQL commit-boundary tests; this suite does not load Prismock.
+import { assertBookingCanCommit } from "@calcom/features/community-enterprise/scheduling/BookingCommitGuard";
+
+const commitStart = new Date("2030-06-10T10:00:00Z");
+function commitInput(overrides = {}) {
+  return {
+    eventTypeId: 501,
+    schedulingType: "ROUND_ROBIN",
+    selectedHosts: [{ id: 1, email: "user1@fixture.test" }],
+    startTime: commitStart,
+    endTime: new Date(commitStart.getTime() + 1800000),
+    ...overrides,
+  };
+}
+const checkCommit = (input) =>
+  prisma.$transaction((tx) => assertBookingCanCommit(tx, input), {
+    isolationLevel: "ReadCommitted",
+    timeout: 10000,
+  });
+
+test("commit guard refuses a snapshot that cannot see a preceding lock holder commit", async () => {
+  await event();
+  await assert.rejects(
+    prisma.$transaction((tx) => assertBookingCanCommit(tx, commitInput()), {
+      isolationLevel: "RepeatableRead",
+    }),
+    /read-committed isolation/
+  );
+});
+test("commit guard permits an eligible free host", async () => {
+  await event();
+  await checkCommit(commitInput());
+});
+test("commit guard rejects stale host identity and revoked membership", async () => {
+  await event();
+  await assert.rejects(
+    checkCommit(commitInput({ selectedHosts: [{ id: 1, email: "changed@fixture.test" }] }))
+  );
+  await prisma.membership.delete({ where: { userId_teamId: { userId: 1, teamId: 10 } } });
+  await assert.rejects(checkCommit(commitInput()));
+});
+test("commit guard cannot reduce a collective meeting or select two members of one RR group", async () => {
+  await event();
+  await assert.rejects(
+    checkCommit(
+      commitInput({
+        selectedHosts: [
+          { id: 1, email: "user1@fixture.test" },
+          { id: 2, email: "user2@fixture.test" },
+        ],
+      })
+    )
+  );
+  await prisma.eventType.update({ where: { id: 501 }, data: { schedulingType: "COLLECTIVE" } });
+  await assert.rejects(checkCommit(commitInput({ schedulingType: "COLLECTIVE" })));
+  await checkCommit(
+    commitInput({
+      schedulingType: "COLLECTIVE",
+      selectedHosts: [
+        { id: 1, email: "user1@fixture.test" },
+        { id: 2, email: "user2@fixture.test" },
+      ],
+    })
+  );
+});
+test("commit guard rejects an overlapping accepted appointment across event types", async () => {
+  await event();
+  await prisma.eventType.create({ data: { id: 502, title: "Other", slug: "other", length: 30, userId: 1 } });
+  await original(502, 1);
+  await assert.rejects(
+    checkCommit(
+      commitInput({ startTime: new Date("2030-06-10T10:15:00Z"), endTime: new Date("2030-06-10T10:45:00Z") })
+    )
+  );
+});
+test("commit guard permits exact adjacency without buffers", async () => {
+  await event();
+  await original(501, 1);
+  await checkCommit(
+    commitInput({ startTime: new Date("2030-06-10T10:30:00Z"), endTime: new Date("2030-06-10T11:00:00Z") })
+  );
+});
+test("commit guard preserves the existing event's after buffer", async () => {
+  await event();
+  await prisma.eventType.create({
+    data: { id: 502, title: "Other", slug: "other", length: 30, userId: 1, afterEventBuffer: 20 },
+  });
+  await original(502, 1);
+  await assert.rejects(
+    checkCommit(
+      commitInput({ startTime: new Date("2030-06-10T10:45:00Z"), endTime: new Date("2030-06-10T11:15:00Z") })
+    )
+  );
+});
+test("commit guard preserves the candidate event's before buffer", async () => {
+  await event({ beforeEventBuffer: 15 });
+  await prisma.eventType.create({ data: { id: 502, title: "Other", slug: "other", length: 30, userId: 1 } });
+  await original(502, 1);
+  await assert.rejects(
+    checkCommit(
+      commitInput({ startTime: new Date("2030-06-10T10:40:00Z"), endTime: new Date("2030-06-10T11:10:00Z") })
+    )
+  );
+});
+test("commit guard detects a selected host who participates in another organizer's appointment", async () => {
+  await event();
+  const booking = await original(501, 2);
+  await prisma.attendee.create({
+    data: { name: "Host", email: "user1@fixture.test", timeZone: "UTC", bookingId: booking.id },
+  });
+  await assert.rejects(checkCommit(commitInput()));
+});
+test("pending bookings reserve time only when their event requires blocking", async () => {
+  await event();
+  await prisma.eventType.create({
+    data: {
+      id: 502,
+      title: "Other",
+      slug: "other",
+      length: 30,
+      userId: 1,
+      requiresConfirmation: true,
+      requiresConfirmationWillBlockSlot: true,
+    },
+  });
+  const booking = await original(502, 1);
+  await prisma.booking.update({ where: { id: booking.id }, data: { status: "PENDING" } });
+  await assert.rejects(checkCommit(commitInput()));
+  await prisma.eventType.update({ where: { id: 502 }, data: { requiresConfirmationWillBlockSlot: false } });
+  await checkCommit(commitInput());
+});
+test("cancelled appointments do not reserve host time", async () => {
+  await event();
+  const booking = await original(501, 1);
+  await prisma.booking.update({ where: { id: booking.id }, data: { status: "CANCELLED" } });
+  await checkCommit(commitInput());
+});
+test("reschedule exclusion is bound to the unchanged original booking", async () => {
+  await event();
+  const booking = await original(501, 1);
+  await checkCommit(commitInput({ original: booking }));
+  await prisma.booking.update({ where: { id: booking.id }, data: { status: "CANCELLED" } });
+  await assert.rejects(checkCommit(commitInput({ original: booking })));
+});
+test("a losing reschedule does not cancel its previous booking", async () => {
+  await event();
+  const old = await original(501, 1);
+  await prisma.booking.create({
+    data: {
+      uid: "blocking",
+      title: "Busy",
+      eventTypeId: 501,
+      userId: 1,
+      startTime: new Date("2030-06-11T10:00:00Z"),
+      endTime: new Date("2030-06-11T10:30:00Z"),
+      status: "ACCEPTED",
+    },
+  });
+  await assert.rejects(
+    prisma.$transaction(
+      async (tx) => {
+        await assertBookingCanCommit(
+          tx,
+          commitInput({
+            original: old,
+            startTime: new Date("2030-06-11T10:00:00Z"),
+            endTime: new Date("2030-06-11T10:30:00Z"),
+          })
+        );
+        await tx.booking.update({ where: { id: old.id }, data: { status: "CANCELLED" } });
+      },
+      { isolationLevel: "ReadCommitted" }
+    )
+  );
+  assert.equal((await prisma.booking.findUnique({ where: { id: old.id } })).status, "ACCEPTED");
+});
+async function raceCommitInputs(inputs) {
+  const barrier = await pool.connect();
+  let requests;
+  let released = false;
+  try {
+    await barrier.query("BEGIN");
+    const gateId = (await barrier.query("SELECT pg_backend_pid() AS id")).rows[0].id;
+    const shared = inputs[0].selectedHosts
+      .map((host) => host.id)
+      .filter((id) => inputs[1].selectedHosts.some((host) => host.id === id));
+    if (inputs[0].original && inputs[0].original.id === inputs[1].original?.id) {
+      await barrier.query('SELECT id FROM "Booking" WHERE id=$1 FOR UPDATE', [inputs[0].original.id]);
+    } else {
+      assert.ok(shared.length);
+      await barrier.query('SELECT id FROM "users" WHERE id=ANY($1::int[]) ORDER BY id FOR UPDATE', [shared]);
+    }
+    requests = Promise.allSettled(
+      inputs.map((input, index) =>
+        prisma.$transaction(
+          async (tx) => {
+            await assertBookingCanCommit(tx, input);
+            if (input.original)
+              await tx.booking.update({ where: { id: input.original.id }, data: { status: "CANCELLED" } });
+            return tx.booking.create({
+              data: {
+                uid: `concurrent-${index}`,
+                title: "Race",
+                eventTypeId: input.eventTypeId,
+                userId: input.selectedHosts[0].id,
+                startTime: input.startTime,
+                endTime: input.endTime,
+                status: "ACCEPTED",
+                attendees: {
+                  create: input.selectedHosts
+                    .slice(1)
+                    .map((host) => ({ email: host.email, name: "Host", timeZone: "UTC" })),
+                },
+              },
+            });
+          },
+          { isolationLevel: "ReadCommitted", timeout: 10000 }
+        )
+      )
+    );
+    let waiting = 0;
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      waiting = (
+        await pool.query(
+          `WITH RECURSIVE waiters(pid) AS (
+        SELECT pid FROM pg_stat_activity WHERE $1::int = ANY(pg_blocking_pids(pid))
+        UNION SELECT a.pid FROM pg_stat_activity a JOIN waiters w ON w.pid = ANY(pg_blocking_pids(a.pid))
+      ) SELECT count(*)::int AS count FROM waiters`,
+          [gateId]
+        )
+      ).rows[0].count;
+      if (waiting === 2) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert.equal(waiting, 2, "Both real transactions must contend for the owned row gate");
+    await barrier.query("COMMIT");
+    released = true;
+    const settled = await requests;
+    assert.equal(settled.filter((result) => result.status === "fulfilled").length, 1);
+    const rejected = settled.find((result) => result.status === "rejected");
+    assert.equal(rejected?.reason?.code, "booking_conflict_error");
+    return settled.find((result) => result.status === "fulfilled").value;
+  } finally {
+    if (!released) await barrier.query("ROLLBACK");
+    barrier.release();
+    if (requests) await requests;
+  }
+}
+test("PostgreSQL permits only one overlapping cross-event booking to commit", async () => {
+  await event();
+  await prisma.eventType.create({
+    data: {
+      id: 502,
+      title: "Other",
+      slug: "other",
+      length: 30,
+      teamId: 10,
+      schedulingType: "ROUND_ROBIN",
+      hosts: { create: [{ userId: 1, isFixed: false }] },
+    },
+  });
+  await raceCommitInputs([
+    commitInput(),
+    commitInput({
+      eventTypeId: 502,
+      startTime: new Date("2030-06-10T10:15:00Z"),
+      endTime: new Date("2030-06-10T10:45:00Z"),
+    }),
+  ]);
+  assert.equal(await prisma.booking.count({ where: { status: "ACCEPTED" } }), 1);
+});
+test("a shared collective participant cannot be double-booked under different organizers", async () => {
+  await event({ schedulingType: "COLLECTIVE" });
+  await prisma.eventType.create({
+    data: {
+      id: 502,
+      title: "Other",
+      slug: "other",
+      length: 30,
+      teamId: 10,
+      schedulingType: "ROUND_ROBIN",
+      hosts: { create: [{ userId: 2, isFixed: false }] },
+    },
+  });
+  await raceCommitInputs([
+    commitInput({
+      schedulingType: "COLLECTIVE",
+      selectedHosts: [
+        { id: 1, email: "user1@fixture.test" },
+        { id: 2, email: "user2@fixture.test" },
+      ],
+    }),
+    commitInput({
+      eventTypeId: 502,
+      selectedHosts: [{ id: 2, email: "user2@fixture.test" }],
+      startTime: new Date("2030-06-10T10:15:00Z"),
+      endTime: new Date("2030-06-10T10:45:00Z"),
+    }),
+  ]);
+  assert.equal(await prisma.booking.count({ where: { status: "ACCEPTED" } }), 1);
+});
+
+test("two reschedules of one booking to disjoint new hosts cannot both succeed", async () => {
+  await event();
+  const old = await original(501, 1);
+  await raceCommitInputs([
+    commitInput({
+      original: old,
+      startTime: new Date("2030-06-11T10:00:00Z"),
+      endTime: new Date("2030-06-11T10:30:00Z"),
+    }),
+    commitInput({
+      original: old,
+      selectedHosts: [{ id: 2, email: "user2@fixture.test" }],
+      startTime: new Date("2030-06-12T10:00:00Z"),
+      endTime: new Date("2030-06-12T10:30:00Z"),
+    }),
+  ]);
+  assert.equal(await prisma.booking.count({ where: { status: "ACCEPTED" } }), 1);
+  assert.equal((await prisma.booking.findUnique({ where: { id: old.id } })).status, "CANCELLED");
+});
+test("reversed collective host order cannot bypass a shared-host conflict", async () => {
+  await event({ schedulingType: "COLLECTIVE" });
+  await prisma.eventType.create({
+    data: {
+      id: 502,
+      title: "Other",
+      slug: "other",
+      length: 30,
+      teamId: 10,
+      schedulingType: "COLLECTIVE",
+      hosts: {
+        create: [
+          { userId: 1, isFixed: false },
+          { userId: 2, isFixed: false },
+        ],
+      },
+    },
+  });
+  const hosts = [
+    { id: 1, email: "user1@fixture.test" },
+    { id: 2, email: "user2@fixture.test" },
+  ];
+  await raceCommitInputs([
+    commitInput({ schedulingType: "COLLECTIVE", selectedHosts: hosts }),
+    commitInput({
+      eventTypeId: 502,
+      schedulingType: "COLLECTIVE",
+      selectedHosts: [...hosts].reverse(),
+      startTime: new Date("2030-06-10T10:15:00Z"),
+      endTime: new Date("2030-06-10T10:45:00Z"),
+    }),
+  ]);
+});
+test("independent hosts are not blocked merely because they share an event", async () => {
+  await event();
+  const requests = [1, 2].map((id) =>
+    prisma.$transaction(
+      async (tx) => {
+        const input = commitInput({ selectedHosts: [{ id, email: `user${id}@fixture.test` }] });
+        await assertBookingCanCommit(tx, input);
+        return tx.booking.create({
+          data: {
+            uid: `independent-${id}`,
+            title: "Independent",
+            eventTypeId: 501,
+            userId: id,
+            startTime: input.startTime,
+            endTime: input.endTime,
+            status: "ACCEPTED",
+          },
+        });
+      },
+      { isolationLevel: "ReadCommitted", timeout: 10000 }
+    )
+  );
+  await Promise.all(requests);
+  assert.equal(await prisma.booking.count({ where: { status: "ACCEPTED" } }), 2);
+});

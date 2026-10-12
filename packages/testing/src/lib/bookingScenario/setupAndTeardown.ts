@@ -1,6 +1,16 @@
 import { enableEmailFeature, mockNoTranslations } from "./bookingScenario";
 import process from "node:process";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
+
+// Prismock cannot model raw SQL or PostgreSQL row-lock isolation. This
+// suite remains an engine/provider unit test. Real commit isolation is exercised
+// by postgres-hosts.test.ts and the packaged booking-concurrency HTTP suite.
+vi.mock("@calcom/features/community-enterprise/scheduling/BookingCommitGuard", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@calcom/features/community-enterprise/scheduling/BookingCommitGuard")
+  >()),
+  assertBookingCanCommit: vi.fn(async () => undefined),
+}));
 
 export function setupAndTeardown() {
   beforeEach(() => {
