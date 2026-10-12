@@ -32,7 +32,7 @@ test("round-robin email assertion returns a promise and waits for all outcomes",
       await Promise.resolve();
       callback();
     },
-    (message) => messages.push(message.heading)
+    (message) => messages.push(message)
   );
   const result = check({
     emails: [],
@@ -42,7 +42,12 @@ test("round-robin email assertion returns a promise and waits for all outcomes",
   });
   assert.equal(typeof result?.then, "function");
   await result;
-  assert.deepEqual(messages, ["new_event_scheduled", "event_request_cancelled", "event_request_reassigned"]);
+  assert.deepEqual(
+    messages.map((message) => message.heading),
+    ["new_event_scheduled", "event_request_cancelled", "event_request_cancelled"]
+  );
+  assert.equal(messages[2].subHeading, "event_reassigned_subtitle");
+  assert.deepEqual(messages[2].links, [{ text: "new@example.test", href: "mailto:new@example.test" }]);
 });
 test("same host represented by distinct fixture objects expects a reschedule, not reassignment", async () => {
   const messages = [];
@@ -128,5 +133,23 @@ test("email assertions find the requested lifecycle notification, not an older m
   assert.equal(
     selectNotification(messages, { heading: "event_has_been_rescheduled" }, to, "created"),
     undefined
+  );
+});
+
+test("a cancellation notice without required reassignment detail cannot pass", async () => {
+  const check = load(
+    async (callback) => callback(),
+    (message) => {
+      if (message.subHeading === "event_reassigned_subtitle") throw new Error("Missing reassignment details");
+    }
+  );
+  await assert.rejects(
+    check({
+      emails: [],
+      newOrganizer: { email: "new@example.test" },
+      prevOrganizer: { email: "old@example.test" },
+      bookerReschedule: true,
+    }),
+    /Missing reassignment details/
   );
 });

@@ -753,7 +753,11 @@ export async function expectSuccessfulRoundRobinReschedulingEmails({
       await vi.waitFor(() => {
         expect(emails).toHaveEmail(
           {
-            heading: "event_request_reassigned",
+            // The existing sender combines cancellation with reassignment.
+            // Verify the new organizer is actually identified in that notice.
+            heading: "event_request_cancelled",
+            subHeading: "event_reassigned_subtitle",
+            links: [{ text: newOrganizer.email, href: `mailto:${newOrganizer.email}` }],
             to: `${prevOrganizer.email}`,
           },
           `${prevOrganizer.email}`

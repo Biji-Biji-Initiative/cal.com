@@ -2377,6 +2377,8 @@ describe("handleNewBooking", () => {
                 location: { optionValue: "", value: BookingLocations.CalVideo },
               },
               rescheduledBy: booker.email,
+              // Make reassignment intentional; unweighted random choice is not a test fixture.
+              routedTeamMemberIds: [roundRobinHost2.id],
             },
           });
 
@@ -2410,7 +2412,8 @@ describe("handleNewBooking", () => {
           expect(createdBooking.startTime?.toISOString()).toBe(`${plus1DateString}T04:00:00.000Z`);
           expect(createdBooking.endTime?.toISOString()).toBe(`${plus1DateString}T04:15:00.000Z`);
 
-          expect(createdBooking.title).toBe(`${booker.name} and ${roundRobinHost1.name}: Team Meeting`);
+          expect(createdBooking.userId).toBe(roundRobinHost2.id);
+          expect(createdBooking.title).toBe(`${booker.name} and ${roundRobinHost2.name}: Team Meeting`);
 
           await expectBookingInDBToBeRescheduledFromTo({
             from: {
@@ -2916,9 +2919,9 @@ describe("handleNewBooking", () => {
           expect(createdBooking.startTime?.toISOString()).toBe(`${plus1DateString}T04:00:00.000Z`);
           expect(createdBooking.endTime?.toISOString()).toBe(`${plus1DateString}T04:15:00.000Z`);
 
-          // After EE removal, rescheduleWithSameRoundRobinHost logic is gone,
-          // so round-robin may reassign to a different host (host 101 in this case)
-          expect(createdBooking.userId).toBe(roundRobinHost1.id);
+          // The existing booking belongs to host 102. The enabled policy must
+          // retain that host, not silently downgrade to a different organizer.
+          expect(createdBooking.userId).toBe(roundRobinHost2.id);
 
           await expectBookingInDBToBeRescheduledFromTo({
             from: {
@@ -2939,8 +2942,8 @@ describe("handleNewBooking", () => {
           });
 
           await expectSuccessfulRoundRobinReschedulingEmails({
-            prevOrganizer: roundRobinHost1,
-            newOrganizer: roundRobinHost1,
+            prevOrganizer: roundRobinHost2,
+            newOrganizer: roundRobinHost2,
             emails,
           });
         },
