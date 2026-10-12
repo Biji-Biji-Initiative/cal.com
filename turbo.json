@@ -3,6 +3,7 @@
   "globalDependencies": ["yarn.lock"],
   "globalEnv": [
     "CAL_AUTHENTIK_ENABLED",
+    "CAL_AUTHENTIK_ONLY",
     "CAL_AUTHENTIK_ISSUER",
     "CAL_AUTHENTIK_CLIENT_ID",
     "CAL_AUTHENTIK_CLIENT_SECRET",
