@@ -1,3 +1,5 @@
+import process from "node:process";
+import { restrictLocalAccountRoute } from "@calcom/features/community-enterprise/identity/StaffLoginPolicy";
 import { passwordResetRequest } from "@calcom/features/auth/lib/passwordResetRequest";
 import { checkRateLimitAndThrowError } from "@calcom/lib/checkRateLimitAndThrowError";
 import { emailSchema } from "@calcom/lib/emailSchema";
@@ -38,4 +40,4 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const POST = defaultResponderForAppDir(handler);
+export const POST = restrictLocalAccountRoute(defaultResponderForAppDir(handler), () => process.env);
