@@ -1,4 +1,5 @@
 import process from "node:process";
+import { isAuthentikOnly } from "@calcom/features/community-enterprise/identity/StaffLoginPolicy";
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
 import { readAuthentikConfig } from "@calcom/features/community-enterprise/identity/AuthentikConfig";
 import { WEBSITE_URL } from "@calcom/lib/constants";
@@ -11,6 +12,7 @@ import { getCsrfToken } from "next-auth/react";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const { req, query } = context;
+  const onlyAuthentik = isAuthentikOnly(process.env);
 
   const session = await getServerSession({ req });
 
@@ -25,7 +27,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   };
 
   let totpEmail = null;
-  if (context.query.totp) {
+  if (context.query.totp && !onlyAuthentik) {
     try {
       const decryptedJwt = await verifyJwt(context.query.totp as string);
       if (decryptedJwt.payload) {
@@ -76,7 +78,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   }
 
   const userExists = await prisma.user.findFirst({ select: { id: true } });
-  if (!userExists) {
+  if (!userExists && !onlyAuthentik) {
     // Proceed to new onboarding to create first admin user
     return {
       redirect: {
@@ -88,7 +90,8 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   return {
     props: {
       csrfToken: await getCsrfToken(context),
-      isGoogleLoginEnabled: IS_GOOGLE_LOGIN_ENABLED,
+      isGoogleLoginEnabled: !onlyAuthentik && IS_GOOGLE_LOGIN_ENABLED,
+      isAuthentikOnlyLogin: onlyAuthentik,
       isAuthentikLoginEnabled: readAuthentikConfig(process.env) !== null,
       isOutlookLoginEnabled: false,
       totpEmail,
