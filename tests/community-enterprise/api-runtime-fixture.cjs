@@ -69,14 +69,6 @@ function fixtureModules(state) {
         },
       },
     ],
-    [
-      "@calcom/platform-constants",
-      {
-        INVALID_ACCESS_TOKEN: "invalid",
-        X_CAL_CLIENT_ID: "x-cal-client-id",
-        X_CAL_SECRET_KEY: "x-cal-secret-key",
-      },
-    ],
   ]);
   function load(filename) {
     const file = [filename, `${filename}.ts`, `${filename}.tsx`, path.join(filename, "index.ts")].find(
@@ -101,6 +93,8 @@ function fixtureModules(state) {
     new Function("require", "module", "exports", "__filename", "__dirname", result.outputText)(
       (name) => {
         if (substitutions.has(name)) return substitutions.get(name);
+        if (name === "@calcom/platform-constants")
+          return load(path.join(root, "packages/platform/constants/api.ts"));
         if (name === "@calcom/prisma") return { __esModule: true, default: state.primary.prisma };
         if (name === "@calcom/platform-libraries") {
           return Object.assign(
@@ -110,6 +104,7 @@ function fixtureModules(state) {
               "identity/AuthentikIdentity",
               "identity/StaffLoginPolicy",
               "api-keys/ApiKeyAuthentication",
+              "api-keys/ApiKeyLifecycle",
             ].map((entry) => load(path.join(root, "packages/features/community-enterprise", entry)))
           );
         }
@@ -128,7 +123,7 @@ function fixtureModules(state) {
   return { load, tokens };
 }
 
-async function createApiRuntime(state) {
+async function createApiRuntime(state, options = {}) {
   const { load, tokens } = fixtureModules(state);
   const auth = "apps/api/v2/src/modules/auth/";
   const { NextAuthSessionService } = load(path.join(root, auth, "services/next-auth-session.service.ts"));
@@ -179,10 +174,18 @@ async function createApiRuntime(state) {
     UseGuards(method === null ? NextAuthGuard : ApiAuthGuard)(FixtureController.prototype, name, descriptor);
     if (method) ApiAuthGuardOnlyAllow([method])(FixtureController.prototype, name, descriptor);
   }
+  const controllers = [FixtureController];
+  const extraProviders = [];
+  if (options.apiKeyController) {
+    const apiKeys = path.join(root, "apps/api/v2/src/modules/api-keys");
+    controllers.push(load(path.join(apiKeys, "controllers/api-keys.controller.ts")).ApiKeysController);
+    extraProviders.push(load(path.join(apiKeys, "services/api-keys.service.ts")).ApiKeysService);
+  }
   const module = await Test.createTestingModule({
     imports: [PassportModule],
-    controllers: [FixtureController],
+    controllers,
     providers: [
+      ...extraProviders,
       ApiAuthStrategy,
       NextAuthStrategy,
       NextAuthSessionService,
@@ -197,6 +200,7 @@ async function createApiRuntime(state) {
   }).compile();
   const app = module.createNestApplication({ logger: false });
   app.use(cookieParser());
+  if (options.configure) options.configure(app);
   await app.listen(0, "127.0.0.1");
   return { app, module, load, origin: await app.getUrl(), resolve: module.get(NextAuthSessionService) };
 }
