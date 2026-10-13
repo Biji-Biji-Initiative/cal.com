@@ -32,7 +32,7 @@
     ],
     "rule": "One build/integration owner; other work is disjoint. Do not claim workers are dispatched without actual registration and evidence.",
     "ready_command": "node scripts/verify-community-enterprise-task-graph.cjs --ready",
-    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task’s own required level.",
+    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task\u2019s own required level.",
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
       "CAL-02.BUILD",
@@ -446,7 +446,7 @@
       "parent": "CAL-03",
       "kind": "task",
       "title": "Audit remaining app/API authorization and bind mutation checks to writes",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-03.POLICY",
         "CAL-02.INSTALL"
@@ -463,11 +463,24 @@
         "Concurrent permission removal versus protected mutation, owner/member/global-admin and cross-org cases pass.",
         "Do not broaden booking.read/booking.readOrgBookings aliases to make tests pass."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite calendar-boundary --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "32 local Nest/controller/service/Prisma/PostgreSQL ownership cases pass, zero skips; fixture authentication and Google/OAuth boundaries explicit. Both existing aliases retained. Native full API/IdP/provider/per-action team scopes remain unfinished."
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 1
+      "priority": 1,
+      "progress_references": [
+        "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
+        "docs/community-enterprise/API-KEY-CONTROLLER-2026-10-13.md"
+      ],
+      "progress": "Calendar event reference read/update now carries authenticated owner ID and uses current primary selection. Focused native32 and existing unit47 tests verified; earlier key-controller receipt is separately linked, not rerun. Complete resource/API acceptance remains open."
     },
     {
       "id": "CAL-04.OIDC",
@@ -702,7 +715,7 @@
       "parent": "CAL-05",
       "kind": "task",
       "title": "Scope existing API v2 and integration principals",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-05.CORE",
         "CAL-03.ROUTES",
@@ -719,11 +732,24 @@
         "No global shared administrator key; key revocation/disabled owner, listing/detail/export and mutation negatives.",
         "Use the same domain services; preserve established booking API contracts."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite calendar-boundary --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "32 local Nest/controller/service/Prisma/PostgreSQL ownership cases pass, zero skips; fixture authentication and Google/OAuth boundaries explicit. Both existing aliases retained. Native full API/IdP/provider/per-action team scopes remain unfinished."
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
-      "priority": 1
+      "priority": 1,
+      "progress_references": [
+        "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
+        "docs/community-enterprise/API-KEY-CONTROLLER-2026-10-13.md"
+      ],
+      "progress": "Calendar event reference read/update now carries authenticated owner ID and uses current primary selection. Focused native32 and existing unit47 tests verified; earlier key-controller receipt is separately linked, not rerun. Complete resource/API acceptance remains open."
     },
     {
       "id": "CAL-06.REUSE",
@@ -1102,7 +1128,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/IDENTITY-ONBOARDING-2026-10-13.md",
+  "latest_evidence": "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",

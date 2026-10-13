@@ -16,10 +16,10 @@ import { JWT } from "googleapis-common";
 import type { CreateUnifiedCalendarEventInput } from "../inputs/create-unified-calendar-event.input";
 import { UpdateUnifiedCalendarEventInput } from "../inputs/update-unified-calendar-event.input";
 import { GoogleCalendarEventInputPipe } from "../pipes/google-calendar-event-input-pipe";
-import { BookingReferencesRepository_2024_08_13 } from "@/platform/bookings/2024-08-13/repositories/booking-references.repository";
-import { GoogleCalendarService as GCalService } from "@/platform/calendars/services/gcal.service";
 import { GoogleCalendarEventResponse } from "@/modules/cal-unified-calendars/pipes/get-calendar-event-details-output-pipe";
 import { CredentialsRepository } from "@/modules/credentials/credentials.repository";
+import { BookingReferencesRepository_2024_08_13 } from "@/platform/bookings/2024-08-13/repositories/booking-references.repository";
+import { GoogleCalendarService as GCalService } from "@/platform/calendars/services/gcal.service";
 
 @Injectable()
 export class GoogleCalendarService {
@@ -30,9 +30,12 @@ export class GoogleCalendarService {
     private readonly credentialsRepository: CredentialsRepository
   ) {}
 
-  async getEventDetails(eventUid: string): Promise<GoogleCalendarEventResponse> {
+  async getEventDetails(eventUid: string, userId: number): Promise<GoogleCalendarEventResponse> {
     const bookingReference =
-      await this.bookingReferencesRepository.getBookingReferencesIncludeSensitiveCredentials(eventUid);
+      await this.bookingReferencesRepository.getBookingReferencesIncludeSensitiveCredentials(
+        eventUid,
+        userId
+      );
 
     if (!bookingReference) {
       throw new NotFoundException("Booking reference not found");
@@ -65,10 +68,14 @@ export class GoogleCalendarService {
 
   async updateEventDetails(
     eventUid: string,
-    updateData: UpdateUnifiedCalendarEventInput
+    updateData: UpdateUnifiedCalendarEventInput,
+    userId: number
   ): Promise<GoogleCalendarEventResponse> {
     const bookingReference =
-      await this.bookingReferencesRepository.getBookingReferencesIncludeSensitiveCredentials(eventUid);
+      await this.bookingReferencesRepository.getBookingReferencesIncludeSensitiveCredentials(
+        eventUid,
+        userId
+      );
 
     if (!bookingReference) {
       throw new NotFoundException("Booking reference not found");
@@ -354,8 +361,8 @@ export class GoogleCalendarService {
     if (status === 403) {
       // Google returns 403 for both permission errors and quota/rate-limit errors.
       // Check the error reason to distinguish retriable throttling from permanent permission denial.
-      const reason = (error as { response?: { data?: { error?: { errors?: Array<{ reason?: string }> } } } })?.response
-        ?.data?.error?.errors?.[0]?.reason;
+      const reason = (error as { response?: { data?: { error?: { errors?: Array<{ reason?: string }> } } } })
+        ?.response?.data?.error?.errors?.[0]?.reason;
       if (reason === "rateLimitExceeded" || reason === "userRateLimitExceeded") {
         return new HttpException(fallbackMessage, 429);
       }
