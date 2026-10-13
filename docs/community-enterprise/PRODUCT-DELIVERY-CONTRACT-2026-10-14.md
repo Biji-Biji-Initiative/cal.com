@@ -40,7 +40,7 @@ organization creation and must not be wired back into the product as-is.
 
 The mother-agent calendar-reference repair at 246c07c3 is an ancestor of the
 current branch. Its primary-state ownership/provider checks and recorded tests
-are preserved. That repair proves its stated authorization slice, not onboarding,
+are preserved. That repair proves the stated authorization slice, not onboarding,
 paid-plan removal or deployed enterprise parity. No task history was lost.
 
 ## Product rules
