@@ -97,9 +97,10 @@ async function runOnboardingBrowserJourney({ pool, fixture, t }) {
         };
       });
     });
-    await page.goto(`${origin}/onboarding/getting-started?plan=organization&bp=a`, {
+    const entered = await page.goto(`${origin}/onboarding/getting-started?plan=organization&bp=a`, {
       waitUntil: "domcontentloaded",
     });
+    assert.equal(entered.status(), 200, "The real first-run page must render successfully");
     await expect(page).toHaveURL(/\/getting-started(?:\?|$)/);
     await expect(page.getByText("Set up your calendar", { exact: true })).toBeVisible();
     await expect(page.getByText("Select plan", { exact: true })).toHaveCount(0);
@@ -107,6 +108,16 @@ async function runOnboardingBrowserJourney({ pool, fixture, t }) {
     assert.ok(!(await page.locator("body").innerText()).match(/\$(15|37)\/user/));
     const output = path.resolve(__dirname, "../../test-results/community-enterprise");
     fs.mkdirSync(output, { recursive: true });
+    await expect(page.locator('input[name="name"]')).toBeVisible();
+    const timezone = page.getByRole("combobox", { name: "Timezone Select" });
+    await expect(timezone).toBeEnabled({ timeout: 60000 });
+    await timezone.fill("Kuala Lumpur");
+    // The retained custom React Select option renders its city label as text;
+    // older versions do not expose an option role. Assert the actual rendered
+    // row and verify the canonical timezone from the database after saving.
+    const timezoneRow = page.getByText(/^Kuala Lumpur GMT \+8:00$/, { exact: true });
+    await expect(timezoneRow).toBeVisible();
+    await timezoneRow.click();
     await page.screenshot({ path: path.join(output, "onboarding-start.png"), fullPage: true });
     await page.locator('input[name="name"]').fill("Synthetic Onboarded Staff");
     await page.getByTestId("connect-calendar-button").click();
@@ -122,15 +133,22 @@ async function runOnboardingBrowserJourney({ pool, fixture, t }) {
     await page.getByTestId("finish-onboarding").click();
     await expect(page).toHaveURL(/\/event-types(?:\?|$)/);
     const user = (
-      await pool.query('SELECT name,"completedOnboarding",role,"defaultScheduleId" FROM users WHERE id=7001')
+      await pool.query(
+        'SELECT name,"timeZone","completedOnboarding",role,"defaultScheduleId" FROM users WHERE id=7001'
+      )
     ).rows[0];
     assert.equal(user.name, "Synthetic Onboarded Staff");
+    assert.equal(user.timeZone, "Asia/Kuala_Lumpur");
     assert.equal(user.completedOnboarding, true);
     assert.equal(user.role, "USER");
     assert.ok(user.defaultScheduleId);
     assert.equal(
-      (await pool.query('SELECT count(*)::int AS count FROM "Availability" WHERE "userId"=7001')).rows[0]
-        .count > 0,
+      (
+        await pool.query(
+          'SELECT count(*)::int AS count FROM "Availability" a JOIN "Schedule" s ON a."scheduleId"=s.id WHERE s.id=$1 AND s."userId"=7001',
+          [user.defaultScheduleId]
+        )
+      ).rows[0].count > 0,
       true
     );
     assert.deepEqual(
