@@ -2,6 +2,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const { createHash } = require("node:crypto");
 
 function validateRuntime(env, receipt, mode) {
   if (!["web", "migrate"].includes(mode)) throw new Error("Unknown runtime operation");
@@ -44,44 +45,82 @@ function validateRuntime(env, receipt, mode) {
   return { sourceSha: receipt.sourceSha, publicOrigin: receipt.publicOrigin, operation: mode };
 }
 
-function main(args = process.argv.slice(2), env = process.env) {
+async function runCommand(root, env, command, input) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, command, {
+      cwd: path.join(root, "ops"),
+      env,
+      stdio: input === undefined ? "inherit" : ["pipe", "inherit", "inherit"],
+    });
+    const handlers = new Map();
+    for (const signal of ["SIGTERM", "SIGINT"]) {
+      const handler = () => child.kill(signal);
+      handlers.set(signal, handler);
+      process.on(signal, handler);
+    }
+    const finish = (code) => {
+      for (const [signal, handler] of handlers) process.off(signal, handler);
+      resolve(code);
+    };
+    child.once("error", () => finish(1));
+    child.once("exit", (code) => finish(code ?? 1));
+    if (input !== undefined) {
+      child.stdin.on("error", () => {
+        child.kill();
+        finish(1);
+      });
+      child.stdin.end(input);
+    }
+  });
+}
+
+async function main(args = process.argv.slice(2), env = process.env) {
+  if (args.length > 1) throw new Error("Unexpected runtime arguments");
   const root = path.resolve(__dirname, "..");
   const receipt = JSON.parse(fs.readFileSync(path.join(root, "enterprise-build.json"), "utf8"));
   const mode = args[0] || "web";
   console.log(JSON.stringify(validateRuntime(env, receipt, mode)));
-  const command =
-    mode === "web"
-      ? [path.join(root, "apps/web/server.js")]
-      : [
-          path.join(root, "ops/node_modules/prisma/build/index.js"),
-          "migrate",
-          "deploy",
-          "--schema",
-          path.join(root, "ops/packages/prisma/schema.prisma"),
-        ];
-  if (args.length > 1) throw new Error("Unexpected runtime arguments");
-  const child = spawn(process.execPath, command, {
-    cwd: mode === "web" ? path.join(root, "apps/web") : path.join(root, "ops"),
+  if (mode === "web") {
+    // The web process does not run migrations or inspect retired data.
+    const child = spawn(process.execPath, [path.join(root, "apps/web/server.js")], {
+      cwd: path.join(root, "apps/web"),
+      env,
+      stdio: "inherit",
+    });
+    for (const signal of ["SIGTERM", "SIGINT"]) process.on(signal, () => child.kill(signal));
+    child.on("error", () => {
+      process.exitCode = 1;
+    });
+    child.on("exit", (code) => {
+      process.exitCode = code ?? 1;
+    });
+    return;
+  }
+  const preflight = fs.readFileSync(path.join(root, "scripts/check-enterprise-migration.sql"));
+  if (createHash("sha256").update(preflight).digest("hex") !== receipt.migrationPreflightSha256) {
+    throw new Error("Migration preflight does not match the built artifact");
+  }
+  const cli = path.join(root, "ops/node_modules/prisma/build/index.js");
+  const schema = path.join(root, "ops/packages/prisma/schema.prisma");
+  const admission = await runCommand(
+    root,
     env,
-    stdio: "inherit",
-  });
-  for (const signal of ["SIGTERM", "SIGINT"]) process.on(signal, () => child.kill(signal));
-  child.on("error", () => {
-    console.error("Runtime process could not start");
-    process.exitCode = 1;
-  });
-  child.on("exit", (code, signal) => {
-    process.exitCode = code ?? (signal ? 1 : 0);
-  });
+    [cli, "db", "execute", "--schema", schema, "--stdin"],
+    preflight
+  );
+  if (admission !== 0) {
+    console.error("Migration refused: legacy-data preflight failed; no migration command was started");
+    process.exitCode = admission;
+    return;
+  }
+  process.exitCode = await runCommand(root, env, [cli, "migrate", "deploy", "--schema", schema]);
 }
 if (require.main === module) {
-  try {
-    main();
-  } catch {
+  main().catch(() => {
     console.error(
       "Enterprise runtime preflight refused; check the exact build, origin, operation and runtime configuration"
     );
     process.exitCode = 1;
-  }
+  });
 }
 module.exports = { validateRuntime };

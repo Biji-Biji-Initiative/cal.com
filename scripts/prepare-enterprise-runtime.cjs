@@ -92,6 +92,10 @@ async function prepare(outputPath, receiptPath) {
     path.join(root, "scripts/enterprise-runtime-entrypoint.cjs"),
     path.join(output, "scripts/enterprise-runtime-entrypoint.cjs")
   );
+  await fs.copyFile(
+    path.join(root, "scripts/check-enterprise-migration.sql"),
+    path.join(output, "scripts/check-enterprise-migration.sql")
+  );
   await fs.copyFile(path.join(root, "Dockerfile.enterprise-preview"), path.join(output, "Dockerfile"));
   const noticeCount = await retainNotices(output);
   const manifest = {
@@ -102,6 +106,9 @@ async function prepare(outputPath, receiptPath) {
     buildManifestSha256: receipt.manifest_sha256,
     lockSha256: receipt.lock_after,
     entrypointSha256: hash(await fs.readFile(path.join(output, "scripts/enterprise-runtime-entrypoint.cjs"))),
+    migrationPreflightSha256: hash(
+      await fs.readFile(path.join(output, "scripts/check-enterprise-migration.sql"))
+    ),
     dockerfileSha256: hash(await fs.readFile(path.join(output, "Dockerfile"))),
     migrationEngineVersion: engineVersion,
     operationsTraceFiles: traced.fileList.size,
