@@ -1,20 +1,23 @@
-import { NextAuthPassportStrategy } from "@/lib/passport/strategies/types";
-import { NextAuthSessionService } from "@/modules/auth/services/next-auth-session.service";
 import { Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import type { Request } from "express";
 import { getToken } from "next-auth/jwt";
+import { NextAuthPassportStrategy } from "@/lib/passport/strategies/types";
+import { NextAuthSessionService } from "@/modules/auth/services/next-auth-session.service";
 
 @Injectable()
 export class NextAuthStrategy extends PassportStrategy(NextAuthPassportStrategy, "next-auth") {
-  constructor(private readonly sessions: NextAuthSessionService, private readonly config: ConfigService) {
+  constructor(
+    private readonly sessions: NextAuthSessionService,
+    private readonly config: ConfigService
+  ) {
     super();
   }
 
   async authenticate(req: Request) {
     try {
-      const nextAuthSecret = this.config.get("next.authSecret", { infer: true });
+      const nextAuthSecret = this.config.get<string>("next.authSecret");
       if (typeof nextAuthSecret !== "string" || nextAuthSecret.length === 0) {
         throw new UnauthorizedException("Native session authentication is unavailable");
       }

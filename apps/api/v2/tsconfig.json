@@ -9,6 +9,15 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2021",
+    "lib": [
+      "es2021",
+      "dom",
+      "webworker.importscripts",
+      "scripthost",
+      "dom.iterable",
+      "dom.asynciterable",
+      "es2022.object"
+    ],
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": ".",

@@ -101,7 +101,7 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
         throw new UnauthorizedException("ApiAuthStrategy - Invalid or disallowed Bearer token");
       }
 
-      const nextAuthSecret = this.config.get("next.authSecret", { infer: true });
+      const nextAuthSecret = this.config.get<string>("next.authSecret");
       if (nextAuthAllowed && (typeof nextAuthSecret !== "string" || nextAuthSecret.length === 0)) {
         throw new UnauthorizedException("Native session authentication is unavailable");
       }
