@@ -16,14 +16,28 @@ export function isAuthentikOnly(env: StaffLoginEnvironment): boolean {
 // This is a dispatch requirement, NOT token validation. The existing native
 // refresh must still validate the binding, issuer, subject and current user.
 export function hasAuthentikMarker(token: unknown): boolean {
-  return typeof token === "object" && token !== null &&
-    Object.hasOwn(token, "authentik") && Reflect.get(token, "authentik") !== undefined;
+  return (
+    typeof token === "object" &&
+    token !== null &&
+    Object.hasOwn(token, "authentik") &&
+    Reflect.get(token, "authentik") !== undefined
+  );
 }
 
-export function selectAuthentikProvider<T extends { id: string; options?: { id?: string } }>(providers: T[]): T[] {
+export function selectAuthentikProvider<T extends { id: string; options?: unknown }>(providers: T[]): T[] {
   const selected = providers.filter((provider) => provider.id === "authentik");
-  if (selected.length !== 1 || (selected[0].options?.id !== undefined && selected[0].options.id !== "authentik")) {
+  if (selected.length !== 1) {
     throw new Error("Authentik-only login requires exactly one native Authentik provider");
+  }
+  // Email providers have options without an id field. Do not narrow the entire
+  // native Provider union to an OAuth-only options shape during filtering.
+  const options = selected[0].options;
+  if (options !== undefined && options !== null) {
+    if (typeof options !== "object") throw new Error("Invalid native Authentik provider options");
+    const overriddenId = Reflect.get(options, "id");
+    if (overriddenId !== undefined && overriddenId !== "authentik") {
+      throw new Error("Authentik-only login requires exactly one native Authentik provider");
+    }
   }
   return selected;
 }
@@ -64,10 +78,13 @@ export function restrictLocalAccountRoute<Args extends unknown[]>(
     if (isAuthentikOnly(environment())) {
       // Deny before parsing a body, inspecting an invite, writing a password,
       // bootstrapping an administrator, or delivering account-recovery mail.
-      return Response.json({ message: "Sign in with Authentik", code: "AUTHENTIK_ONLY" }, {
-        status: 403,
-        headers: { "Cache-Control": "no-store" },
-      });
+      return Response.json(
+        { message: "Sign in with Authentik", code: "AUTHENTIK_ONLY" },
+        {
+          status: 403,
+          headers: { "Cache-Control": "no-store" },
+        }
+      );
     }
     return next(...args);
   };
