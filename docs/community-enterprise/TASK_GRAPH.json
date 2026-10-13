@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
   "owner": "Gurpreet",
-  "programme": "Open-source enterprise calendar",
-  "decision_date": "2026-10-12",
-  "goal": "One self-hosted fully open-source enterprise calendar, native Authentik, organizations/teams/roles/scoped APIs, team scheduling, audit/reminders, routing/reporting and repeatable community updates.",
+  "programme": "Mereka hosted enterprise calendar",
+  "decision_date": "2026-10-13",
+  "goal": "One operator-hosted scheduling platform on the existing Cal.diy enterprise branch; retain historical value, Authentik, teams/organizations/roles, scoped APIs and community updates. No repository or deployment migration.",
   "production_status": "unchanged; local single-host journey exercised; candidate not promotable",
   "tracking": {
     "canonical_source": "docs/community-enterprise/TASK_GRAPH.json",
@@ -15,7 +15,9 @@
       "required_schema": 17,
       "migration_plan_result": "Installed reviewed migration supports only 13..16 to 17; source 5 rejected. No unsupported migration or reset performed."
     },
-    "rule": "Keep these stable CAL IDs. Reconcile once into the existing tracker after supported recovery; do not create another tracker."
+    "rule": "Use this existing repository and branch as the single implementation source. Preserve stable CAL IDs and evidence. No successor-repository development or competing tracker; reconcile retained drafts here without overwriting newer work or publishing private material.",
+    "canonical_repository": "Biji-Biji-Initiative/cal.com",
+    "canonical_branch": "work/cal-diy-enterprise-20261010"
   },
   "execution": {
     "max_concurrent_agents": 4,
@@ -30,7 +32,7 @@
     ],
     "rule": "One build/integration owner; other work is disjoint. Do not claim workers are dispatched without actual registration and evidence.",
     "ready_command": "node scripts/verify-community-enterprise-task-graph.cjs --ready",
-    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task\u2019s own required level.",
+    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task’s own required level.",
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
       "CAL-02.BUILD",
@@ -1100,5 +1102,22 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/IDENTITY-ONBOARDING-2026-10-13.md"
+  "latest_evidence": "docs/community-enterprise/IDENTITY-ONBOARDING-2026-10-13.md",
+  "repository_decision": {
+    "date": "2026-10-13",
+    "status": "owner_decided",
+    "canonical_repository": "Biji-Biji-Initiative/cal.com",
+    "canonical_branch": "work/cal-diy-enterprise-20261010",
+    "canonical_task_graph": "docs/community-enterprise/TASK_GRAPH.json",
+    "handover_issue": 78,
+    "research_issue": 79,
+    "repository_migration": "rejected by owner",
+    "deployment_migration": false,
+    "history_and_integrations": "Keep current history, issues, workflows, domains, infrastructure and upstream relationship; do not delete/recreate, detach, rename or repoint as a shortcut.",
+    "private_source_intent": "Retained; choosing the existing repository does not authorize publication of unpublished proprietary material.",
+    "observed_visibility": "public",
+    "publication_boundary": "The repository was public at readback. Privately held research and unaccepted source drafts stay preserved until an explicit privacy-preserving publication decision. No private branch assumption.",
+    "carry_over": "Retain unpublished research, graph expansion and incomplete tests for bounded reconciliation under CAL-01.REUSE; do not call them published or accepted.",
+    "decision_record": "docs/community-enterprise/SINGLE-REPOSITORY-2026-10-13.md"
+  }
 }
