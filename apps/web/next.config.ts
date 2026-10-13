@@ -504,6 +504,29 @@ const nextConfig = (phase: string): NextConfig => {
     },
     async redirects() {
       const redirects = [
+        // Preserve old links without resurrecting removed subscription flows.
+        { source: "/onboarding/getting-started", destination: "/getting-started", permanent: false },
+        {
+          source: "/onboarding/personal/settings",
+          destination: "/getting-started/user-settings",
+          permanent: false,
+        },
+        {
+          source: "/onboarding/personal/calendar",
+          destination: "/getting-started/connected-calendar",
+          permanent: false,
+        },
+        {
+          source: "/onboarding/personal/profile",
+          destination: "/getting-started/user-profile",
+          permanent: false,
+        },
+        { source: "/onboarding/teams/:path*", destination: "/settings/enterprise/teams", permanent: false },
+        {
+          source: "/onboarding/organization/:path*",
+          destination: "/settings/enterprise/teams",
+          permanent: false,
+        },
         {
           source: "/settings/organizations",
           destination: "/settings/organizations/profile",
