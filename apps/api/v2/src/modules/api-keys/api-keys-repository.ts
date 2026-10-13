@@ -7,7 +7,8 @@ export class ApiKeysRepository {
   constructor(private readonly dbRead: PrismaReadService, private readonly dbWrite: PrismaWriteService) {}
 
   async getApiKeyFromHash(hashedKey: string) {
-    return this.dbRead.prisma.apiKey.findUnique({
+    // Revoked or rotated credentials must not be resurrected by replica lag.
+    return this.dbWrite.prisma.apiKey.findUnique({
       where: {
         hashedKey,
       },
