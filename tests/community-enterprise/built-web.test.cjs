@@ -12,6 +12,10 @@ const root = path.resolve(__dirname, "../..");
 const { seedTeamBrowserFixture, runTeamBrowserJourney } = require("./team-browser-journey.cjs");
 const { startOidcTestProvider } = require("./oidc-test-provider.cjs");
 const { startSmtpTestSink } = require("./smtp-test-sink.cjs");
+const {
+  seedOnboardingBrowserFixture,
+  runOnboardingBrowserJourney,
+} = require("./onboarding-browser-journey.cjs");
 
 test(
   "built web renders native Authentik login without authenticating an anonymous visitor",
@@ -62,6 +66,12 @@ test(
       ]);
       const teamFixture =
         process.env.CAL_TEAM_BROWSER_JOURNEY === "true" ? await seedTeamBrowserFixture(pool) : null;
+      const onboardingFixture =
+        process.env.CAL_ONBOARDING_BROWSER_JOURNEY === "true"
+          ? await seedOnboardingBrowserFixture(pool)
+          : null;
+      const identityFixture = onboardingFixture || teamFixture;
+
       const environment = Object.fromEntries(
         ["PATH", "HOME", "USER", "LANG"]
           .filter((name) => process.env[name])
@@ -83,12 +93,13 @@ test(
         NEXT_TELEMETRY_DISABLED: "1",
         NODE_OPTIONS: "--max-old-space-size=4096",
       });
-      if (teamFixture) {
+      if (identityFixture) {
         oidcProvider = await startOidcTestProvider({ directory: path.dirname(socket), pool });
-        teamFixture.oidc = oidcProvider;
+        identityFixture.oidc = oidcProvider;
         Object.assign(environment, oidcProvider.environment);
+        if (onboardingFixture) environment.CAL_AUTHENTIK_ONLY = "true";
         smtpSink = await startSmtpTestSink();
-        teamFixture.smtp = smtpSink;
+        identityFixture.smtp = smtpSink;
         Object.assign(environment, smtpSink.environment);
       }
       sensitiveValues = [
@@ -160,6 +171,7 @@ test(
       assert.ok(!JSON.parse(await request("/api/auth/session")).user);
       assert.equal(typeof JSON.parse(await request("/api/auth/csrf")).csrfToken, "string");
       if (teamFixture) await runTeamBrowserJourney({ pool, fixture: teamFixture, t });
+      if (onboardingFixture) await runOnboardingBrowserJourney({ pool, fixture: onboardingFixture, t });
       t.diagnostic(
         JSON.stringify({
           buildId,

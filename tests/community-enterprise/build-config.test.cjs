@@ -32,10 +32,11 @@ test("actual Next configuration resolves and traces only the Cal monorepo", () =
   const script = `
     const loadConfig = require("next/dist/server/config").default;
     const { PHASE_PRODUCTION_BUILD } = require("next/constants");
-    loadConfig(PHASE_PRODUCTION_BUILD, process.cwd(), { silent: true }).then((config) => {
+    loadConfig(PHASE_PRODUCTION_BUILD, process.cwd(), { silent: true }).then(async (config) => {
       console.log("CAL_ROOT_RESULT=" + JSON.stringify({
         root: config.turbopack.root,
         trace: config.outputFileTracingRoot,
+        redirects: await config.redirects(),
       }));
     }).catch(() => { console.error("Candidate config could not be loaded"); process.exitCode = 1; });
   `;
@@ -50,6 +51,19 @@ test("actual Next configuration resolves and traces only the Cal monorepo", () =
   const result = JSON.parse(line.slice("CAL_ROOT_RESULT=".length));
   assert.equal(result.root, root);
   assert.equal(result.trace, root);
+  for (const [source, destination] of [
+    ["/onboarding/getting-started", "/getting-started"],
+    ["/onboarding/personal/settings", "/getting-started/user-settings"],
+    ["/onboarding/personal/calendar", "/getting-started/connected-calendar"],
+    ["/onboarding/personal/profile", "/getting-started/user-profile"],
+    ["/onboarding/teams/:path*", "/settings/enterprise/teams"],
+    ["/onboarding/organization/:path*", "/settings/enterprise/teams"],
+  ]) {
+    const rules = result.redirects.filter((rule) => rule.source === source);
+    assert.equal(rules.length, 1, `Exactly one compatibility rule for ${source}`);
+    assert.equal(rules[0].destination, destination);
+    assert.equal(rules[0].permanent, false);
+  }
 });
 
 test("the normal Turbo application lane carries the server-only Authentik variables", () => {
