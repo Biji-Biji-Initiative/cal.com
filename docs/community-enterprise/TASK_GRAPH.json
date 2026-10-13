@@ -32,7 +32,7 @@
     ],
     "rule": "One build/integration owner; other work is disjoint. Do not claim workers are dispatched without actual registration and evidence.",
     "ready_command": "node scripts/verify-community-enterprise-task-graph.cjs --ready",
-    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task\u2019s own required level.",
+    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task’s own required level.",
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
       "CAL-02.BUILD",
@@ -319,6 +319,14 @@
           "command": "yarn test:community-enterprise:journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
           "summary": "Rebuilt standalone Next candidate completes local TLS-fixture OIDC and single-host booking lifecycle with real PostgreSQL and SMTP capture. Not deployed preview, live IdP/calendar or complete multi-host acceptance."
+        },
+        {
+          "file": "docs/community-enterprise/DELIVERY-2026-10-14.md",
+          "level": "runtime",
+          "command": "Exact-source build/container receipt and existing migration-preflight test runner; scoped commands in evidence document",
+          "exit_code": 0,
+          "summary": "Local exact dev-origin web build/image passes; registry publication and deployed candidate are not implied.",
+          "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2"
         }
       ],
       "required_for_team_release": true,
@@ -331,7 +339,7 @@
       "parent": "CAL-02",
       "kind": "task",
       "title": "Build and start API v2 with the same source/schema",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-02.INSTALL"
       ],
@@ -346,7 +354,16 @@
         "Build the pinned platform dependencies, API v2 and runtime from the same candidate revision.",
         "Prove API startup and schema compatibility with synthetic data; the web preview need not wait for this, but production does."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/DELIVERY-2026-10-14.md",
+          "level": "source",
+          "command": "Exact-source build/container receipt and existing migration-preflight test runner; scoped commands in evidence document",
+          "exit_code": 0,
+          "summary": "Published 5da2ff77 repairs native API compilation; API container and full runtime startup remain open.",
+          "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2"
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "Exact build/start commands and artifacts proven; never infer API acceptance from a web build.",
       "completion_evidence_level": "runtime",
@@ -370,7 +387,16 @@
         "Resource/volume placement admitted without new hardware or policy bypass; no overwrite of existing staging.",
         "Test-only users and credentials, isolated database, outbound email/calendar effects disabled until deliberate tests."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/DELIVERY-2026-10-14.md",
+          "level": "runtime",
+          "command": "Exact-source build/container receipt and existing migration-preflight test runner; scoped commands in evidence document",
+          "exit_code": 0,
+          "summary": "Existing dev/staging legacy workloads reach their Authentik redirect. Enterprise candidate is local only; registry identity lacks package scope.",
+          "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2"
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
@@ -913,7 +939,7 @@
       "parent": "CAL-08",
       "kind": "task",
       "title": "Inventory actual deployed artifacts, data ownership and restore ability",
-      "state": "open",
+      "state": "in_progress",
       "requires": [],
       "lane": "integration",
       "owner_role": "platform owner",
@@ -925,7 +951,16 @@
         "Read-only image/source/migration/user/event/integration inventory; never infer running fork from a manifest.",
         "Authorized backup restored in isolation; counts, stable IDs, encryption/decryption and existing booking URLs reconcile."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/DELIVERY-2026-10-14.md",
+          "level": "runtime",
+          "command": "Exact-source build/container receipt and existing migration-preflight test runner; scoped commands in evidence document",
+          "exit_code": 0,
+          "summary": "Prior retained dev database and backup metadata recorded; fresh live preservation/consumer verification remains required.",
+          "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2"
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
@@ -936,7 +971,7 @@
       "parent": "CAL-08",
       "kind": "task",
       "title": "Rehearse preservation-first legacy-to-candidate migration",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-08.BASELINE",
         "CAL-02.BUILD",
@@ -953,7 +988,16 @@
         "One explicit migration operator, no automatic destructive changes on ordinary pod restart.",
         "Rollback covers writes accepted after cutover; no old backup restored over new bookings."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/DELIVERY-2026-10-14.md",
+          "level": "runtime",
+          "command": "Exact-source build/container receipt and existing migration-preflight test runner; scoped commands in evidence document",
+          "exit_code": 0,
+          "summary": "36 actual PostgreSQL admission tests and exact-image fresh migration/replay pass; full legacy restore, quiesced writers and production approval are not complete.",
+          "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2"
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
@@ -1128,7 +1172,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
+  "latest_evidence": "docs/community-enterprise/DELIVERY-2026-10-14.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
@@ -1145,5 +1189,20 @@
     "publication_boundary": "The repository was public at readback. Privately held research and unaccepted source drafts stay preserved until an explicit privacy-preserving publication decision. No private branch assumption.",
     "carry_over": "Retain unpublished research, graph expansion and incomplete tests for bounded reconciliation under CAL-01.REUSE; do not call them published or accepted.",
     "decision_record": "docs/community-enterprise/SINGLE-REPOSITORY-2026-10-13.md"
+  },
+  "delivery_checkpoint": {
+    "date": "2026-10-14",
+    "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2",
+    "local_image_id": "sha256:ff56a7906c945e128a8a978652b4ebcf6fc4531c66a1294f6c8cd1f4b3403f06",
+    "candidate_deployed": false,
+    "registry_published": false,
+    "production_promoted": false,
+    "blocking_requirements": [
+      "Owner-approved existing publisher package permissions",
+      "Unresolved HIGH findings and complete artifact security review",
+      "Real Authentik/configuration and staff/guest/calendar acceptance",
+      "Fresh preservation rehearsal, writer quiescence and staged release gates"
+    ],
+    "evidence": "docs/community-enterprise/DELIVERY-2026-10-14.md"
   }
 }
