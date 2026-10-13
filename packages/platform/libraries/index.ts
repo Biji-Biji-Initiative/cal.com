@@ -149,18 +149,8 @@ export async function roundRobinReassignment(_args: {
   // No-op in community edition
 }
 
-// createApiKeyHandler removed (EE feature) — stub for API v2
-export async function createApiKeyHandler(_args: {
-  ctx: { user: { id: number } };
-  input: {
-    note?: string | null;
-    neverExpires?: boolean;
-    expiresAt?: Date | null;
-    teamId?: number;
-  };
-}): Promise<string> {
-  throw new Error("API key creation is not available in community edition");
-}
+export { createHandler as createApiKeyHandler } from "@calcom/trpc/server/routers/viewer/apiKeys/create.handler";
+export { createApiKey, rotateApiKey } from "@calcom/features/community-enterprise/api-keys/ApiKeyLifecycle";
 
 // getClientSecretFromPayment removed (EE feature) — stub for API v2
 export function getClientSecretFromPayment(payment: { data: Record<string, unknown> }): string | null {
