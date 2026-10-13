@@ -1,27 +1,26 @@
-import { NextAuthSessionService } from "@/modules/auth/services/next-auth-session.service";
-import { isUsableApiKeyExpiry, parseBearerHeader } from "@/modules/auth/services/credential-policy";
-import { sha256Hash, isApiKey, stripApiKey } from "@/lib/api-key";
-import { AuthMethods } from "@/lib/enums/auth-methods";
-import { isOriginAllowed } from "@/lib/is-origin-allowed/is-origin-allowed";
-import { BaseStrategy } from "@/lib/passport/strategies/types";
-import { ApiKeysRepository } from "@/modules/api-keys/api-keys-repository";
-import { MembershipsRepository } from "@/modules/memberships/memberships.repository";
-import { OAuthClientRepository } from "@/modules/oauth-clients/oauth-client.repository";
-import { OAuthFlowService } from "@/modules/oauth-clients/services/oauth-flow.service";
-import { TokensRepository } from "@/modules/tokens/tokens.repository";
-import { TokensService } from "@/modules/tokens/tokens.service";
-import { UsersService } from "@/modules/users/services/users.service";
-import { type UserWithProfile, UsersRepository } from "@/modules/users/users.repository";
-import { Injectable, InternalServerErrorException, UnauthorizedException } from "@nestjs/common";
-import { Logger } from "@nestjs/common";
+import { INVALID_ACCESS_TOKEN, X_CAL_CLIENT_ID, X_CAL_SECRET_KEY } from "@calcom/platform-constants";
+import { authenticateApiKey } from "@calcom/platform-libraries";
+import { Injectable, InternalServerErrorException, Logger, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import type { Request } from "express";
 import { getToken, type JWT } from "next-auth/jwt";
-
-import { INVALID_ACCESS_TOKEN, X_CAL_CLIENT_ID, X_CAL_SECRET_KEY } from "@calcom/platform-constants";
-
 import type { AllowedAuthMethod } from "../../decorators/api-auth-guard-only-allow.decorator";
+import { isApiKey } from "@/lib/api-key";
+import { AuthMethods } from "@/lib/enums/auth-methods";
+import { isOriginAllowed } from "@/lib/is-origin-allowed/is-origin-allowed";
+import { BaseStrategy } from "@/lib/passport/strategies/types";
+import { clientSecretsMatch } from "@/modules/auth/services/client-secret";
+import { parseBearerHeader } from "@/modules/auth/services/credential-policy";
+import { NextAuthSessionService } from "@/modules/auth/services/next-auth-session.service";
+import { MembershipsRepository } from "@/modules/memberships/memberships.repository";
+import { OAuthClientRepository } from "@/modules/oauth-clients/oauth-client.repository";
+import { OAuthFlowService } from "@/modules/oauth-clients/services/oauth-flow.service";
+import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
+import { TokensRepository } from "@/modules/tokens/tokens.repository";
+import { TokensService } from "@/modules/tokens/tokens.service";
+import { UsersService } from "@/modules/users/services/users.service";
+import { UsersRepository, type UserWithProfile } from "@/modules/users/users.repository";
 
 export type ApiAuthGuardUser = UserWithProfile & { isSystemAdmin: boolean };
 export type ApiAuthGuardRequest = Request & {
@@ -46,7 +45,7 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
     private readonly tokensRepository: TokensRepository,
     private readonly tokensService: TokensService,
     private readonly userRepository: UsersRepository,
-    private readonly apiKeyRepository: ApiKeysRepository,
+    private readonly database: PrismaWriteService,
     private readonly oauthRepository: OAuthClientRepository,
     private readonly usersService: UsersService,
     private readonly membershipsRepository: MembershipsRepository,
@@ -177,7 +176,7 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
       );
     }
 
-    if (client.secret !== oAuthClientSecret) {
+    if (!clientSecretsMatch(client.secret, oAuthClientSecret)) {
       throw new UnauthorizedException("ApiAuthStrategy - oAuth client - Invalid client secret");
     }
 
@@ -230,26 +229,27 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
   }
 
   async apiKeyStrategy(apiKey: string, request: ApiAuthGuardRequest) {
-    const strippedApiKey = stripApiKey(apiKey, this.config.get<string>("api.keyPrefix"));
-    const apiKeyHash = sha256Hash(strippedApiKey);
-    const keyData = await this.apiKeyRepository.getApiKeyFromHash(apiKeyHash);
-    if (!keyData) {
-      throw new UnauthorizedException("ApiAuthStrategy - api key - Your api key is not valid");
+    try {
+      const { user, teamId } = await authenticateApiKey(
+        this.database.prisma,
+        apiKey,
+        this.config.get<string>("api.keyPrefix") ?? "cal_"
+      );
+      // Retain the established API field contract: a team-bound key carries its
+      // exact team ID, not an inferred default organization from another profile.
+      request.organizationId = teamId;
+      return user;
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        ["unauthorized_error", "forbidden_error"].includes(String(error.code))
+      ) {
+        throw new UnauthorizedException("ApiAuthStrategy - api key - Credential is unavailable");
+      }
+      throw error;
     }
-
-    if (!isUsableApiKeyExpiry(keyData.expiresAt, Date.now())) {
-      throw new UnauthorizedException("ApiAuthStrategy - api key - Your api key is expired");
-    }
-
-    const apiKeyOwnerId = keyData.userId;
-    if (!apiKeyOwnerId) {
-      throw new UnauthorizedException("ApiAuthStrategy - api key - No user tied to this apiKey");
-    }
-
-    const user: UserWithProfile | null = await this.userRepository.findByIdWithProfile(apiKeyOwnerId);
-    request.organizationId = keyData.teamId;
-
-    return user;
   }
 
   async accessTokenStrategy(accessToken: string, request: ApiAuthGuardRequest, origin?: string) {

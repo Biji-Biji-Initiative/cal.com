@@ -21,9 +21,9 @@ import {
   ONLY_CLIENT_SECRET_PROVIDED_MESSAGE,
 } from "./api-auth.strategy";
 import appConfig from "@/config/app";
-import { NextAuthSessionService } from "@/modules/auth/services/next-auth-session.service";
 import { AuthMethods } from "@/lib/enums/auth-methods";
 import { ApiKeysRepository } from "@/modules/api-keys/api-keys-repository";
+import { NextAuthSessionService } from "@/modules/auth/services/next-auth-session.service";
 import { DeploymentsRepository } from "@/modules/deployments/deployments.repository";
 import { DeploymentsService } from "@/modules/deployments/deployments.service";
 import { JwtService } from "@/modules/jwt/jwt.service";
@@ -114,6 +114,16 @@ describe("ApiAuthStrategy", () => {
     validOAuthUser = await userRepositoryFixture.create({
       email: validOAuthEmail,
     });
+
+    // Legacy team keys now require current direct issuance authority at use.
+    for (const team of [organization, organizationTwo]) {
+      await membershipRepositoryFixture.create({
+        user: { connect: { id: validApiKeyUser.id } },
+        team: { connect: { id: team.id } },
+        role: "ADMIN",
+        accepted: true,
+      });
+    }
 
     await profilesRepositoryFixture.create({
       uid: "asd-asd",

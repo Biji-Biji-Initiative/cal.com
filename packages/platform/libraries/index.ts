@@ -90,12 +90,12 @@ export { paymentDataSelect };
 export { confirmHandler as confirmBookingHandler } from "@calcom/trpc/server/routers/viewer/bookings/confirm.handler";
 export { getBookingFieldsWithSystemFields };
 
-export { checkAdminOrOwner } from "@calcom/features/auth/lib/checkAdminOrOwner";
 export { sendLocationChangeEmailsAndSMS } from "@calcom/emails/email-manager";
+export { checkAdminOrOwner } from "@calcom/features/auth/lib/checkAdminOrOwner";
 export { verifyCodeUnAuthenticated } from "@calcom/features/auth/lib/verifyCodeUnAuthenticated";
 export { sendEmailVerificationByCode } from "@calcom/features/auth/lib/verifyEmail";
-export { getCalendarLinks } from "@calcom/features/bookings/lib/getCalendarLinks";
 export { BookingReferenceRepository } from "@calcom/features/bookingReference/repositories/BookingReferenceRepository";
+export { getCalendarLinks } from "@calcom/features/bookings/lib/getCalendarLinks";
 export { BookingAccessService } from "@calcom/features/bookings/services/BookingAccessService";
 export { CredentialRepository } from "@calcom/features/credentials/repositories/CredentialRepository";
 export type { OrgMembershipLookup } from "@calcom/features/di/modules/OrgMembershipLookup";
@@ -149,8 +149,8 @@ export async function roundRobinReassignment(_args: {
   // No-op in community edition
 }
 
-export { createHandler as createApiKeyHandler } from "@calcom/trpc/server/routers/viewer/apiKeys/create.handler";
 export { createApiKey, rotateApiKey } from "@calcom/features/community-enterprise/api-keys/ApiKeyLifecycle";
+export { createHandler as createApiKeyHandler } from "@calcom/trpc/server/routers/viewer/apiKeys/create.handler";
 
 // getClientSecretFromPayment removed (EE feature) — stub for API v2
 export function getClientSecretFromPayment(payment: { data: Record<string, unknown> }): string | null {
@@ -203,6 +203,10 @@ export async function verifyPhoneNumber(
   throw new Error("Phone verification is not available in community edition");
 }
 
+export { authenticateApiKey } from "@calcom/features/community-enterprise/api-keys/ApiKeyAuthentication";
 export { readAuthentikSessionConfig } from "@calcom/features/community-enterprise/identity/AuthentikConfig";
 export { refreshAuthentikToken } from "@calcom/features/community-enterprise/identity/AuthentikIdentity";
-export { hasAuthentikMarker, isAuthentikOnly } from "@calcom/features/community-enterprise/identity/StaffLoginPolicy";
+export {
+  hasAuthentikMarker,
+  isAuthentikOnly,
+} from "@calcom/features/community-enterprise/identity/StaffLoginPolicy";
