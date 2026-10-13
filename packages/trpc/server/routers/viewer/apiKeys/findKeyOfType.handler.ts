@@ -1,28 +1,13 @@
-import prisma from "@calcom/prisma";
-import { MembershipRole } from "@calcom/prisma/enums";
-
+import { listApiKeyMetadata } from "@calcom/features/community-enterprise/api-keys/ApiKeyManagement";
+import type { PrismaClient } from "@calcom/prisma";
 import type { TrpcSessionUser } from "../../../types";
-import { checkPermissions } from "./_auth-middleware";
 import type { TFindKeyOfTypeInputSchema } from "./findKeyOfType.schema";
 
-type FindKeyOfTypeOptions = {
-  ctx: {
-    user: NonNullable<TrpcSessionUser>;
-  };
+type Options = {
+  ctx: { user: NonNullable<TrpcSessionUser>; prisma: PrismaClient };
   input: TFindKeyOfTypeInputSchema;
 };
 
-export const findKeyOfTypeHandler = async ({ ctx, input }: FindKeyOfTypeOptions) => {
-  const { teamId, appId } = input;
-  const userId = ctx.user.id;
-  /** Only admin or owner can create apiKeys of team (if teamId is passed) */
-  await checkPermissions({ userId, teamId, role: { in: [MembershipRole.OWNER, MembershipRole.ADMIN] } });
-
-  return await prisma.apiKey.findMany({
-    where: {
-      teamId,
-      userId,
-      appId,
-    },
-  });
+export const findKeyOfTypeHandler = async ({ ctx, input }: Options) => {
+  return listApiKeyMetadata(ctx.prisma, ctx.user.id, input);
 };
