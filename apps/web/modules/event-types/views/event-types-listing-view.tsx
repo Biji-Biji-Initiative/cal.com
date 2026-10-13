@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog } from "@calcom/features/components/controlled-dialog";
+import { onboardingReturnPath } from "@calcom/features/onboarding/lib/onboarding-return-path";
 import { APP_NAME } from "@calcom/lib/constants";
 import { extractHostTimezone, filterActiveLinks } from "@calcom/lib/hashedLinksUtils";
 import { useCopy } from "@calcom/lib/hooks/useCopy";
@@ -930,9 +931,7 @@ const CTA = ({ profileOptions }: { profileOptions: ProfileOption[] }) => {
         }}
         placeholder={t("search")}
       />
-      <Button
-        data-testid="new-event-type"
-        href={`?dialog=new&eventPage=${profileOptions[0]?.slug ?? ""}`}>
+      <Button data-testid="new-event-type" href={`?dialog=new&eventPage=${profileOptions[0]?.slug ?? ""}`}>
         {t("new")}
       </Button>
       <CreateEventTypeDialog profileOptions={profileOptions} />
@@ -1057,7 +1056,7 @@ const EventTypesPage = ({ userEventGroupsData, user }: Props) => {
     const redirectUrl = localStorage.getItem("onBoardingRedirect");
     localStorage.removeItem("onBoardingRedirect");
     if (redirectUrl) {
-      router.push(redirectUrl);
+      router.push(onboardingReturnPath(redirectUrl));
     }
   }, [router]);
 

@@ -1,27 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import posthog from "posthog-js";
-
+import { onboardingReturnPath } from "@calcom/features/onboarding/lib/onboarding-return-path";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { md } from "@calcom/lib/markdownIt";
 import turndown from "@calcom/lib/turndownService";
 import { localStorage } from "@calcom/lib/webstorage";
-import { trpc } from "@calcom/trpc/react";
 import type { RouterOutputs } from "@calcom/trpc/react";
+import { trpc } from "@calcom/trpc/react";
 import { UserAvatar } from "@calcom/ui/components/avatar";
 import { Button } from "@calcom/ui/components/button";
 import { Editor } from "@calcom/ui/components/editor";
 import { Label } from "@calcom/ui/components/form";
 import { ImageUploader } from "@calcom/ui/components/image-uploader";
 import { showToast } from "@calcom/ui/components/toast";
+import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
+import { useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 
-type FormData = {
-  bio: string;
-};
-
+type FormData = { bio: string };
 interface UserProfileProps {
   user: RouterOutputs["viewer"]["me"]["get"];
 }
@@ -29,18 +26,17 @@ interface UserProfileProps {
 const UserProfile = ({ user }: UserProfileProps) => {
   const { t } = useLocale();
   const avatarRef = useRef<HTMLInputElement>(null);
+  const finishing = useRef(false);
+  const [isFinishing, setIsFinishing] = useState(false);
   const { setValue, handleSubmit, getValues } = useForm<FormData>({
     defaultValues: { bio: user?.bio || "" },
   });
-
-  const { data: eventTypes } = trpc.viewer.eventTypes.list.useQuery();
   const [imageSrc, setImageSrc] = useState<string>(user?.avatar || "");
   const utils = trpc.useUtils();
   const router = useRouter();
   const createEventType = trpc.viewer.eventTypesHeavy.create.useMutation();
   const [firstRender, setFirstRender] = useState(true);
 
-  // Create a separate mutation for avatar updates
   const avatarMutation = trpc.viewer.me.updateProfile.useMutation({
     onSuccess: async (data) => {
       showToast(t("your_user_profile_updated_successfully"), "success");
@@ -50,69 +46,40 @@ const UserProfile = ({ user }: UserProfileProps) => {
       showToast(t("problem_saving_user_profile"), "error");
     },
   });
+  const mutation = trpc.viewer.me.updateProfile.useMutation();
+  const defaultEventTypes = [
+    { title: t("15min_meeting"), slug: "15min", length: 15 },
+    { title: t("30min_meeting"), slug: "30min", length: 30 },
+    { title: t("secret_meeting"), slug: "secret", length: 15, hidden: true },
+  ];
 
-  // Original mutation remains for onboarding completion
-  const mutation = trpc.viewer.me.updateProfile.useMutation({
-    onSuccess: async () => {
-      try {
-        if (eventTypes?.length === 0) {
-          await Promise.all(
-            DEFAULT_EVENT_TYPES.map(async (event) => {
-              return createEventType.mutate(event);
-            })
-          );
-        }
-      } catch (error) {
-        console.error(error);
+  const onSubmit = handleSubmit(async ({ bio }: FormData) => {
+    if (finishing.current) return;
+    finishing.current = true;
+    setIsFinishing(true);
+    try {
+      // Setup is not complete while initial event writes are pending or failed.
+      const eventTypes = await utils.viewer.eventTypes.list.fetch();
+      if (eventTypes.length === 0) {
+        await Promise.all(defaultEventTypes.map((event) => createEventType.mutateAsync(event)));
       }
-
-      posthog.capture("onboarding_completed");
-
+      await mutation.mutateAsync({ bio, completedOnboarding: true });
       await utils.viewer.me.get.refetch();
-      const redirectUrl = localStorage.getItem("onBoardingRedirect");
+      posthog.capture("onboarding_completed");
+      const destination = onboardingReturnPath(localStorage.getItem("onBoardingRedirect"));
       localStorage.removeItem("onBoardingRedirect");
-      redirectUrl ? router.push(redirectUrl) : router.push("/");
-    },
-    onError: () => {
+      router.push(destination);
+    } catch {
       showToast(t("problem_saving_user_profile"), "error");
-    },
-  });
-
-  const onSubmit = handleSubmit((data: { bio: string }) => {
-    const { bio } = data;
-
-    // telemetry.event(telemetryEventTypes.onboardingFinished);
-
-    mutation.mutate({
-      bio,
-      completedOnboarding: true,
-    });
+    } finally {
+      finishing.current = false;
+      setIsFinishing(false);
+    }
   });
 
   async function updateProfileHandler(newAvatar: string) {
-    avatarMutation.mutate({
-      avatarUrl: newAvatar,
-    });
+    avatarMutation.mutate({ avatarUrl: newAvatar });
   }
-
-  const DEFAULT_EVENT_TYPES = [
-    {
-      title: t("15min_meeting"),
-      slug: "15min",
-      length: 15,
-    },
-    {
-      title: t("30min_meeting"),
-      slug: "30min",
-      length: 30,
-    },
-    {
-      title: t("secret_meeting"),
-      slug: "secret",
-      length: 15,
-      hidden: true,
-    },
-  ];
 
   return (
     <form onSubmit={onSubmit}>
@@ -133,16 +100,13 @@ const UserProfile = ({ user }: UserProfileProps) => {
             id="avatar-upload"
             buttonMsg={t("add_profile_photo")}
             handleAvatarChange={(newAvatar) => {
-              if (avatarRef.current) {
-                avatarRef.current.value = newAvatar;
-              }
+              if (avatarRef.current) avatarRef.current.value = newAvatar;
               const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
                 window.HTMLInputElement.prototype,
                 "value"
               )?.set;
               nativeInputValueSetter?.call(avatarRef.current, newAvatar);
-              const ev2 = new Event("input", { bubbles: true });
-              avatarRef.current?.dispatchEvent(ev2);
+              avatarRef.current?.dispatchEvent(new Event("input", { bubbles: true }));
               updateProfileHandler(newAvatar);
             }}
             imageSrc={imageSrc}
@@ -161,7 +125,9 @@ const UserProfile = ({ user }: UserProfileProps) => {
         <p className="text-default mt-2 font-sans text-sm font-normal">{t("few_sentences_about_yourself")}</p>
       </fieldset>
       <Button
-        loading={mutation.isPending}
+        loading={isFinishing}
+        disabled={isFinishing}
+        data-testid="finish-onboarding"
         EndIcon="arrow-right"
         type="submit"
         className="mt-8 w-full items-center justify-center">
@@ -170,5 +136,4 @@ const UserProfile = ({ user }: UserProfileProps) => {
     </form>
   );
 };
-
 export default UserProfile;
