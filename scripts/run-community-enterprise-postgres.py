@@ -19,7 +19,7 @@ def main() -> int:
     parser.add_argument("--pg-bin", type=Path, help="Directory containing initdb and pg_ctl")
     parser.add_argument("--scratch-root", type=Path, help="Parent for the disposable fixture")
     parser.add_argument("--prisma-cli", type=Path, help="Explicit installed Prisma CLI; its version must match the repo pin")
-    parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "hosts", "team-journey", "identity-link", "api-keys", "api-auth", "api-key-http", "calendar-boundary"), default="bookings")
+    parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "hosts", "team-journey", "identity-link", "api-keys", "api-auth", "api-key-http", "calendar-boundary", "migration-preflight"), default="bookings")
     parser.add_argument("--concurrency", action="store_true", help="Run the additional deterministic booking-conflict acceptance probe")
     args = parser.parse_args()
     if args.concurrency and args.suite != "team-journey":
@@ -83,7 +83,7 @@ def main() -> int:
             command = ([node, "node_modules/vitest/vitest.mjs", "run", "--config", "tests/community-enterprise/vitest.postgres.config.mts", {"hosts": "tests/community-enterprise/postgres-hosts.test.ts", "teams": "tests/community-enterprise/postgres-teams.test.ts", "identity-link": "tests/community-enterprise/postgres-identity-link.test.ts"}[args.suite]]
                        if args.suite in ("teams", "hosts", "identity-link") else
                        [node, "--test", "--test-reporter=spec", {"api-keys": "tests/community-enterprise/postgres-api-keys.test.cjs", "api-auth": "tests/community-enterprise/postgres-api-auth.test.cjs",
-                "api-key-http": "tests/community-enterprise/postgres-api-key-controller.test.cjs", "calendar-boundary": "tests/community-enterprise/postgres-calendar-boundary.test.cjs", "bookings": "tests/community-enterprise/postgres-bookings.test.cjs", "built-web": "tests/community-enterprise/built-web.test.cjs", "team-journey": "tests/community-enterprise/built-web.test.cjs"}[args.suite]])
+                "api-key-http": "tests/community-enterprise/postgres-api-key-controller.test.cjs", "migration-preflight": "tests/community-enterprise/postgres-migration-preflight.test.cjs", "calendar-boundary": "tests/community-enterprise/postgres-calendar-boundary.test.cjs", "bookings": "tests/community-enterprise/postgres-bookings.test.cjs", "built-web": "tests/community-enterprise/built-web.test.cjs", "team-journey": "tests/community-enterprise/built-web.test.cjs"}[args.suite]])
             result = subprocess.run(command, cwd=root, env=environment, timeout=480 if args.suite == "team-journey" else 300)
             return result.returncode
         finally:
