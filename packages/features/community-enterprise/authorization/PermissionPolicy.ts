@@ -14,6 +14,7 @@ const PERMISSIONS: Readonly<Record<string, readonly MembershipRole[]>> = {
   "eventType.manage": ADMIN_ROLES,
   "team.read": READ_ROLES,
   "team.update": ADMIN_ROLES,
+  "apiKey.manage": ADMIN_ROLES,
   "organization.read": READ_ROLES,
   "organization.update": ADMIN_ROLES,
   "booking.readTeamBookings": ADMIN_ROLES,
