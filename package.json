@@ -83,7 +83,7 @@
     "changesets-version": "yarn changeset version",
     "changesets-release": "NODE_OPTIONS='--max_old_space_size=12288' turbo run build-npm --filter=@calcom/atoms && yarn changeset publish",
     "lint-staged": "lint-staged",
-    "test:community-enterprise": "node scripts/verify-community-enterprise-permissions.cjs && node scripts/verify-community-enterprise-task-graph.cjs && node --test tests/community-enterprise/authorization.test.cjs tests/community-enterprise/authentik.test.cjs tests/community-enterprise/task-graph.test.cjs tests/community-enterprise/booking-expectations.test.cjs tests/community-enterprise/identity-link-cli.test.cjs tests/community-enterprise/staff-login-policy.test.cjs tests/community-enterprise/api-session-boundary.test.cjs tests/community-enterprise/api-key-lifecycle.test.cjs",
+    "test:community-enterprise": "node scripts/verify-community-enterprise-permissions.cjs && node scripts/verify-community-enterprise-task-graph.cjs && node --test tests/community-enterprise/authorization.test.cjs tests/community-enterprise/authentik.test.cjs tests/community-enterprise/task-graph.test.cjs tests/community-enterprise/booking-expectations.test.cjs tests/community-enterprise/identity-link-cli.test.cjs tests/community-enterprise/staff-login-policy.test.cjs tests/community-enterprise/api-session-boundary.test.cjs tests/community-enterprise/api-key-lifecycle.test.cjs tests/community-enterprise/runtime-package.test.cjs",
     "test:community-enterprise:postgres": "python3 scripts/run-community-enterprise-postgres.py",
     "test:community-enterprise:build-config": "node --test tests/community-enterprise/build-config.test.cjs",
     "test:community-enterprise:web-smoke": "python3 scripts/run-community-enterprise-postgres.py --suite built-web",
@@ -224,7 +224,9 @@
     "brace-expansion@^5.0.2": "5.0.5",
     "brace-expansion@^2.0.1": "2.0.3",
     "brace-expansion@^2.0.2": "2.0.3",
-    "i18next-fs-backend": "^2.6.6"
+    "i18next-fs-backend": "^2.6.6",
+    "handlebars": "4.7.10",
+    "websocket-driver": "0.7.5"
   },
   "packageExtensions": {
     "ink@3.2.0": {

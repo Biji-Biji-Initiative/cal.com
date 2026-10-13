@@ -1,0 +1,37 @@
+# This context is produced by scripts/prepare-enterprise-runtime.cjs after the
+# exact public-origin build. Application dependencies are not installed here.
+FROM node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa
+# Prisma 6's schema engine needs the OS OpenSSL libraries, not Node's bundled SSL.
+# Versions below were resolved from Debian's signed trixie-security metadata.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      openssl=3.5.7-1~deb13u3 \
+      libssl3t64=3.5.7-1~deb13u3 \
+      ca-certificates=20250419 \
+ && rm -rf /var/lib/apt/lists/*
+ARG SOURCE_SHA
+ARG BUILD_ID
+ARG DOCKERFILE_SHA256
+ARG ENTRYPOINT_SHA256
+LABEL org.opencontainers.image.source="https://github.com/Biji-Biji-Initiative/cal.com" \
+      org.opencontainers.image.revision="${SOURCE_SHA}" \
+      io.mereka.cal.build-id="${BUILD_ID}" \
+      io.mereka.cal.dockerfile-sha256="${DOCKERFILE_SHA256}" \
+      io.mereka.cal.entrypoint-sha256="${ENTRYPOINT_SHA256}" \
+      io.mereka.cal.distribution="community-enterprise-preview"
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    CHECKPOINT_DISABLE=1 \
+    PRISMA_HIDE_UPDATE_MESSAGE=1 \
+    PRISMA_GENERATE_SKIP_AUTOINSTALL=true \
+    HOSTNAME=0.0.0.0 \
+    PORT=3000
+WORKDIR /calcom
+COPY --chown=1000:1000 standalone/ ./
+COPY --chown=1000:1000 ops/ ./ops/
+COPY --chown=1000:1000 scripts/ ./scripts/
+COPY --chown=1000:1000 enterprise-build.json ./enterprise-build.json
+USER 1000:1000
+EXPOSE 3000
+ENTRYPOINT ["node", "/calcom/scripts/enterprise-runtime-entrypoint.cjs"]
+CMD ["web"]
