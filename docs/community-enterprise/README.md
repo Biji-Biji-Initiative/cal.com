@@ -1,6 +1,31 @@
-# Open-source enterprise calendar — implementation record
+# Cal.diy-based enterprise service — implementation record
 
-## Current: reviewed identity onboarding (2026-10-13)
+## Current product direction and acceptance
+
+We are building our operator-hosted enterprise service on the retained Cal.diy
+foundation, not asking staff to buy Cal.com cloud plans. Repository, branch and
+TASK_GRAPH.json remain the single delivery home. Product source/publication intent
+is governed by the existing single-repository decision and corrected issue #79;
+old "open-source distribution" language below is historical, not a new commitment
+to publish private product drafts.
+
+[Product delivery contract](PRODUCT-DELIVERY-CONTRACT-2026-10-14.md) groups the
+existing tasks into first user journeys, complete enterprise lifecycle, qualified
+rollout, and approved broader network/agent capability. [Onboarding evidence](ONBOARDING-2026-10-14.md)
+records the repaired first-run path, exact built-browser proof and unresolved work.
+
+The currently served dev application was read back as legacy v6.2.0. Restored
+availability and an Authentik redirect are not enterprise candidate acceptance.
+This source fixes the candidate's own stale plan chooser and incomplete first-run
+routing; deployment, real organization provisioning and live provider acceptance
+remain open. The mother-agent 246c07c3 authorization repair is included and retained.
+
+## Historical implementation receipts
+
+The records below retain their original code/test scopes. Later evidence may
+supersede a defect status; no old receipt validates a newer image or live release.
+
+## Historical: reviewed identity onboarding (2026-10-13)
 
 The existing account-link helper now has an operator-only plan/apply workflow,
 with exact user UUIDs, current instance-administrator checks, deployment-bound
@@ -30,7 +55,7 @@ migration/release. Source proof is not a production rollout.
 
 ## Prior verification records
 
-## Current wave: shared host selection and calendar correctness
+## Historical wave: shared host selection and calendar correctness
 
 The booking and available-slot paths now use one membership-aware host service.
 The retained same-host/rerouting suite is green rather than relying on the earlier
@@ -46,7 +71,7 @@ release gates are not closed by a local test. No shared environment was changed.
 
 ## Earlier implementation record
 
-## Current slice: teams, audit and a local complete booking lifecycle
+## Historical slice: teams, audit and a local complete booking lifecycle
 
 [Team journey evidence](TEAM-JOURNEY-2026-10-12.md) records the recovered and
 completed implementation: authenticated organization/team administration, basic
@@ -64,7 +89,7 @@ remaining requirements rather than reporting all scheduler tests green.
 
 ## Earlier implementation records
 
-## Current direction: runnable enterprise journeys (2026-10-12)
+## Historical direction: runnable enterprise journeys (2026-10-12)
 
 [Recalibration](REALIGNMENT-2026-10-12.md) keeps the MIT Cal.diy foundation and
 existing infrastructure but replaces the coarse sequence with an executable

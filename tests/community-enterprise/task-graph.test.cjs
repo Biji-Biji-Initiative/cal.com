@@ -125,7 +125,7 @@ test("source-only evidence cannot satisfy a runtime prerequisite", () => {
 });
 test("runnable work includes the retained engine without waiting for full administration", () => {
   const ready = readyTasks(read()).map((task) => task.id);
-  assert.equal(ready[0], "CAL-02.PREVIEW");
+  assert.equal(ready[0], "CAL-05.CORE");
   assert.ok(ready.includes("CAL-06.REUSE"));
   assert.ok(ready.includes("CAL-05.CORE"));
   assert.ok(!ready.includes("CAL-09.PILOT"));
@@ -147,7 +147,7 @@ test("ready CLI produces machine-readable JSON without extra diagnostics", () =>
     { encoding: "utf8" }
   );
   const ready = JSON.parse(text);
-  assert.equal(ready[0].id, "CAL-02.PREVIEW");
+  assert.equal(ready[0].id, "CAL-05.CORE");
   assert.equal(ready[0].priority, 0);
 });
 
@@ -180,4 +180,16 @@ test("required fork reconciliation cannot be orphaned from the production path",
       acceptance.requires = acceptance.requires.filter((id) => id !== "CAL-01.REUSE");
     }).some((error) => error.includes("team-release dependency path"))
   );
+});
+
+test("product phases only reference the same canonical task identities", () => {
+  const graph = read();
+  const ids = new Set(graph.tasks.map((task) => task.id));
+  assert.equal(ids.size, 39);
+  assert.equal(graph.product_delivery.phases.length, 4);
+  for (const phase of graph.product_delivery.phases) {
+    assert.ok(phase.tasks.length > 0);
+    for (const id of phase.tasks) assert.ok(ids.has(id));
+  }
+  assert.equal(typeof graph.product_delivery.candidate_deployed, "boolean");
 });

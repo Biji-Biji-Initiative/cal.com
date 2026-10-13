@@ -35,13 +35,14 @@
     "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task’s own required level.",
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
-      "CAL-02.BUILD",
-      "CAL-02.PREVIEW",
-      "CAL-04.LINK",
       "CAL-05.CORE",
+      "CAL-05.UI",
+      "CAL-04.LINK",
+      "CAL-06.JOURNEY",
+      "CAL-02.PREVIEW",
       "CAL-06.REUSE"
     ],
-    "priority_rule": "0 means the next runnable journey, 1 enabling/release work, 2 later full-rollout work. Dependencies and evidence gates always take precedence."
+    "priority_rule": "Next-ready work prioritizes the complete staff/admin/guest journey. Infrastructure owners can resolve publication and admission in parallel; no dependency, privacy, security or production gate is waived."
   },
   "milestones": [
     {
@@ -385,7 +386,9 @@
       ],
       "acceptance": [
         "Resource/volume placement admitted without new hardware or policy bypass; no overwrite of existing staging.",
-        "Test-only users and credentials, isolated database, outbound email/calendar effects disabled until deliberate tests."
+        "Test-only users and credentials, isolated database, outbound email/calendar effects disabled until deliberate tests.",
+        "Read back the actual serving image/source/config and test the first staff journey; legacy v6.2 service recovery or an IdP 302 is not enterprise candidate acceptance.",
+        "The guest booking namespace remains anonymous where intended; remove blanket legacy forward-auth only through reviewed native OIDC/routing cutover, retaining all staff authorization."
       ],
       "evidence": [
         {
@@ -402,7 +405,12 @@
       "completion_evidence_level": "runtime",
       "priority": 0,
       "progress": "Packaged local application journey is the candidate for preview admission. No shared environment or existing parked Cal workload is changed; image/public-origin, admission, real IdP and secret delivery still require realization.",
-      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
+      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md",
+      "blockers": [
+        "Live cal.mereka.dev is the restored legacy v6.2.0 image, not the enterprise candidate.",
+        "Approved GHCR publication permissions and exact-image security disposition remain unresolved.",
+        "Native Authentik client/account/organization provisioning and anonymous guest routing need actual deployment acceptance."
+      ]
     },
     {
       "id": "CAL-03.POLICY",
@@ -697,7 +705,8 @@
       "acceptance": [
         "Use Team/Membership/Profile/Role; no second tenant directory or SaaS license/billing dependencies.",
         "Create team, accept/invite members, assign existing/custom permissions, preserve last owner and provenance.",
-        "No automatic mapping of brand/email domain to a new organization without actual owner data."
+        "No automatic mapping of brand/email domain to a new organization without actual owner data.",
+        "Provide the real operator-authorized first organization and initial membership provisioning path with audit/idempotency; identity-link plans do not create missing organizations. No manual SQL hidden behind a successful UI state."
       ],
       "evidence": [],
       "required_for_team_release": true,
@@ -726,9 +735,20 @@
       ],
       "acceptance": [
         "Organization switch, team/members, event ownership and actionable errors work without operator SQL.",
-        "Permission checks on server actions and route data; keyboard/accessibility and denied-state tests."
+        "Permission checks on server actions and route data; keyboard/accessibility and denied-state tests.",
+        "Fresh staff, including accepted organization members, complete the retained profile/calendar/conferencing/availability journey without Cal.com plan selection, hosted checkout or stale browser-plan redirects.",
+        "Visible onboarding, organization and team controls must invoke implemented services; absent provisioning cannot emit a success message. No membership or role may be derived from a subscription choice."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/ONBOARDING-2026-10-14.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite onboarding-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Actual built browser, native session exchange against TLS test IdP, real PostgreSQL first-run setup, stale purchase drafts and legacy links. External calendar/conferencing steps explicitly skipped; not a deployed candidate or live IdP proof.",
+          "source_revision": "4c76854e22561bae0cb1f08ecb9ff2c3e4f6c6e9"
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
@@ -862,7 +882,8 @@
       "acceptance": [
         "Real Authentik login, reviewed identity/team, connected test calendar, public invitee booking, invitation, reschedule and cancellation.",
         "Second organization denied; guest booking does not require staff login; visible admin errors not operator guesswork.",
-        "This is preview-only proof, not permission to promote incomplete enterprise controls."
+        "This is preview-only proof, not permission to promote incomplete enterprise controls.",
+        "Begin at first login for an unconfigured admitted staff user, not a fixture marked completedOnboarding=true; demonstrate real settings, availability and intended membership before guest booking."
       ],
       "evidence": [
         {
@@ -871,6 +892,14 @@
           "command": "yarn test:community-enterprise:booking-concurrency --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
           "summary": "Verified local packaged multi-host journey and notification capture. This is explicitly not the required shared preview, real Authentik or connected external calendar journey."
+        },
+        {
+          "file": "docs/community-enterprise/ONBOARDING-2026-10-14.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite onboarding-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Actual built browser, native session exchange against TLS test IdP, real PostgreSQL first-run setup, stale purchase drafts and legacy links. External calendar/conferencing steps explicitly skipped; not a deployed candidate or live IdP proof.",
+          "source_revision": "4c76854e22561bae0cb1f08ecb9ff2c3e4f6c6e9"
         }
       ],
       "required_for_team_release": true,
@@ -1059,7 +1088,8 @@
       "acceptance": [
         "Exact source/image/migration/config and runtime proof; all named core enterprise journeys pass.",
         "No waiver of security, privacy, data preservation or supported recovery to make the first pilot green.",
-        "Dependency and secret scans, runtime policy compliance, and no credential/PII leakage in the exercised paths; all exceptions explicit and release-reviewed."
+        "Dependency and secret scans, runtime policy compliance, and no credential/PII leakage in the exercised paths; all exceptions explicit and release-reviewed.",
+        "No paid-plan or upgrade path to removed services in the exercised staff/admin journeys. Prove all visible actions and distinguish actual product access from third-party attribution or attendee-payment integrations."
       ],
       "evidence": [],
       "required_for_team_release": true,
@@ -1172,7 +1202,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/DELIVERY-2026-10-14.md",
+  "latest_evidence": "docs/community-enterprise/ONBOARDING-2026-10-14.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
@@ -1204,5 +1234,72 @@
       "Fresh preservation rehearsal, writer quiescence and staged release gates"
     ],
     "evidence": "docs/community-enterprise/DELIVERY-2026-10-14.md"
+  },
+  "product_delivery": {
+    "decision_date": "2026-10-14",
+    "contract": "docs/community-enterprise/PRODUCT-DELIVERY-CONTRACT-2026-10-14.md",
+    "owner_pacing": "Phase-by-phase depth and verified journeys; the earlier rushed production date is not an approval to waive requirements.",
+    "foundation": "Cal.diy retained code and community updates; own enterprise behavior is not Cal.com cloud subscription entitlement.",
+    "progress_unit": "Complete observable staff/admin/guest journeys, supported by source, tests and exact serving-artifact proof.",
+    "mother_agent_commit": "246c07c3; ancestry confirmed; authorization repair preserved, not evidence of live onboarding parity.",
+    "phases": [
+      {
+        "name": "First working staff/admin/guest journey",
+        "tasks": [
+          "CAL-05.UI",
+          "CAL-05.CORE",
+          "CAL-04.OIDC",
+          "CAL-04.LINK",
+          "CAL-06.JOURNEY",
+          "CAL-02.PREVIEW"
+        ]
+      },
+      {
+        "name": "Complete core enterprise lifecycle",
+        "tasks": [
+          "CAL-03.ROUTES",
+          "CAL-03.LIST",
+          "CAL-04.SESSION",
+          "CAL-04.SCIM",
+          "CAL-04.REVOCATION",
+          "CAL-05.API",
+          "CAL-06.REUSE",
+          "CAL-07.AUDIT",
+          "CAL-07.REMINDERS"
+        ]
+      },
+      {
+        "name": "Qualified dev, staging and production; prepare in parallel",
+        "tasks": [
+          "CAL-02.BUILD",
+          "CAL-02.API",
+          "CAL-08.BASELINE",
+          "CAL-08.MIGRATE",
+          "CAL-08.UPDATE",
+          "CAL-09.ACCEPT",
+          "CAL-09.PILOT"
+        ]
+      },
+      {
+        "name": "Approved broader platform value on a working core",
+        "tasks": [
+          "CAL-10.ROUTING",
+          "CAL-10.REPORTS",
+          "CAL-10.ROLLOUT",
+          "CAL-01.REUSE"
+        ]
+      }
+    ],
+    "candidate_deployed": false,
+    "live_service_label": "legacy recovery, not enterprise acceptance",
+    "phase_groups_are_not_new_task_ids": true,
+    "prior_focus_order": [
+      "CAL-02.BUILD",
+      "CAL-02.PREVIEW",
+      "CAL-04.LINK",
+      "CAL-05.CORE",
+      "CAL-06.REUSE"
+    ],
+    "next_ready_outcome": "Real operator-authorized organization/member bootstrap and completion of the first staff/admin/guest journey; not another unrelated API-only slice."
   }
 }
