@@ -1,80 +1,59 @@
-import { sha256Hash, stripApiKey } from "@/lib/api-key";
 import { AuthMethods } from "@/lib/enums/auth-methods";
-import { ApiKeysRepository } from "@/modules/api-keys/api-keys-repository";
-import { CreateApiKeyInput } from "@/modules/api-keys/inputs/create-api-key.input";
-import { RefreshApiKeyInput } from "@/modules/api-keys/inputs/refresh-api-key.input";
-import { ApiAuthGuardRequest } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
-import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { parseBearerHeader } from "@/modules/auth/services/credential-policy";
+import type { CreateApiKeyInput } from "@/modules/api-keys/inputs/create-api-key.input";
+import type { RefreshApiKeyInput } from "@/modules/api-keys/inputs/refresh-api-key.input";
+import type { ApiAuthGuardRequest } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
+import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { DateTime } from "luxon";
-
-import { createApiKeyHandler } from "@calcom/platform-libraries";
+import { createApiKey, rotateApiKey } from "@calcom/platform-libraries";
 
 @Injectable()
 export class ApiKeysService {
-  constructor(
-    private readonly apiKeysRepository: ApiKeysRepository,
-    private readonly config: ConfigService
-  ) {}
+  constructor(private readonly database: PrismaWriteService, private readonly config: ConfigService) {}
 
   async getRequestApiKey(request: ApiAuthGuardRequest) {
-    if (request.authMethod !== AuthMethods.API_KEY) {
-      throw new UnauthorizedException(
-        "ApiKeysService - This endpoint can only be accessed using an API key by providing 'Authorization: Bearer <apiKey>' header"
-      );
-    }
-    const apiKey = request.get("Authorization")?.replace("Bearer ", "");
-    if (!apiKey) {
-      throw new UnauthorizedException("ApiKeysService - No API key provided");
-    }
-    return apiKey;
+    if (request.authMethod !== AuthMethods.API_KEY) throw new UnauthorizedException("An API key is required");
+    try {
+      const key = parseBearerHeader(request.get("Authorization"));
+      if (key) return key;
+    } catch { /* A malformed credential is never replaced with a session cookie. */ }
+    throw new UnauthorizedException("An API key is required");
   }
 
-  async createApiKey(authUserId: number, createApiKeyInput: CreateApiKeyInput) {
-    if (createApiKeyInput.apiKeyDaysValid && createApiKeyInput.apiKeyNeverExpires) {
-      throw new BadRequestException(
-        "ApiKeysService -Cannot set both apiKeyDaysValid and apiKeyNeverExpires. It has to be either or none of them."
-      );
+  private lifetime(input: RefreshApiKeyInput) {
+    const days = input.apiKeyDaysValid;
+    if ((days !== undefined && (!Number.isSafeInteger(days) || days < 1)) ||
+        (input.apiKeyNeverExpires !== undefined && typeof input.apiKeyNeverExpires !== "boolean") ||
+        (days !== undefined && input.apiKeyNeverExpires === true)) {
+      throw new BadRequestException("Choose a positive whole number of days or an explicit non-expiring key");
     }
-
-    const defaultApiKeyDaysValid = 30;
-    const apiKeyExpiresAfterDays = createApiKeyInput.apiKeyDaysValid
-      ? createApiKeyInput.apiKeyDaysValid
-      : defaultApiKeyDaysValid;
-    const apiKeyExpiresAt = DateTime.utc().plus({ days: apiKeyExpiresAfterDays }).toJSDate();
-    const apiKey = await createApiKeyHandler({
-      ctx: {
-        user: {
-          id: authUserId,
-        },
-      },
-      input: {
-        note: createApiKeyInput.note,
-        neverExpires: !!createApiKeyInput.apiKeyNeverExpires,
-        expiresAt: apiKeyExpiresAt,
-        teamId: createApiKeyInput.teamId,
-      },
-    });
-
-    return apiKey;
+    const expiresAt = new Date(Date.now() + (days ?? 30) * 86400000);
+    if (!Number.isFinite(expiresAt.getTime())) throw new BadRequestException("Invalid API key lifetime");
+    return { neverExpires: input.apiKeyNeverExpires === true, expiresAt };
   }
 
-  async refreshApiKey(authUserId: number, apiKey: string, refreshApiKeyInput: RefreshApiKeyInput) {
-    const strippedApiKey = stripApiKey(apiKey, this.config.get<string>("api.keyPrefix"));
-    const apiKeyHash = sha256Hash(strippedApiKey);
-    const apiKeyInDb = await this.apiKeysRepository.getApiKeyFromHash(apiKeyHash);
-    if (!apiKeyInDb) {
-      throw new UnauthorizedException("ApiKeysService - provided api key is not valid.");
+  private async execute<T>(operation: () => Promise<T>): Promise<T> {
+    try { return await operation(); }
+    catch (error) {
+      if (typeof error === "object" && error !== null && "code" in error) {
+        if (error.code === "forbidden_error") throw new ForbiddenException("API key operation is not permitted");
+        if (error.code === "bad_request_error") throw new BadRequestException("Invalid API key input");
+      }
+      throw error;
     }
+  }
 
-    const newApiKey = await this.createApiKey(authUserId, {
-      ...refreshApiKeyInput,
-      note: apiKeyInDb.note || undefined,
-      teamId: apiKeyInDb.teamId || undefined,
-    });
+  async createApiKey(authUserId: number, input: CreateApiKeyInput) {
+    const lifetime = this.lifetime(input);
+    return this.execute(() => createApiKey(this.database.prisma, authUserId, {
+      ...lifetime, note: input.note, teamId: input.teamId,
+    }, this.config.get<string>("api.keyPrefix") ?? "cal_"));
+  }
 
-    await this.apiKeysRepository.deleteById(apiKeyInDb.id);
-
-    return newApiKey;
+  async refreshApiKey(authUserId: number, key: string, input: RefreshApiKeyInput) {
+    const lifetime = this.lifetime(input);
+    return this.execute(() => rotateApiKey(this.database.prisma, authUserId, key, lifetime,
+      this.config.get<string>("api.keyPrefix") ?? "cal_"));
   }
 }
