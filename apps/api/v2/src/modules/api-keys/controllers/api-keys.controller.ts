@@ -1,15 +1,15 @@
+import { SUCCESS_STATUS } from "@calcom/platform-constants";
+import { Body, Controller, Header, HttpCode, HttpStatus, Post, Req, UseGuards } from "@nestjs/common";
+import { ApiHeader, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { API_VERSIONS_VALUES } from "@/lib/api-versions";
 import { API_KEY_HEADER } from "@/lib/docs/headers";
 import { RefreshApiKeyInput } from "@/modules/api-keys/inputs/refresh-api-key.input";
 import { RefreshApiKeyOutput } from "@/modules/api-keys/outputs/refresh-api-key.output";
 import { ApiKeysService } from "@/modules/api-keys/services/api-keys.service";
+import { ApiAuthGuardOnlyAllow } from "@/modules/auth/decorators/api-auth-guard-only-allow.decorator";
 import { GetUser } from "@/modules/auth/decorators/get-user/get-user.decorator";
 import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
 import { ApiAuthGuardRequest } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from "@nestjs/common";
-import { ApiTags, ApiHeader, ApiOperation } from "@nestjs/swagger";
-
-import { SUCCESS_STATUS } from "@calcom/platform-constants";
 
 @Controller({
   path: "/v2/api-keys",
@@ -26,6 +26,8 @@ export class ApiKeysController {
   })
   @ApiHeader(API_KEY_HEADER)
   @Post("/refresh")
+  @ApiAuthGuardOnlyAllow(["API_KEY"])
+  @Header("Cache-Control", "no-store")
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Body() body: RefreshApiKeyInput,
