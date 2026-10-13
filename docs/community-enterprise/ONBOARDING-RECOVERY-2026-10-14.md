@@ -1,3 +1,23 @@
+# Historical onboarding recovery checkpoint — resolved
+
+**This interruption was recovered in the same work session.** The operator laptop's
+existing SSH route restored ordinary access to g2. The final explicit timezone
+selection/persistence test passed; the existing team/booking/multi-host regression
+also passed on the same built application. Test servers stopped. Both public and
+local Git histories were merged without force-pushing or losing application code.
+The canonical graph and phase priorities are now updated, with all 39 identities,
+prior evidence and release dependencies retained. No enterprise milestone or live
+candidate deployment was claimed.
+
+Current acceptance is [ONBOARDING-2026-10-14.md](ONBOARDING-2026-10-14.md), the
+[product contract](PRODUCT-DELIVERY-CONTRACT-2026-10-14.md), and TASK_GRAPH.json.
+The checkpoint below is retained as history; its "not published" and "unknown"
+statements describe the earlier interruption, not the final reconciled branch.
+The exact application build remains 4c76854e22561bae0cb1f08ecb9ff2c3e4f6c6e9;
+later test/documentation commits must not be relabeled onto its artifact.
+
+---
+
 # Onboarding correction: verified work and recovery checkpoint
 
 Date: 2026-10-14. This document is an execution checkpoint, not application
