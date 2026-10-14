@@ -750,6 +750,14 @@
           "exit_code": 0,
           "summary": "Reviewed basic organization roles, atomic ownership transfer and bounded planned offboarding preserve personal/other-org data, revoke scoped credentials and require explicit handoff. Complete provider handoff, custom roles, self-service departure and directory lifecycle remain open.",
           "source_revision": "3ee12ff80d110b077f15ac5d6c1fd037e7cc89f7"
+        },
+        {
+          "file": "docs/community-enterprise/SCHEDULING-HANDOFF-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "One explicit shared host assignment can be handed to an accepted successor and their own availability, then eligible planned offboarding can finish. Existing future appointments/provider bindings still require their actual handoff lifecycle.",
+          "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         }
       ],
       "required_for_team_release": true,
@@ -758,7 +766,7 @@
       "priority": 0,
       "progress": "Reviewed operator admission and existing-account invitation/accept/decline/cancel now share retained models and current-state permission checks. Personal calendars and other memberships are preserved. New-account enrollment, accepted-member offboarding, custom-role editing and full directory lifecycle remain open.",
       "progress_reference": "docs/community-enterprise/INVITATION-ACCEPTANCE-2026-10-14.md",
-      "progress_summary": "Reviewed basic organization roles, atomic ownership transfer and bounded planned offboarding preserve personal/other-org data, revoke scoped credentials and require explicit handoff. Complete provider handoff, custom roles, self-service departure and directory lifecycle remain open."
+      "progress_summary": "One explicit shared host assignment can be handed to an accepted successor and their own availability, then eligible planned offboarding can finish. Existing future appointments/provider bindings still require their actual handoff lifecycle."
     },
     {
       "id": "CAL-05.UI",
@@ -815,6 +823,14 @@
           "exit_code": 0,
           "summary": "Actual browser review/confirmation, stale-review refusal, membership revocation with unchanged sessions, ownership and last-owner protection pass. No deployed administration or full accessibility certification claimed.",
           "source_revision": "3ee12ff80d110b077f15ac5d6c1fd037e7cc89f7"
+        },
+        {
+          "file": "docs/community-enterprise/SCHEDULING-HANDOFF-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Actual browser selects successor/schedule, previews precise effects, rejects changed review, commits handoff and separately removes eligible old access. No live product/deployment acceptance implied.",
+          "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         }
       ],
       "required_for_team_release": true,
@@ -823,7 +839,7 @@
       "priority": 1,
       "progress": "First-run, first-organization and three-identity invitation consent flows pass on assembled local candidate alongside guest/team booking regressions. Pending, expiry/cancel and email-submission failure are explicit. Live identities/provider and broader member lifecycle acceptance remain open.",
       "progress_reference": "docs/community-enterprise/INVITATION-ACCEPTANCE-2026-10-14.md",
-      "progress_summary": "Actual browser review/confirmation, stale-review refusal, membership revocation with unchanged sessions, ownership and last-owner protection pass. No deployed administration or full accessibility certification claimed."
+      "progress_summary": "Actual browser selects successor/schedule, previews precise effects, rejects changed review, commits handoff and separately removes eligible old access. No live product/deployment acceptance implied."
     },
     {
       "id": "CAL-05.API",
@@ -903,6 +919,14 @@
           "command": "yarn test:community-enterprise:host-db --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
           "summary": "42 real-PostgreSQL eligibility/commit tests; shared collective host conflicts, reverse lock order, competing reschedules, buffers and independent-host controls."
+        },
+        {
+          "file": "docs/community-enterprise/SCHEDULING-HANDOFF-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite scheduling-handoff --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Reuses retained qualified-host/booking engine and ordered host locks; actual two-order transaction races plus unchanged-link successor guest booking pass. Managed/automatic/provider/future-appointment reassignment remain open.",
+          "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         }
       ],
       "required_for_team_release": true,
@@ -925,7 +949,8 @@
         "Working-hour construction resolves explicit organizer wall times independently of the server process timezone; existing travel and return-type contracts are preserved.",
         "Deterministic PostgreSQL tests cover overlapping cross-event bookings, shared collective hosts, reversed host order, competing reschedules and independent hosts using ordered row locks in the existing transaction.",
         "The regular write rechecks selected identities, current eligibility, local overlaps and buffers before committing or cancelling the original appointment."
-      ]
+      ],
+      "progress_summary": "Reuses retained qualified-host/booking engine and ordered host locks; actual two-order transaction races plus unchanged-link successor guest booking pass. Managed/automatic/provider/future-appointment reassignment remain open."
     },
     {
       "id": "CAL-06.JOURNEY",
@@ -969,6 +994,14 @@
           "exit_code": 0,
           "summary": "Actual built browser, native session exchange against TLS test IdP, real PostgreSQL first-run setup, stale purchase drafts and legacy links. External calendar/conferencing steps explicitly skipped; not a deployed candidate or live IdP proof.",
           "source_revision": "4c76854e22561bae0cb1f08ecb9ff2c3e4f6c6e9"
+        },
+        {
+          "file": "docs/community-enterprise/SCHEDULING-HANDOFF-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
+          "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         }
       ],
       "required_for_team_release": true,
@@ -976,7 +1009,8 @@
       "completion_evidence_level": "runtime",
       "priority": 1,
       "progress": "Packaged native OIDC through a TLS fixture, Chromium team administration, directed/same-host/rerouted bookings and collective availability are locally proven with PostgreSQL and non-relaying SMTP. Not deployed Authentik, connected external calendars or shared preview admission.",
-      "progress_reference": "docs/community-enterprise/MULTI-HOST-2026-10-12.md"
+      "progress_reference": "docs/community-enterprise/MULTI-HOST-2026-10-12.md",
+      "progress_summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
     },
     {
       "id": "CAL-07.AUDIT",
@@ -1014,6 +1048,14 @@
           "exit_code": 0,
           "summary": "Member commands and reviewed credential/grant changes commit with audit; real constraint rollback and exact replay tested. No durable external delivery, full audit retention or production recovery completion claimed.",
           "source_revision": "3ee12ff80d110b077f15ac5d6c1fd037e7cc89f7"
+        },
+        {
+          "file": "docs/community-enterprise/SCHEDULING-HANDOFF-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Handoff and exact administrative audit commit together with replay and real constraint-failure rollback; no distributed provider transaction or durable notification completion.",
+          "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         }
       ],
       "required_for_team_release": true,
@@ -1022,7 +1064,7 @@
       "priority": 1,
       "progress": "Organization/team/key and invitation state transitions have transactional administrative audit. Invite notifications record attempts, not guaranteed delivery; SMTP failures do not grant access. Full durable outbox/crash-retry, booking audit and retention acceptance remain open.",
       "progress_reference": "docs/community-enterprise/INVITATION-ACCEPTANCE-2026-10-14.md",
-      "progress_summary": "Member commands and reviewed credential/grant changes commit with audit; real constraint rollback and exact replay tested. No durable external delivery, full audit retention or production recovery completion claimed."
+      "progress_summary": "Handoff and exact administrative audit commit together with replay and real constraint-failure rollback; no distributed provider transaction or durable notification completion."
     },
     {
       "id": "CAL-07.REMINDERS",
@@ -1150,12 +1192,21 @@
           "exit_code": 0,
           "summary": "Two real database-catalog tests detect changed Membership/Profile deletion effects, including an actual added synthetic cascade. This is scoped upstream-update acceptance, not a completed upstream upgrade or production migration.",
           "application_source": "3ee12ff80d110b077f15ac5d6c1fd037e7cc89f7"
+        },
+        {
+          "file": "docs/community-enterprise/SCHEDULING-HANDOFF-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite scheduling-handoff --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Actual Host foreign-key deletion contract plus synthetic-cascade negative extends the retained preservation acceptance pattern; not a full upstream upgrade or live migration.",
+          "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 1
+      "priority": 1,
+      "progress_summary": "Actual Host foreign-key deletion contract plus synthetic-cascade negative extends the retained preservation acceptance pattern; not a full upstream upgrade or live migration."
     },
     {
       "id": "CAL-09.ACCEPT",
@@ -1298,7 +1349,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/MEMBER-LIFECYCLE-2026-10-14.md",
+  "latest_evidence": "docs/community-enterprise/SCHEDULING-HANDOFF-2026-10-15.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
@@ -1396,7 +1447,7 @@
       "CAL-05.CORE",
       "CAL-06.REUSE"
     ],
-    "next_ready_outcome": "Complete the blocked handoff and remaining membership/custom-role lifecycle without bypassing preservation, while resolving exact-image and live identity/deployment prerequisites.",
+    "next_ready_outcome": "Extend explicit scheduling/provider handoff to existing appointments and bound integrations using retained booking/provider services; continue custom-role/community lifecycle and exact-image/live identity release gates independently.",
     "organization_admission": {
       "scope": "established operator plus existing-account admission",
       "evidence": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md",
@@ -1449,6 +1500,16 @@
         "Qualified deployment and existing preservation/security gates"
       ],
       "upstream_preservation_contract": "Actual Membership/Profile incoming-FK deletion contract; a synthetic added cascade is detected by the acceptance test"
+    },
+    "scheduling_handoff": {
+      "evidence": "docs/community-enterprise/SCHEDULING-HANDOFF-2026-10-15.md",
+      "contract": "docs/community-enterprise/SCHEDULING-HANDOFF-CONTRACT-2026-10-15.md",
+      "built_source": "094ae76b06e8834f227768d0b5d1d829acacdd88",
+      "scope": "explicit shared host configuration without future appointments or provider bindings",
+      "stable_booking_link_proven": true,
+      "candidate_deployed": false,
+      "future_appointments_reassigned": false,
+      "provider_credentials_transferred": false
     }
   }
 }

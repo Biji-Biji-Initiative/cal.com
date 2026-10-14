@@ -1,6 +1,17 @@
 # Cal.diy-based enterprise service — implementation record
 
-## Latest: reviewed member roles, ownership and planned offboarding
+## Latest: explicit shared scheduling handoff (2026-10-15)
+
+[Assembled handoff evidence](SCHEDULING-HANDOFF-2026-10-15.md) proves an eligible
+shared host assignment can move to an accepted successor's own schedule, unblock
+a separate planned removal, and retain the public team link for a new guest booking.
+[The contract](SCHEDULING-HANDOFF-CONTRACT-2026-10-15.md) distinguishes that operation
+from actual future-appointment/provider reassignment, which remains incomplete.
+This is current local-candidate proof, not deployment or a new enterprise license.
+All prior journeys and the existing 39 task identities remain in the programme.
+
+
+## Previous: reviewed member roles, ownership and planned offboarding
 
 [Member-lifecycle evidence](MEMBER-LIFECYCLE-2026-10-14.md) records the assembled
 role-change, ownership-transfer and planned-removal journey, including unchanged
