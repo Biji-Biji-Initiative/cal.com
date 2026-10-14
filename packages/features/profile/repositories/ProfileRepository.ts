@@ -549,7 +549,12 @@ export class ProfileRepository implements IProfileRepository {
         include: {
           user: { select: userSelect },
           organization: {
-            select: organizationWithSettingsAndMembersSelect,
+            select: {
+              ...organizationWithSettingsAndMembersSelect,
+              // This projection feeds the authenticated caller's role hint.
+              // Another member's OWNER row must not make this caller an admin.
+              members: { select: membershipSelect, where: { accepted: true, userId } },
+            },
           },
         },
       });
@@ -584,7 +589,7 @@ export class ProfileRepository implements IProfileRepository {
                 select: membershipSelect,
                 where: {
                   accepted: true,
-                  user: { profiles: { some: { id: lookupTarget.id } } },
+                  userId,
                 },
               },
             },

@@ -406,3 +406,37 @@ test("root-address serialization is observed in PostgreSQL before either competi
   assert.equal(await prisma.team.count(), 1);
   assert.equal(await prisma.enterpriseAuditEvent.count(), 1);
 });
+
+test("a member's UUID profile never carries another person's owner membership as authority", async () => {
+  const created = await service.provision(actor, input());
+  const memberProfile = await prisma.profile.findFirstOrThrow({
+    where: { organizationId: created.organizationId, userId: 3 },
+    select: { uid: true },
+  });
+  const member = await ProfileRepository.findByUpIdWithAuth(`prof-${memberProfile.uid}`, 3);
+  assert.ok(member?.organization);
+  assert.deepEqual(
+    member.organization.members.map((row) => ({ userId: row.userId, role: row.role })),
+    [{ userId: 3, role: "MEMBER" }]
+  );
+  assert.equal(
+    member.organization.members.some((row) => ["OWNER", "ADMIN"].includes(row.role)),
+    false
+  );
+});
+
+test("the authenticated owner retains its own role when selecting another authorized member profile", async () => {
+  const created = await service.provision(actor, input());
+  const memberProfile = await prisma.profile.findFirstOrThrow({
+    where: { organizationId: created.organizationId, userId: 3 },
+    select: { uid: true, id: true },
+  });
+  for (const upId of [`prof-${memberProfile.uid}`, String(memberProfile.id)]) {
+    const selected = await ProfileRepository.findByUpIdWithAuth(upId, 2);
+    assert.ok(selected?.organization);
+    assert.deepEqual(
+      selected.organization.members.map((row) => ({ userId: row.userId, role: row.role })),
+      [{ userId: 2, role: "OWNER" }]
+    );
+  }
+});

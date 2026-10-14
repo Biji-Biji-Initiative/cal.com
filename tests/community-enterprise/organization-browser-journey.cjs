@@ -125,6 +125,11 @@ async function runOrganizationBrowserJourney({ pool, fixture, t }) {
     await form.locator('input[name="timeZone"]').fill("Asia/Kuala_Lumpur");
     await form.locator('input[name="ownerEmail"]').fill("smoke@example.test");
     await form.locator('textarea[name="memberEmails"]').fill("member@example.test");
+    const existingDialog = page.getByRole("dialog");
+    if (await existingDialog.count()) {
+      await page.keyboard.press("Escape");
+      await expect(existingDialog).not.toBeVisible();
+    }
     await form.locator('button[type="submit"]').click();
     await expect(page.getByTestId("organization-review")).toBeVisible();
     assert.equal(
