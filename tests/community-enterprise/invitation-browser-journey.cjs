@@ -162,6 +162,14 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
     const invitation = memberPage.getByTestId(`invitation-${first.id}`);
     await expect(invitation).toBeVisible();
     await expect(invitation.getByText("Synthetic Invitation Workspace", { exact: true })).toBeVisible();
+    await expect(invitation.locator("time")).toHaveAttribute(
+      "datetime",
+      new Date(first.expires).toISOString()
+    );
+    assert.ok(
+      !(await invitation.locator("time").innerText()).includes("&#"),
+      "Expiry must be readable text, not double-escaped HTML entities"
+    );
     await memberPage.screenshot({ path: path.join(output, "invitation-consent.png"), fullPage: true });
     await invitation.getByRole("button", { name: "Accept invitation", exact: true }).click();
     await expect(invitation).toHaveCount(0);

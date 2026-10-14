@@ -73,6 +73,7 @@ export default function OrganizationInvitations({ organizationId }: { organizati
     !query.isPending &&
     !query.error &&
     !query.data?.items.length &&
+    !query.data?.nextCursor &&
     cursor === undefined
   )
     return null;
@@ -120,7 +121,12 @@ export default function OrganizationInvitations({ organizationId }: { organizati
           </p>
           <p className="text-subtle text-sm">
             {t("enterprise_invite_membership_scope")} ·{" "}
-            {t("enterprise_invite_expires", { when: new Date(invitation.expires).toLocaleString() })}
+            <time dateTime={new Date(invitation.expires).toISOString()}>
+              {t("enterprise_invite_expires", {
+                when: new Date(invitation.expires).toLocaleString(),
+                interpolation: { escapeValue: false },
+              })}
+            </time>
           </p>
           {!invitation.actionable && (
             <p className="text-subtle text-sm">{t("enterprise_invite_unavailable")}</p>
