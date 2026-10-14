@@ -10,7 +10,6 @@ import type { UpId, UserAsPersonalProfile, UserProfile } from "@calcom/types/Use
 import { v4 as uuidv4 } from "uuid";
 import type { IProfileRepository } from "./IProfileRepository";
 
-const whereClauseForOrgWithSlugOrRequestedSlug = (..._args: unknown[]) => ({});
 const getParsedTeam = <T>(team: T): T => team;
 
 const userSelect = {
@@ -793,12 +792,22 @@ export class ProfileRepository implements IProfileRepository {
     orgSlug: string;
   }) {
     logger.debug("findManyByOrgSlugOrRequestedSlug", safeStringify({ usernames, orgSlug }));
+    if (!orgSlug || !usernames.length) return [];
+    // The retained schema has no requestedSlug, and NULL-parent slugs may be
+    // duplicated. Resolve one actual root before touching any profile data.
+    const organizations = await prisma.team.findMany({
+      where: { slug: orgSlug, isOrganization: true, parentId: null },
+      select: { id: true },
+      take: 2,
+    });
+    if (organizations.length !== 1) return [];
+
     const profiles = await prisma.profile.findMany({
       where: {
         username: {
           in: usernames,
         },
-        organization: whereClauseForOrgWithSlugOrRequestedSlug(orgSlug),
+        organizationId: organizations[0].id,
       },
       include: {
         user: {
