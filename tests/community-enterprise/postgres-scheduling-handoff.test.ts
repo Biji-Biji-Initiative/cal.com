@@ -742,3 +742,48 @@ for (const malformed of ["metadata", "locations"] as const)
     });
     await blocked("provider-configuration");
   });
+
+// Reuse the prior member-removal preservation ratchet for the one Host row
+// this operation replaces. An upstream cascade must not silently erase a new
+// dependency that the current handoff planner does not know how to preserve.
+async function hostDeletionReferences() {
+  return prisma.$queryRaw<Array<{ schema: string; child: string; columns: string[]; deleteAction: string }>>`
+    SELECT ns.nspname::text AS schema, child.relname::text AS child,
+      ARRAY(SELECT a.attname::text FROM unnest(c.conkey) WITH ORDINALITY AS k(attnum, position)
+        JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=k.attnum ORDER BY k.position) AS columns,
+      c.confdeltype::text AS "deleteAction"
+    FROM pg_constraint c JOIN pg_class child ON child.oid=c.conrelid
+      JOIN pg_namespace ns ON ns.oid=child.relnamespace
+    WHERE c.contype='f' AND c.confrelid='public."Host"'::regclass
+    ORDER BY ns.nspname, child.relname, c.oid`;
+}
+function requireReviewedHostReferences(actual: Awaited<ReturnType<typeof hostDeletionReferences>>) {
+  assert.deepEqual(
+    actual,
+    [{ schema: "public", child: "HostLocation", columns: ["userId", "eventTypeId"], deleteAction: "c" }],
+    "Host deletion effects changed; review handoff preservation before accepting the upstream schema"
+  );
+}
+test("the actual Host deletion effects match the handoff preservation contract", async () => {
+  requireReviewedHostReferences(await hostDeletionReferences());
+});
+test("an actual added host cascade fails update acceptance without executing a handoff", async () => {
+  await prisma.$executeRawUnsafe(
+    'CREATE TABLE "HandoffFutureHostReference" (id integer PRIMARY KEY, "userId" integer NOT NULL, "eventTypeId" integer NOT NULL, FOREIGN KEY ("userId", "eventTypeId") REFERENCES "Host"("userId", "eventTypeId") ON DELETE CASCADE)'
+  );
+  try {
+    await prisma.$executeRaw`INSERT INTO "HandoffFutureHostReference" (id,"userId","eventTypeId") VALUES (1,3,300)`;
+    const before = await snapshot();
+    const actual = await hostDeletionReferences();
+    assert.ok(actual.some((row) => row.child === "HandoffFutureHostReference"));
+    assert.throws(() => requireReviewedHostReferences(actual), /preservation/);
+    assert.deepEqual(
+      await prisma.$queryRaw`SELECT id,"userId","eventTypeId" FROM "HandoffFutureHostReference"`,
+      [{ id: 1, userId: 3, eventTypeId: 300 }]
+    );
+    assert.deepEqual(await snapshot(), before);
+  } finally {
+    await prisma.$executeRawUnsafe('DROP TABLE "HandoffFutureHostReference"');
+  }
+  requireReviewedHostReferences(await hostDeletionReferences());
+});

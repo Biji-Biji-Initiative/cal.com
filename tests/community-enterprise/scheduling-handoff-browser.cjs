@@ -219,6 +219,9 @@ async function runHandoffJourney({ pool, fixture, t }) {
     assert.deepEqual((await slots.query("getSchedule", { ...query, routedTeamMemberIds: [7002] })).slots, {});
     const offered = await slots.query("getSchedule", { ...query, routedTeamMemberIds: [7003] });
     assert.ok(Object.values(offered.slots).flat().length > 0);
+    // Use the retained loopback sink's synthetic-recipient contract, not a
+    // widened SMTP allowlist. This browser has no native staff session; former
+    // organization membership is not required to book as an anonymous guest.
     const bookingInput = {
       eventTypeId: 9800,
       eventTypeSlug: "same-public-link",
@@ -228,7 +231,7 @@ async function runHandoffJourney({ pool, fixture, t }) {
       language: "en",
       responses: {
         name: "Synthetic guest",
-        email: "external-guest@example.test",
+        email: "invitee@example.test",
         location: { value: "inPerson", optionValue: "Shared test meeting room" },
       },
       user: "handoff-team",
@@ -244,12 +247,14 @@ async function runHandoffJourney({ pool, fixture, t }) {
       (await pool.query('SELECT "userId" FROM "Booking" WHERE uid=$1', [body.uid])).rows[0].userId,
       7003
     );
-    await fixture.smtp.expectRecipientsSince(mark, ["colleague@example.test", "external-guest@example.test"]);
+    await fixture.smtp.expectRecipientsSince(mark, ["colleague@example.test", "invitee@example.test"]);
     const csrf = await (await guest.request.get(origin + "/api/csrf")).json();
+    const cancelMark = fixture.smtp.count();
     const cancelled = await guest.request.post(origin + "/api/cancel", {
       data: { uid: body.uid, csrfToken: csrf.csrfToken, cancellationReason: "Synthetic handoff acceptance" },
     });
     assert.equal(cancelled.status(), 200);
+    await fixture.smtp.expectRecipientsSince(cancelMark, ["colleague@example.test", "invitee@example.test"]);
     await page.screenshot({ path: path.join(output, "scheduling-handoff-completed.png"), fullPage: true });
     await guest.close();
     t.diagnostic(
@@ -261,6 +266,7 @@ async function runHandoffJourney({ pool, fixture, t }) {
         stablePublicPath: publicPath,
         successorBookingOwner: 7003,
         departedHostSlots: 0,
+        capturedLocalMessages: fixture.smtp.count(),
         privateIdentityCredentialsHistoryPreserved: true,
         scope:
           "actual local web/domain/primary DB, native test-IdP sessions and SMTP sink; no real provider transfer, future-appointment reassignment or live deployment",
