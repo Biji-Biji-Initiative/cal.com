@@ -125,7 +125,7 @@ export class TeamService {
     positiveId.parse(actorId);
     const user = await this.client.user.findUnique({
       where: { id: actorId },
-      select: { id: true, locked: true },
+      select: { id: true, locked: true, isPlatformManaged: true },
     });
     if (!user || user.locked) throw denied();
     const memberships = await this.client.membership.findMany({
@@ -178,9 +178,23 @@ export class TeamService {
               orderBy: { userId: "asc" },
             })
           : [];
+        const invitationScope =
+          !user.isPlatformManaged &&
+          canManage &&
+          membership.customRoleId === null &&
+          ["ADMIN", "OWNER"].includes(membership.role)
+            ? await this.client.team.findUnique({
+                where: { id: membership.teamId },
+                select: { pendingPayment: true, dsyncTeamGroupMapping: { select: { id: true }, take: 1 } },
+              })
+            : null;
         return {
           organization: membership.team,
           canManage,
+          canInvite:
+            !!invitationScope &&
+            !invitationScope.pendingPayment &&
+            invitationScope.dsyncTeamGroupMapping.length === 0,
           teams: teams.map(({ dsyncTeamGroupMapping, ...team }) => ({
             ...team,
             directoryManaged: dsyncTeamGroupMapping.length > 0,
