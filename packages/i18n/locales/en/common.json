@@ -4796,5 +4796,18 @@
   "please_reschedule": "Please reschedule.",
   "ADD_NEW_STRINGS_ABOVE_THIS_LINE_TO_PREVENT_MERGE_CONFLICTS": "↑↑↑↑↑↑↑↑↑↑↑↑↑ Add your new strings above here ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑",
   "self_hosted_onboarding_title": "Set up your calendar",
-  "self_hosted_onboarding_description": "Set your profile, calendars and availability. Team and organization access comes from your memberships, not a subscription plan."
+  "self_hosted_onboarding_description": "Set your profile, calendars and availability. Team and organization access comes from your memberships, not a subscription plan.",
+  "enterprise_provision_title": "Create an organization",
+  "enterprise_provision_description": "Platform operators can provision a workspace and admit reviewed existing accounts. This does not create login accounts, send invitations or transfer personal calendars.",
+  "enterprise_organization_name": "Organization name",
+  "enterprise_organization_address": "Organization address",
+  "enterprise_initial_owner": "Existing owner account email",
+  "enterprise_initial_members": "Additional existing members (optional, one email per line; up to 19)",
+  "enterprise_review_admission": "Review accounts and permissions",
+  "enterprise_review_admission_warning": "Confirm these admissions: one organization owner and the listed ordinary members. Email-domain auto-joining stays disabled. The operator receives no membership unless listed.",
+  "enterprise_confirm_admission": "Create organization and admit these accounts",
+  "enterprise_provision_success": "Organization {{id}} was created. Only the reviewed accounts received membership.",
+  "enterprise_organization_access_title": "Organization and team access",
+  "enterprise_organization_access_description": "Manage the organizations and teams you belong to. Platform operators can create organizations and review initial membership here.",
+  "enterprise_open_organization_access": "Open organization management"
 }

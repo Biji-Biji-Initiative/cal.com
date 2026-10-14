@@ -6,6 +6,7 @@ import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import Link from "next/link";
 import { type FormEvent, useRef, useState } from "react";
+import OrganizationProvisioning from "./organization-provisioning";
 
 function useOperationKey() {
   const last = useRef<{ signature: string; requestId: string } | null>(null);
@@ -81,6 +82,13 @@ export default function EnterpriseTeamsView() {
   return (
     <SettingsHeader title={t("enterprise_teams_title")} description={t("enterprise_teams_description")}>
       <div className="space-y-6" data-testid="enterprise-teams">
+        <OrganizationProvisioning
+          onCreated={async (organizationId) => {
+            setSelected(organizationId);
+            await utils.viewer.enterpriseTeams.overview.invalidate();
+          }}
+        />
+
         {query.isPending && <p role="status">{t("loading")}</p>}
         {(query.error || error) && (
           <p role="alert" className="text-red-700">
