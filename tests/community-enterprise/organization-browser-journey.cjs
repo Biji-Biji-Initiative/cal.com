@@ -9,9 +9,12 @@ const superjson = require("superjson").default;
 const origin = "http://127.0.0.1:38917";
 
 async function seedOrganizationBrowserFixture(pool) {
+  // This fixture starts with an already-configured operator. Match its saved
+  // timezone to the browser; timezone-change prompts belong to the setup suite.
   await pool.query(
-    'UPDATE users SET role=\'ADMIN\',"completedOnboarding"=true,"emailVerified"=NOW() WHERE id=7001'
+    `UPDATE users SET role='ADMIN',"completedOnboarding"=true,"emailVerified"=NOW(),"timeZone"='UTC' WHERE id=7001`
   );
+
   await pool.query(
     'INSERT INTO users (id,uuid,email,name,username,"completedOnboarding","emailVerified") VALUES (7002,$1,$2,$3,$4,true,NOW())',
     [randomUUID(), "member@example.test", "Synthetic New Member", "new-member"]
@@ -113,6 +116,9 @@ async function runOrganizationBrowserJourney({ pool, fixture, t }) {
     );
     await context.addCookies(Array.from(jar, ([name, value]) => ({ name, value, url: origin })));
     const page = await context.newPage();
+    const diagnosticDirectory = path.resolve(__dirname, "../../test-results/community-enterprise");
+    fs.mkdirSync(diagnosticDirectory, { recursive: true });
+    page.on("pageerror", (error) => console.error("ORG_BROWSER_ERROR", error.message));
     page.setDefaultTimeout(45000);
     const response = await page.goto(origin + "/settings/enterprise/teams", {
       waitUntil: "domcontentloaded",
@@ -125,13 +131,29 @@ async function runOrganizationBrowserJourney({ pool, fixture, t }) {
     await form.locator('input[name="timeZone"]').fill("Asia/Kuala_Lumpur");
     await form.locator('input[name="ownerEmail"]').fill("smoke@example.test");
     await form.locator('textarea[name="memberEmails"]').fill("member@example.test");
-    const existingDialog = page.getByRole("dialog");
-    if (await existingDialog.count()) {
-      await page.keyboard.press("Escape");
-      await expect(existingDialog).not.toBeVisible();
-    }
+    await expect(form.locator('input[name="name"]')).toHaveValue("Synthetic Community Workspace");
+    await expect(form.locator('input[name="ownerEmail"]')).toHaveValue("smoke@example.test");
     await form.locator('button[type="submit"]').click();
-    await expect(page.getByTestId("organization-review")).toBeVisible();
+    try {
+      await expect(page.getByTestId("organization-review")).toBeVisible({ timeout: 15000 });
+    } catch (error) {
+      console.error(
+        "ORG_REVIEW_FORM",
+        JSON.stringify(
+          await form.evaluate((element) => ({
+            valid: element.checkValidity(),
+            fieldNames: Array.from(new FormData(element).keys()),
+          }))
+        )
+      );
+      console.error("ORG_REVIEW_ALERTS", JSON.stringify(await page.getByRole("alert").allTextContents()));
+      await page.screenshot({
+        path: path.join(diagnosticDirectory, "organization-review-failure.png"),
+        fullPage: true,
+      });
+      throw error;
+    }
+
     assert.equal(
       (await pool.query('SELECT count(*)::int AS count FROM "Team"')).rows[0].count,
       0,
