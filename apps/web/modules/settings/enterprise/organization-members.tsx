@@ -4,6 +4,7 @@ import type { RouterOutputs } from "@calcom/trpc/react";
 import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import { useRef, useState } from "react";
+import SchedulingHandoff from "./scheduling-handoff";
 
 type Review = RouterOutputs["viewer"]["enterpriseTeams"]["reviewMemberChange"];
 type Member = RouterOutputs["viewer"]["enterpriseTeams"]["organizationMembers"]["items"][number];
@@ -18,6 +19,7 @@ export default function OrganizationMembers({ organizationId }: { organizationId
   const preview = trpc.viewer.enterpriseTeams.reviewMemberChange.useMutation();
   const commit = trpc.viewer.enterpriseTeams.commitMemberChange.useMutation();
   const [review, setReview] = useState<Review | null>(null);
+  const [handoff, setHandoff] = useState<Member["user"] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState(false);
   const running = useRef(false);
@@ -32,6 +34,7 @@ export default function OrganizationMembers({ organizationId }: { organizationId
     setError(null);
     setReview(null);
     setNotice(false);
+    setHandoff(null);
     try {
       setReview(
         await preview.mutateAsync({
@@ -94,6 +97,20 @@ export default function OrganizationMembers({ organizationId }: { organizationId
               <p className="text-subtle text-sm">{t("enterprise_member_special_role")}</p>
             ) : (
               <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  color="secondary"
+                  disabled={busy}
+                  onClick={() => {
+                    setReview(null);
+                    setError(null);
+                    setNotice(false);
+                    setHandoff(member.user);
+                  }}
+                  data-testid="open-scheduling-handoff">
+                  {t("enterprise_handoff_open")}
+                </Button>
+
                 {owner && !member.user.locked && (
                   <Button
                     type="button"
@@ -159,6 +176,14 @@ export default function OrganizationMembers({ organizationId }: { organizationId
           }}>
           {t("enterprise_members_first")}
         </Button>
+      )}
+      {handoff && (
+        <SchedulingHandoff
+          key={`${organizationId}-${handoff.uuid}`}
+          organizationId={organizationId}
+          source={handoff}
+          onClose={() => setHandoff(null)}
+        />
       )}
       {review && (
         <div className="bg-subtle space-y-3 rounded-lg p-4" data-testid="member-change-review">

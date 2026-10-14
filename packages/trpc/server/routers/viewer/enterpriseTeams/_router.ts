@@ -19,6 +19,13 @@ import {
 } from "@calcom/features/community-enterprise/organizations/OrganizationProvisioningService";
 import { sendOrganizationInvitationNotice } from "@calcom/features/community-enterprise/organizations/sendOrganizationInvitationNotice";
 import {
+  handoffCommitInput,
+  handoffEventsInput,
+  handoffOptionsInput,
+  handoffReviewInput,
+  SchedulingHandoffService,
+} from "@calcom/features/community-enterprise/scheduling/SchedulingHandoffService";
+import {
   createTeamInput,
   setMemberInput,
   TeamService,
@@ -41,6 +48,27 @@ const provisioningProcedure = authedProcedure.use(({ ctx, next }) => {
 });
 
 export const enterpriseTeamsRouter = router({
+  handoffEvents: authedProcedure
+    .input(handoffEventsInput)
+    .query(({ ctx, input }) =>
+      new SchedulingHandoffService(ctx.prisma).events({ id: ctx.user.id, uuid: ctx.user.uuid }, input)
+    ),
+  handoffOptions: authedProcedure
+    .input(handoffOptionsInput)
+    .query(({ ctx, input }) =>
+      new SchedulingHandoffService(ctx.prisma).options({ id: ctx.user.id, uuid: ctx.user.uuid }, input)
+    ),
+  reviewSchedulingHandoff: provisioningProcedure
+    .input(handoffReviewInput)
+    .mutation(({ ctx, input }) =>
+      new SchedulingHandoffService(ctx.prisma).review({ id: ctx.user.id, uuid: ctx.user.uuid }, input)
+    ),
+  commitSchedulingHandoff: provisioningProcedure
+    .input(handoffCommitInput)
+    .mutation(({ ctx, input }) =>
+      new SchedulingHandoffService(ctx.prisma).commit({ id: ctx.user.id, uuid: ctx.user.uuid }, input)
+    ),
+
   organizationMembers: authedProcedure
     .input(memberPageInput)
     .query(({ ctx, input }) =>
