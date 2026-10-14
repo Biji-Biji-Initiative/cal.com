@@ -19,7 +19,7 @@ def main() -> int:
     parser.add_argument("--pg-bin", type=Path, help="Directory containing initdb and pg_ctl")
     parser.add_argument("--scratch-root", type=Path, help="Parent for the disposable fixture")
     parser.add_argument("--prisma-cli", type=Path, help="Explicit installed Prisma CLI; its version must match the repo pin")
-    parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "hosts", "team-journey", "identity-link", "api-keys", "api-auth", "api-key-http", "calendar-boundary", "migration-preflight", "onboarding-journey", "organizations", "organization-journey", "invitations", "invitation-journey"), default="bookings")
+    parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "hosts", "team-journey", "identity-link", "api-keys", "api-auth", "api-key-http", "calendar-boundary", "migration-preflight", "onboarding-journey", "organizations", "organization-journey", "invitations", "invitation-journey", "member-lifecycle", "member-journey"), default="bookings")
     parser.add_argument("--concurrency", action="store_true", help="Run the additional deterministic booking-conflict acceptance probe")
     args = parser.parse_args()
     if args.concurrency and args.suite != "team-journey":
@@ -60,6 +60,8 @@ def main() -> int:
         environment["CAL_ORGANIZATION_BROWSER_JOURNEY"] = "true"
     if args.suite == "invitation-journey":
         environment["CAL_INVITATION_BROWSER_JOURNEY"] = "true"
+    if args.suite == "member-journey":
+        environment["CAL_MEMBER_BROWSER_JOURNEY"] = "true"
     if args.concurrency:
         environment["CAL_BOOKING_CONCURRENCY_PROBE"] = "true"
 
@@ -74,7 +76,7 @@ def main() -> int:
                            check=True, env=environment, timeout=60)
             # Full Next server tests use several bounded Prisma/Kysely pools;
             # service-only suites retain the smaller fixture limit.
-            connections = 40 if args.suite in ("built-web", "team-journey", "onboarding-journey", "organization-journey", "invitation-journey") else 12
+            connections = 40 if args.suite in ("built-web", "team-journey", "onboarding-journey", "organization-journey", "invitation-journey", "member-journey") else 12
             options = shlex.join(["-k", str(socket), "-p", "55439", "-c", "listen_addresses=", "-c", f"max_connections={connections}", "-c", "shared_buffers=32MB", "-c", "statement_timeout=15000"])
             subprocess.run([str(pg_bin / "pg_ctl"), "-D", str(pgdata), "-l", str(fixture / "postgres.log"),
                             "-o", options, "-w", "-t", "30", "start"], check=True, env=environment, timeout=40)
@@ -86,11 +88,11 @@ def main() -> int:
             # seed, restore, or connection to any configured application database.
             subprocess.run([node, str(prisma), "db", "push", "--schema", str(root / "packages/prisma/schema.prisma"),
                             "--skip-generate"], cwd=root, env=environment, check=True, timeout=180)
-            command = ([node, "node_modules/vitest/vitest.mjs", "run", "--config", "tests/community-enterprise/vitest.postgres.config.mts", {"hosts": "tests/community-enterprise/postgres-hosts.test.ts", "teams": "tests/community-enterprise/postgres-teams.test.ts", "identity-link": "tests/community-enterprise/postgres-identity-link.test.ts", "organizations": "tests/community-enterprise/postgres-organizations.test.ts", "invitations": "tests/community-enterprise/postgres-invitations.test.ts"}[args.suite]]
-                       if args.suite in ("teams", "hosts", "identity-link", "organizations", "invitations") else
+            command = ([node, "node_modules/vitest/vitest.mjs", "run", "--config", "tests/community-enterprise/vitest.postgres.config.mts", {"hosts": "tests/community-enterprise/postgres-hosts.test.ts", "teams": "tests/community-enterprise/postgres-teams.test.ts", "identity-link": "tests/community-enterprise/postgres-identity-link.test.ts", "organizations": "tests/community-enterprise/postgres-organizations.test.ts", "invitations": "tests/community-enterprise/postgres-invitations.test.ts", "member-lifecycle": "tests/community-enterprise/postgres-member-lifecycle.test.ts"}[args.suite]]
+                       if args.suite in ("teams", "hosts", "identity-link", "organizations", "invitations", "member-lifecycle") else
                        [node, "--test", "--test-reporter=spec", {"api-keys": "tests/community-enterprise/postgres-api-keys.test.cjs", "api-auth": "tests/community-enterprise/postgres-api-auth.test.cjs",
-                "api-key-http": "tests/community-enterprise/postgres-api-key-controller.test.cjs", "migration-preflight": "tests/community-enterprise/postgres-migration-preflight.test.cjs", "calendar-boundary": "tests/community-enterprise/postgres-calendar-boundary.test.cjs", "bookings": "tests/community-enterprise/postgres-bookings.test.cjs", "built-web": "tests/community-enterprise/built-web.test.cjs", "team-journey": "tests/community-enterprise/built-web.test.cjs", "onboarding-journey": "tests/community-enterprise/built-web.test.cjs", "organization-journey": "tests/community-enterprise/built-web.test.cjs", "invitation-journey": "tests/community-enterprise/built-web.test.cjs"}[args.suite]])
-            result = subprocess.run(command, cwd=root, env=environment, timeout=480 if args.suite in ("team-journey", "onboarding-journey", "organization-journey", "invitation-journey") else 300)
+                "api-key-http": "tests/community-enterprise/postgres-api-key-controller.test.cjs", "migration-preflight": "tests/community-enterprise/postgres-migration-preflight.test.cjs", "calendar-boundary": "tests/community-enterprise/postgres-calendar-boundary.test.cjs", "bookings": "tests/community-enterprise/postgres-bookings.test.cjs", "built-web": "tests/community-enterprise/built-web.test.cjs", "team-journey": "tests/community-enterprise/built-web.test.cjs", "onboarding-journey": "tests/community-enterprise/built-web.test.cjs", "organization-journey": "tests/community-enterprise/built-web.test.cjs", "invitation-journey": "tests/community-enterprise/built-web.test.cjs", "member-journey": "tests/community-enterprise/built-web.test.cjs"}[args.suite]])
+            result = subprocess.run(command, cwd=root, env=environment, timeout=480 if args.suite in ("team-journey", "onboarding-journey", "organization-journey", "invitation-journey", "member-journey") else 300)
             return result.returncode
         finally:
             if started:

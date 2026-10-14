@@ -39,6 +39,22 @@ const domain = load(
     "@calcom/lib/errors": { ErrorWithCode: Error },
   }
 );
+const memberDomain = load(
+  "packages/features/community-enterprise/organizations/OrganizationMemberService.ts",
+  {
+    "node:crypto": require("node:crypto"),
+    zod: require("zod"),
+    "@calcom/prisma/client": { Prisma: {} },
+    "@calcom/lib/errorCodes": { ErrorCode: {} },
+    "@calcom/lib/errors": { ErrorWithCode: Error },
+    "./OrganizationInvitationService": {
+      organizationInvitationPrefix: "fixture",
+      parseOrganizationInvitationBinding: () => {
+        throw new Error("unexercised binding");
+      },
+    },
+  }
+);
 const origin = "https://calendar.example.test";
 function fixture() {
   const calls = [];
@@ -61,6 +77,14 @@ function fixture() {
     constructor(db) {
       this.db = db;
     }
+    members(actor, input) {
+      calls.push({ kind: "members", actor, input, db: this.db });
+      return { items: [] };
+    }
+    commit(actor, input) {
+      calls.push({ kind: "commit", actor, input, db: this.db });
+      return { recorded: true, replayed: false };
+    }
     capabilities(actor) {
       calls.push({ kind: "capabilities", actor, db: this.db });
       return { canProvision: true };
@@ -75,6 +99,10 @@ function fixture() {
     }
   }
   const { enterpriseTeamsRouter } = load("packages/trpc/server/routers/viewer/enterpriseTeams/_router.ts", {
+    "@calcom/features/community-enterprise/organizations/OrganizationMemberService": {
+      ...memberDomain,
+      OrganizationMemberService: Service,
+    },
     "node:crypto": require("node:crypto"),
     "@calcom/features/community-enterprise/organizations/sendOrganizationInvitationNotice": {
       sendOrganizationInvitationNotice: () => {
@@ -192,4 +220,53 @@ test("bounded schema refuses too many admissions or malformed stable identities"
     domain.provisionOrganizationInput.safeParse({ ...proposal(), owner: { id: 2, uuid: "stale" } }).success,
     false
   );
+});
+
+const memberProposal = () => ({
+  organizationId: 100,
+  target: { id: 2, uuid: randomUUID() },
+  operation: "remove",
+  reviewHash: "a".repeat(64),
+  requestId: randomUUID(),
+});
+for (const originValue of [undefined, "null", "https://foreign.example.test"])
+  test(`member change refuses Origin ${originValue}`, async () => {
+    const f = fixture();
+    f.ctx.req.headers.origin = originValue;
+    await assert.rejects(f.router.commitMemberChange(f.ctx, memberProposal()), /same-origin/);
+    assert.equal(f.calls.length, 0);
+  });
+for (const extra of [
+  { actorId: 1 },
+  { role: "OWNER" },
+  { accepted: true },
+  { force: true },
+  { skipReview: true },
+])
+  test(`member command rejects override ${JSON.stringify(extra)}`, async () => {
+    const f = fixture();
+    await assert.rejects(f.router.commitMemberChange(f.ctx, { ...memberProposal(), ...extra }));
+    assert.equal(f.calls.length, 0);
+  });
+test("member changes retain authenticated actor and exact primary client", async () => {
+  const f = fixture();
+  const input = memberProposal();
+  await f.router.commitMemberChange(f.ctx, input);
+  assert.deepEqual(f.calls[0].actor, f.ctx.user);
+  assert.equal(f.calls[0].db, f.ctx.prisma);
+  assert.deepEqual(f.calls[0].input, input);
+});
+test("review and member list carry the same verified actor identity", async () => {
+  const f = fixture();
+  await f.router.reviewMemberChange(f.ctx, {
+    organizationId: 100,
+    target: { id: 2, uuid: randomUUID() },
+    operation: "set-role",
+    role: "ADMIN",
+  });
+  await f.router.organizationMembers(f.ctx, { organizationId: 100 });
+  for (const call of f.calls) {
+    assert.deepEqual(call.actor, f.ctx.user);
+    assert.equal(call.db, f.ctx.prisma);
+  }
 });

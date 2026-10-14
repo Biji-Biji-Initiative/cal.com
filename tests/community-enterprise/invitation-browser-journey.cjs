@@ -317,4 +317,4 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
     await browser.close();
   }
 }
-module.exports = { seedInvitationBrowserFixture, runInvitationBrowserJourney };
+module.exports = { seedInvitationBrowserFixture, runInvitationBrowserJourney, sessionFor };

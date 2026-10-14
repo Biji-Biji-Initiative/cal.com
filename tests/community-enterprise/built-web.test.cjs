@@ -10,6 +10,7 @@ const { test } = require("node:test");
 const { Pool } = require("pg");
 const root = path.resolve(__dirname, "../..");
 const { seedTeamBrowserFixture, runTeamBrowserJourney } = require("./team-browser-journey.cjs");
+const { seedMemberLifecycleFixture, runMemberLifecycleJourney } = require("./member-lifecycle-browser.cjs");
 const { startOidcTestProvider } = require("./oidc-test-provider.cjs");
 const { startSmtpTestSink } = require("./smtp-test-sink.cjs");
 const {
@@ -86,7 +87,10 @@ test(
         process.env.CAL_INVITATION_BROWSER_JOURNEY === "true"
           ? await seedInvitationBrowserFixture(pool)
           : null;
-      const identityFixture = invitationFixture || organizationFixture || onboardingFixture || teamFixture;
+      const memberFixture =
+        process.env.CAL_MEMBER_BROWSER_JOURNEY === "true" ? await seedMemberLifecycleFixture(pool) : null;
+      const identityFixture =
+        memberFixture || invitationFixture || organizationFixture || onboardingFixture || teamFixture;
 
       const environment = Object.fromEntries(
         ["PATH", "HOME", "USER", "LANG"]
@@ -113,11 +117,11 @@ test(
         oidcProvider = await startOidcTestProvider({
           directory: path.dirname(socket),
           pool,
-          identities: invitationFixture?.identities,
+          identities: memberFixture?.identities || invitationFixture?.identities,
         });
         identityFixture.oidc = oidcProvider;
         Object.assign(environment, oidcProvider.environment);
-        if (onboardingFixture || organizationFixture || invitationFixture)
+        if (onboardingFixture || organizationFixture || invitationFixture || memberFixture)
           environment.CAL_AUTHENTIK_ONLY = "true";
         smtpSink = await startSmtpTestSink();
         identityFixture.smtp = smtpSink;
@@ -195,6 +199,7 @@ test(
       if (onboardingFixture) await runOnboardingBrowserJourney({ pool, fixture: onboardingFixture, t });
       if (organizationFixture) await runOrganizationBrowserJourney({ pool, fixture: organizationFixture, t });
       if (invitationFixture) await runInvitationBrowserJourney({ pool, fixture: invitationFixture, t });
+      if (memberFixture) await runMemberLifecycleJourney({ pool, fixture: memberFixture, t });
       t.diagnostic(
         JSON.stringify({
           buildId,
