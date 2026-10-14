@@ -346,6 +346,11 @@ export class OrganizationMemberService {
                 { hosts: { some: { userId: target.id } } },
                 { users: { some: { id: target.id } } },
                 { schedule: { userId: target.id } },
+                { restrictionSchedule: { userId: target.id } },
+                { instantMeetingSchedule: { userId: target.id } },
+                { hosts: { some: { schedule: { userId: target.id } } } },
+                { destinationCalendar: { credential: { userId: target.id } } },
+
                 { selectedCalendars: { some: { userId: target.id } } },
               ],
             },
@@ -358,7 +363,7 @@ export class OrganizationMemberService {
           userId: target.id,
           eventType: eventScope,
           endTime: { gt: new Date() },
-          status: { in: ["ACCEPTED", "PENDING"] },
+          status: { in: ["ACCEPTED", "PENDING", "AWAITING_HOST"] },
         },
       });
       if (openBookings) blockers.push("future-bookings");
