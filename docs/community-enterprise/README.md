@@ -1,6 +1,22 @@
 # Cal.diy-based enterprise service — implementation record
 
-## Latest: existing-account invitation consent (2026-10-14)
+## Latest: reviewed member roles, ownership and planned offboarding
+
+[Member-lifecycle evidence](MEMBER-LIFECYCLE-2026-10-14.md) records the assembled
+role-change, ownership-transfer and planned-removal journey, including unchanged
+sessions losing organization access while personal and other-organization data
+remain. [The retained-model contract](MEMBER-LIFECYCLE-CONTRACT-2026-10-14.md)
+explains scope, rollback, replay and the last-owner/provider-handoff boundaries.
+The continuation also tests the actual database deletion contract so a future
+upstream cascade cannot enter update acceptance without preservation review.
+
+This is not emergency suspension or an automatic event/provider handoff engine:
+a blocked review has revoked nothing. Live identity/provider behavior, custom roles,
+community enrollment, exact-image security/publication and staged deployment remain
+open in the same graph. No deployed candidate is claimed by these local receipts.
+
+
+## Previous: existing-account invitation consent (2026-10-14)
 
 [Invitation acceptance evidence](INVITATION-ACCEPTANCE-2026-10-14.md) records the
 actual owner/recipient/cancellation and SMTP-failure journeys. [Reuse and consent](INVITATION-CONTRACT-2026-10-14.md)
@@ -10,7 +26,7 @@ durable notification delivery or live rollout. The canonical graph retains those
 open requirements. Earlier first-organization admission remains implemented.
 
 
-## Latest: actual first-organization admission (2026-10-14)
+## Previous: actual first-organization admission (2026-10-14)
 
 [Admission evidence](ORGANIZATION-ADMISSION-2026-10-14.md) records the established
 operator's real review/create/team-member journey on the assembled local candidate.
@@ -34,11 +50,13 @@ existing tasks into first user journeys, complete enterprise lifecycle, qualifie
 rollout, and approved broader network/agent capability. [Onboarding evidence](ONBOARDING-2026-10-14.md)
 records the repaired first-run path, exact built-browser proof and unresolved work.
 
-The currently served dev application was read back as legacy v6.2.0. Restored
+The prior deployment readback recorded dev as legacy v6.2.0; the member-lifecycle
+continuation made no deployment change. Restored
 availability and an Authentik redirect are not enterprise candidate acceptance.
 This source fixes the candidate's own stale plan chooser and incomplete first-run
 routing. The current local candidate also proves explicit initial organization
-admission; deployment, external invitations and live provider acceptance remain open. The mother-agent 246c07c3 authorization repair is included and retained.
+admission and verified-existing-account invitations; deployment, external account
+enrollment and live provider acceptance remain open. The mother-agent 246c07c3 authorization repair is included and retained.
 
 ## Historical implementation receipts
 
