@@ -13,6 +13,10 @@ const { seedTeamBrowserFixture, runTeamBrowserJourney } = require("./team-browse
 const { startOidcTestProvider } = require("./oidc-test-provider.cjs");
 const { startSmtpTestSink } = require("./smtp-test-sink.cjs");
 const {
+  seedOrganizationBrowserFixture,
+  runOrganizationBrowserJourney,
+} = require("./organization-browser-journey.cjs");
+const {
   seedOnboardingBrowserFixture,
   runOnboardingBrowserJourney,
 } = require("./onboarding-browser-journey.cjs");
@@ -70,7 +74,11 @@ test(
         process.env.CAL_ONBOARDING_BROWSER_JOURNEY === "true"
           ? await seedOnboardingBrowserFixture(pool)
           : null;
-      const identityFixture = onboardingFixture || teamFixture;
+      const organizationFixture =
+        process.env.CAL_ORGANIZATION_BROWSER_JOURNEY === "true"
+          ? await seedOrganizationBrowserFixture(pool)
+          : null;
+      const identityFixture = organizationFixture || onboardingFixture || teamFixture;
 
       const environment = Object.fromEntries(
         ["PATH", "HOME", "USER", "LANG"]
@@ -97,7 +105,7 @@ test(
         oidcProvider = await startOidcTestProvider({ directory: path.dirname(socket), pool });
         identityFixture.oidc = oidcProvider;
         Object.assign(environment, oidcProvider.environment);
-        if (onboardingFixture) environment.CAL_AUTHENTIK_ONLY = "true";
+        if (onboardingFixture || organizationFixture) environment.CAL_AUTHENTIK_ONLY = "true";
         smtpSink = await startSmtpTestSink();
         identityFixture.smtp = smtpSink;
         Object.assign(environment, smtpSink.environment);
@@ -172,6 +180,7 @@ test(
       assert.equal(typeof JSON.parse(await request("/api/auth/csrf")).csrfToken, "string");
       if (teamFixture) await runTeamBrowserJourney({ pool, fixture: teamFixture, t });
       if (onboardingFixture) await runOnboardingBrowserJourney({ pool, fixture: onboardingFixture, t });
+      if (organizationFixture) await runOrganizationBrowserJourney({ pool, fixture: organizationFixture, t });
       t.diagnostic(
         JSON.stringify({
           buildId,
