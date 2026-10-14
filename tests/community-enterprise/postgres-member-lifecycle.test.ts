@@ -646,12 +646,12 @@ test("organization attribute removal is explicit and preserves another organizat
 });
 test("the commit's user-row lock orders concurrent local account revocation", async () => {
   const proposal = await reviewed();
-  let arrived;
-  let release;
-  const waiting = new Promise((resolve) => {
+  let arrived!: () => void;
+  let release!: () => void;
+  const waiting = new Promise<void>((resolve) => {
     arrived = resolve;
   });
-  const hold = new Promise((resolve) => {
+  const hold = new Promise<void>((resolve) => {
     release = resolve;
   });
   const guarded = prisma.$extends({
@@ -708,4 +708,86 @@ test("unclassified inherited invitation links require review instead of being ig
   });
   await blocked("legacy-invitation-links");
   assert.equal(await prisma.verificationToken.count(), 1);
+});
+
+// Future upstream schema changes can add cascades without changing the service.
+// Read the created database contract, not a second list inferred by text grep.
+async function deletionReferences() {
+  return prisma.$queryRaw<
+    Array<{
+      parent: string;
+      childSchema: string;
+      child: string;
+      columns: string[];
+      deleteAction: string;
+    }>
+  >`SELECT parent.relname::text AS parent, ns.nspname::text AS "childSchema",
+    child.relname::text AS child,
+    ARRAY(SELECT attribute.attname::text
+      FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key_column(attnum, position)
+      JOIN pg_attribute attribute ON attribute.attrelid=constraint_row.conrelid AND attribute.attnum=key_column.attnum
+      ORDER BY key_column.position) AS columns,
+    constraint_row.confdeltype::text AS "deleteAction"
+    FROM pg_constraint constraint_row
+    JOIN pg_class parent ON parent.oid=constraint_row.confrelid
+    JOIN pg_class child ON child.oid=constraint_row.conrelid
+    JOIN pg_namespace ns ON ns.oid=child.relnamespace
+    WHERE constraint_row.contype='f'
+      AND constraint_row.confrelid IN ('public."Membership"'::regclass, 'public."Profile"'::regclass)
+    ORDER BY parent.relname, ns.nspname, child.relname, constraint_row.oid`;
+}
+const reviewedDeletionReferences = [
+  {
+    parent: "Membership",
+    childSchema: "public",
+    child: "AttributeToUser",
+    columns: ["memberId"],
+    deleteAction: "c",
+  },
+  { parent: "Membership", childSchema: "public", child: "Host", columns: ["memberId"], deleteAction: "c" },
+  { parent: "Profile", childSchema: "public", child: "EventType", columns: ["profileId"], deleteAction: "n" },
+  {
+    parent: "Profile",
+    childSchema: "public",
+    child: "users",
+    columns: ["movedToProfileId"],
+    deleteAction: "n",
+  },
+];
+function requireReviewedDeletionReferences(actual: Awaited<ReturnType<typeof deletionReferences>>) {
+  assert.deepEqual(
+    actual,
+    reviewedDeletionReferences,
+    "Membership/Profile deletion relations changed: review preservation, blockers and cleanup before accepting an upstream update"
+  );
+}
+test("upstream membership/profile deletion relations still match the reviewed preservation contract", async () => {
+  requireReviewedDeletionReferences(await deletionReferences());
+});
+test("a real new cascade invalidates the preservation contract without executing offboarding", async () => {
+  await prisma.$executeRawUnsafe(
+    'CREATE TABLE "MemberLifecycleFutureCascade" (id integer PRIMARY KEY, "memberId" integer NOT NULL REFERENCES "Membership"(id) ON DELETE CASCADE)'
+  );
+  try {
+    const membership = await member();
+    assert.ok(membership);
+    await prisma.$executeRaw`INSERT INTO "MemberLifecycleFutureCascade" (id, "memberId") VALUES (1, ${membership.id})`;
+    const before = await snapshot();
+    assert.throws(() => requireReviewedDeletionReferences([]), /preservation/);
+    const changed = await deletionReferences();
+    assert.ok(
+      changed.some(
+        (relation) => relation.child === "MemberLifecycleFutureCascade" && relation.deleteAction === "c"
+      )
+    );
+    assert.throws(() => requireReviewedDeletionReferences(changed), /preservation/);
+    const rows = await prisma.$queryRaw<
+      Array<{ id: number; memberId: number }>
+    >`SELECT id,"memberId" FROM "MemberLifecycleFutureCascade"`;
+    assert.deepEqual(rows, [{ id: 1, memberId: membership.id }]);
+    assert.deepEqual(await snapshot(), before);
+  } finally {
+    await prisma.$executeRawUnsafe('DROP TABLE "MemberLifecycleFutureCascade"');
+  }
+  requireReviewedDeletionReferences(await deletionReferences());
 });
