@@ -1,5 +1,15 @@
 # Cal.diy-based enterprise service — implementation record
 
+## Latest: existing-account invitation consent (2026-10-14)
+
+[Invitation acceptance evidence](INVITATION-ACCEPTANCE-2026-10-14.md) records the
+actual owner/recipient/cancellation and SMTP-failure journeys. [Reuse and consent](INVITATION-CONTRACT-2026-10-14.md)
+explains the retained models, identity-bound inbox and explicit delivery limits.
+This does not create new login accounts or complete external community enrollment,
+durable notification delivery or live rollout. The canonical graph retains those
+open requirements. Earlier first-organization admission remains implemented.
+
+
 ## Latest: actual first-organization admission (2026-10-14)
 
 [Admission evidence](ORGANIZATION-ADMISSION-2026-10-14.md) records the established
