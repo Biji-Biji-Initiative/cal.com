@@ -11,6 +11,7 @@ export default defineConfig({
       "tests/community-enterprise/postgres-organizations.test.ts",
       "tests/community-enterprise/postgres-invitations.test.ts",
       "tests/community-enterprise/postgres-member-lifecycle.test.ts",
+      "tests/community-enterprise/postgres-scheduling-handoff.test.ts",
       "tests/community-enterprise/postgres-hosts.test.ts",
     ],
     pool: "forks",

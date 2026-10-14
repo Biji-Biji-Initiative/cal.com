@@ -11,6 +11,7 @@ const { Pool } = require("pg");
 const root = path.resolve(__dirname, "../..");
 const { seedTeamBrowserFixture, runTeamBrowserJourney } = require("./team-browser-journey.cjs");
 const { seedMemberLifecycleFixture, runMemberLifecycleJourney } = require("./member-lifecycle-browser.cjs");
+const { seedHandoffFixture, runHandoffJourney } = require("./scheduling-handoff-browser.cjs");
 const { startOidcTestProvider } = require("./oidc-test-provider.cjs");
 const { startSmtpTestSink } = require("./smtp-test-sink.cjs");
 const {
@@ -89,8 +90,15 @@ test(
           : null;
       const memberFixture =
         process.env.CAL_MEMBER_BROWSER_JOURNEY === "true" ? await seedMemberLifecycleFixture(pool) : null;
+      const handoffFixture =
+        process.env.CAL_HANDOFF_BROWSER_JOURNEY === "true" ? await seedHandoffFixture(pool) : null;
       const identityFixture =
-        memberFixture || invitationFixture || organizationFixture || onboardingFixture || teamFixture;
+        handoffFixture ||
+        memberFixture ||
+        invitationFixture ||
+        organizationFixture ||
+        onboardingFixture ||
+        teamFixture;
 
       const environment = Object.fromEntries(
         ["PATH", "HOME", "USER", "LANG"]
@@ -117,11 +125,12 @@ test(
         oidcProvider = await startOidcTestProvider({
           directory: path.dirname(socket),
           pool,
-          identities: memberFixture?.identities || invitationFixture?.identities,
+          identities:
+            handoffFixture?.identities || memberFixture?.identities || invitationFixture?.identities,
         });
         identityFixture.oidc = oidcProvider;
         Object.assign(environment, oidcProvider.environment);
-        if (onboardingFixture || organizationFixture || invitationFixture || memberFixture)
+        if (onboardingFixture || organizationFixture || invitationFixture || memberFixture || handoffFixture)
           environment.CAL_AUTHENTIK_ONLY = "true";
         smtpSink = await startSmtpTestSink();
         identityFixture.smtp = smtpSink;
@@ -200,6 +209,7 @@ test(
       if (organizationFixture) await runOrganizationBrowserJourney({ pool, fixture: organizationFixture, t });
       if (invitationFixture) await runInvitationBrowserJourney({ pool, fixture: invitationFixture, t });
       if (memberFixture) await runMemberLifecycleJourney({ pool, fixture: memberFixture, t });
+      if (handoffFixture) await runHandoffJourney({ pool, fixture: handoffFixture, t });
       t.diagnostic(
         JSON.stringify({
           buildId,

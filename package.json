@@ -105,7 +105,9 @@
     "test:community-enterprise:invitations": "python3 scripts/run-community-enterprise-postgres.py --suite invitations",
     "test:community-enterprise:invitation-journey": "python3 scripts/run-community-enterprise-postgres.py --suite invitation-journey",
     "test:community-enterprise:member-lifecycle": "python3 scripts/run-community-enterprise-postgres.py --suite member-lifecycle",
-    "test:community-enterprise:member-journey": "python3 scripts/run-community-enterprise-postgres.py --suite member-journey"
+    "test:community-enterprise:member-journey": "python3 scripts/run-community-enterprise-postgres.py --suite member-journey",
+    "test:community-enterprise:scheduling-handoff": "python3 scripts/run-community-enterprise-postgres.py --suite scheduling-handoff",
+    "test:community-enterprise:handoff-journey": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.10",

@@ -55,6 +55,13 @@ const memberDomain = load(
     },
   }
 );
+const handoffDomain = load("packages/features/community-enterprise/scheduling/SchedulingHandoffService.ts", {
+  "node:crypto": require("node:crypto"),
+  zod: require("zod"),
+  "@calcom/prisma/client": { Prisma: {} },
+  "@calcom/lib/errorCodes": { ErrorCode: {} },
+  "@calcom/lib/errors": { ErrorWithCode: Error },
+});
 const origin = "https://calendar.example.test";
 function fixture() {
   const calls = [];
@@ -76,6 +83,14 @@ function fixture() {
   class Service {
     constructor(db) {
       this.db = db;
+    }
+    events(actor, input) {
+      calls.push({ kind: "events", actor, input, db: this.db });
+      return { items: [] };
+    }
+    options(actor, input) {
+      calls.push({ kind: "options", actor, input, db: this.db });
+      return { items: [] };
     }
     members(actor, input) {
       calls.push({ kind: "members", actor, input, db: this.db });
@@ -99,6 +114,10 @@ function fixture() {
     }
   }
   const { enterpriseTeamsRouter } = load("packages/trpc/server/routers/viewer/enterpriseTeams/_router.ts", {
+    "@calcom/features/community-enterprise/scheduling/SchedulingHandoffService": {
+      ...handoffDomain,
+      SchedulingHandoffService: Service,
+    },
     "@calcom/features/community-enterprise/organizations/OrganizationMemberService": {
       ...memberDomain,
       OrganizationMemberService: Service,
@@ -269,4 +288,55 @@ test("review and member list carry the same verified actor identity", async () =
     assert.deepEqual(call.actor, f.ctx.user);
     assert.equal(call.db, f.ctx.prisma);
   }
+});
+
+const handoffRequest = () => ({
+  organizationId: 100,
+  source: { id: 2, uuid: randomUUID() },
+  eventTypeId: 300,
+  successor: { id: 3, uuid: randomUUID() },
+  successorScheduleId: 200,
+});
+for (const route of ["reviewSchedulingHandoff", "commitSchedulingHandoff"]) {
+  test(`${route} uses server subject and the configured primary service`, async () => {
+    const f = fixture();
+    const input = {
+      ...handoffRequest(),
+      ...(route.startsWith("commit") ? { requestId: randomUUID(), reviewHash: "a".repeat(64) } : {}),
+    };
+    await f.router[route](f.ctx, input);
+    assert.equal(f.calls.length, 1);
+    assert.deepEqual(f.calls[0].actor, f.ctx.user);
+    assert.equal(f.calls[0].db, f.ctx.prisma);
+  });
+  for (const changed of ["origin", "method", "actor"])
+    test(`${route} rejects ${changed} before domain access`, async () => {
+      const f = fixture();
+      const input = {
+        ...handoffRequest(),
+        ...(route.startsWith("commit") ? { requestId: randomUUID(), reviewHash: "a".repeat(64) } : {}),
+      };
+      if (changed === "origin") f.ctx.req.headers.origin = "https://foreign.example.test";
+      if (changed === "method") f.ctx.req.method = "GET";
+      if (changed === "actor") input.actorId = 1;
+      await assert.rejects(f.router[route](f.ctx, input));
+      assert.equal(f.calls.length, 0);
+    });
+}
+test("handoff event and successor discovery retain authenticated identity and validate resource IDs", async () => {
+  const f = fixture();
+  const input = handoffRequest();
+  await f.router.handoffEvents(f.ctx, { organizationId: input.organizationId, source: input.source });
+  await f.router.handoffOptions(f.ctx, {
+    organizationId: input.organizationId,
+    source: input.source,
+    eventTypeId: input.eventTypeId,
+  });
+  assert.deepEqual(
+    f.calls.map((c) => c.actor),
+    [f.ctx.user, f.ctx.user]
+  );
+  await assert.rejects(
+    f.router.handoffOptions(f.ctx, { organizationId: 100, source: input.source, eventTypeId: 0 })
+  );
 });
