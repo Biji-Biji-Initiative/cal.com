@@ -9,6 +9,7 @@ export default defineConfig({
       "tests/community-enterprise/postgres-identity-link.test.ts",
       "tests/community-enterprise/postgres-teams.test.ts",
       "tests/community-enterprise/postgres-organizations.test.ts",
+      "tests/community-enterprise/postgres-invitations.test.ts",
       "tests/community-enterprise/postgres-hosts.test.ts",
     ],
     pool: "forks",

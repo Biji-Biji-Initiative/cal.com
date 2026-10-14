@@ -4,6 +4,7 @@ const net = require("node:net");
 const assert = require("node:assert/strict");
 async function startSmtpTestSink() {
   const messages = [];
+  let rejecting = false;
   const clients = new Set();
   const permitted = new Set(["smoke@example.test", "invitee@example.test", "colleague@example.test"]);
   const server = net.createServer((socket) => {
@@ -53,7 +54,8 @@ async function startSmtpTestSink() {
           socket.write("250 sender accepted\r\n");
         } else if (command === "RCPT") {
           const address = line.match(/TO:\s*<([^>]+)>/i)?.[1]?.toLowerCase();
-          if (!permitted.has(address)) socket.write("550 only synthetic recipients accepted\r\n");
+          if (rejecting || !permitted.has(address))
+            socket.write("550 only synthetic recipients accepted\r\n");
           else {
             recipients.push(address);
             socket.write("250 recipient accepted\r\n");
@@ -81,6 +83,10 @@ async function startSmtpTestSink() {
       EMAIL_SERVER_PORT: String(server.address().port),
     },
     count: () => messages.length,
+    setRejecting: (value) => {
+      assert.equal(typeof value, "boolean");
+      rejecting = value;
+    },
     async expectDeliverySince(index, phase, required = ["smoke@example.test", "invitee@example.test"]) {
       assert.ok(required.length && required.every((recipient) => permitted.has(recipient)));
       const deadline = Date.now() + 15000;

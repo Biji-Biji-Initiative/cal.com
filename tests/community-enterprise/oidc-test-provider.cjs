@@ -8,7 +8,14 @@ const { execFileSync } = require("node:child_process");
 const { randomBytes, randomUUID, createHash } = require("node:crypto");
 const { generateKeyPair, exportJWK, SignJWT } = require("jose");
 
-async function startOidcTestProvider({ directory, pool }) {
+async function startOidcTestProvider({
+  directory,
+  pool,
+  identities = [{ userId: 7001, email: "smoke@example.test", subject: "synthetic-staff-subject" }],
+}) {
+  assert.ok(identities.length > 0 && identities.length <= 4);
+  assert.equal(new Set(identities.map((identity) => identity.userId)).size, identities.length);
+  assert.equal(new Set(identities.map((identity) => identity.subject)).size, identities.length);
   const certPath = path.join(directory, "oidc-test.crt");
   const keyPath = path.join(directory, "oidc-test.key");
   execFileSync(
@@ -73,8 +80,13 @@ async function startOidcTestProvider({ directory, pool }) {
           assert.equal(url.searchParams.get("redirect_uri"), redirectUri);
           assert.equal(url.searchParams.get("code_challenge_method"), "S256");
           assert.ok(url.searchParams.get("nonce") && url.searchParams.get("state"));
+          const identity = identities.find(
+            (item) => item.userId === Number(url.searchParams.get("fixture_user") ?? identities[0].userId)
+          );
+          assert.ok(identity);
           const code = randomBytes(24).toString("hex");
           codes.set(code, {
+            identity,
             challenge: url.searchParams.get("code_challenge"),
             nonce: url.searchParams.get("nonce"),
           });
@@ -109,13 +121,13 @@ async function startOidcTestProvider({ directory, pool }) {
           );
           const idToken = await new SignJWT({
             nonce: grant.nonce,
-            email: "smoke@example.test",
+            email: grant.identity.email,
             name: "Synthetic Staff",
           })
             .setProtectedHeader({ alg: "RS256", kid: jwk.kid })
             .setIssuer(`${issuer}/`)
             .setAudience(clientId)
-            .setSubject("synthetic-staff-subject")
+            .setSubject(grant.identity.subject)
             .setIssuedAt()
             .setExpirationTime("2m")
             .sign(keys.privateKey);
@@ -143,13 +155,18 @@ async function startOidcTestProvider({ directory, pool }) {
     server.listen(0, "127.0.0.1", resolve);
   });
   issuer = `https://127.0.0.1:${server.address().port}/application/o/calendar`;
-  const accountId = createHash("sha256")
-    .update(JSON.stringify([issuer, "synthetic-staff-subject"]))
-    .digest("hex");
-  await pool.query(
-    'INSERT INTO "Account" (id,"userId",type,provider,"providerAccountId") VALUES ($1,7001,$2,$3,$4)',
-    [randomUUID(), "oauth", "authentik", accountId]
-  );
+  for (const identity of identities) {
+    const existing = await pool.query("SELECT email FROM users WHERE id=$1", [identity.userId]);
+    assert.equal(existing.rows[0]?.email, identity.email);
+    const accountId = createHash("sha256")
+      .update(JSON.stringify([issuer, identity.subject]))
+      .digest("hex");
+    await pool.query(
+      'INSERT INTO "Account" (id,"userId",type,provider,"providerAccountId") VALUES ($1,$2,$3,$4,$5)',
+      [randomUUID(), identity.userId, "oauth", "authentik", accountId]
+    );
+  }
+
   return {
     environment: {
       CAL_AUTHENTIK_ISSUER: issuer,
@@ -157,11 +174,14 @@ async function startOidcTestProvider({ directory, pool }) {
       CAL_AUTHENTIK_CLIENT_SECRET: clientSecret,
       NODE_EXTRA_CA_CERTS: certPath,
     },
-    async authorize(url) {
+    async authorize(url, userId = identities[0].userId) {
+      assert.ok(identities.some((identity) => identity.userId === userId));
+      const selected = new URL(url);
+      selected.searchParams.set("fixture_user", String(userId));
       assert.equal(new URL(url).origin, new URL(issuer).origin);
       return new Promise((resolve, reject) => {
         https
-          .get(url, { ca: certificate }, (response) => {
+          .get(selected, { ca: certificate }, (response) => {
             response.resume();
             if (response.statusCode !== 302)
               reject(new Error("Synthetic issuer rejected the authorization request"));

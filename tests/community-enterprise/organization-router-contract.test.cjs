@@ -75,6 +75,19 @@ function fixture() {
     }
   }
   const { enterpriseTeamsRouter } = load("packages/trpc/server/routers/viewer/enterpriseTeams/_router.ts", {
+    "node:crypto": require("node:crypto"),
+    "@calcom/features/community-enterprise/organizations/sendOrganizationInvitationNotice": {
+      sendOrganizationInvitationNotice: () => {
+        throw new Error("Unexercised mail path");
+      },
+    },
+    "@calcom/features/community-enterprise/organizations/OrganizationInvitationService": {
+      OrganizationInvitationService: class {},
+      invitationPageInput: require("zod").z.unknown(),
+      inviteOrganizationMemberInput: require("zod").z.unknown(),
+      invitationResponseInput: require("zod").z.unknown(),
+      invitationAdminInput: require("zod").z.unknown(),
+    },
     "@calcom/features/community-enterprise/organizations/OrganizationProvisioningService": {
       ...domain,
       OrganizationProvisioningService: Service,
