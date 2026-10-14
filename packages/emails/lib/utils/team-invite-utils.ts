@@ -1,6 +1,5 @@
-import type { TFunction } from "i18next";
-
 import { APP_NAME } from "@calcom/lib/constants";
+import type { TFunction } from "i18next";
 
 export type TeamInvite = {
   language: TFunction;
@@ -18,6 +17,7 @@ export type TeamInvite = {
   isExistingUserMovedToOrg: boolean;
   prevLink: string | null;
   newLink: string | null;
+  hideHostedSupport?: boolean;
 };
 
 export function getTypeOfInvite(teamInviteEvent: TeamInvite) {
