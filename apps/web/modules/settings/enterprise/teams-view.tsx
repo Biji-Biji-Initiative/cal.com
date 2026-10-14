@@ -7,6 +7,7 @@ import { Button } from "@calcom/ui/components/button";
 import Link from "next/link";
 import { type FormEvent, useRef, useState } from "react";
 import OrganizationInvitations from "./organization-invitations";
+import OrganizationMembers from "./organization-members";
 import OrganizationProvisioning from "./organization-provisioning";
 
 function useOperationKey() {
@@ -123,6 +124,12 @@ export default function EnterpriseTeamsView() {
                 ))}
               </select>
             </label>
+            {current.canInvite && (
+              <OrganizationMembers
+                key={`members-${current.organization.id}`}
+                organizationId={current.organization.id}
+              />
+            )}
             {current.canInvite && (
               <OrganizationInvitations
                 key={current.organization.id}

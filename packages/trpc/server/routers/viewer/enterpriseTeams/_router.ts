@@ -7,6 +7,12 @@ import {
   OrganizationInvitationService,
 } from "@calcom/features/community-enterprise/organizations/OrganizationInvitationService";
 import {
+  memberCommitInput,
+  memberPageInput,
+  memberReviewInput,
+  OrganizationMemberService,
+} from "@calcom/features/community-enterprise/organizations/OrganizationMemberService";
+import {
   OrganizationProvisioningService,
   provisionOrganizationInput,
   reviewOrganizationInput,
@@ -35,6 +41,22 @@ const provisioningProcedure = authedProcedure.use(({ ctx, next }) => {
 });
 
 export const enterpriseTeamsRouter = router({
+  organizationMembers: authedProcedure
+    .input(memberPageInput)
+    .query(({ ctx, input }) =>
+      new OrganizationMemberService(ctx.prisma).members({ id: ctx.user.id, uuid: ctx.user.uuid }, input)
+    ),
+  reviewMemberChange: provisioningProcedure
+    .input(memberReviewInput)
+    .mutation(({ ctx, input }) =>
+      new OrganizationMemberService(ctx.prisma).review({ id: ctx.user.id, uuid: ctx.user.uuid }, input)
+    ),
+  commitMemberChange: provisioningProcedure
+    .input(memberCommitInput)
+    .mutation(({ ctx, input }) =>
+      new OrganizationMemberService(ctx.prisma).commit({ id: ctx.user.id, uuid: ctx.user.uuid }, input)
+    ),
+
   invitations: authedProcedure
     .input(invitationPageInput)
     .query(({ ctx, input }) =>
