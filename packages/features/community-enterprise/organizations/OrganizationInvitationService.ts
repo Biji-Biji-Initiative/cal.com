@@ -44,6 +44,7 @@ const userFields = {
   isPlatformManaged: true,
   name: true,
   email: true,
+  emailVerified: true,
   username: true,
   locale: true,
 } as const;
@@ -207,9 +208,15 @@ export class OrganizationInvitationService {
         take: 2,
       });
       const target = matches[0];
-      if (matches.length !== 1 || !target || target.locked || target.isPlatformManaged)
+      if (
+        matches.length !== 1 ||
+        !target ||
+        target.locked ||
+        target.isPlatformManaged ||
+        !target.emailVerified
+      )
         throw invalid(
-          "Invite one active existing account. New-account enrollment must be completed separately."
+          "Invite one active existing account with a verified email address. Enrollment and address verification must be completed separately."
         );
       const current = await tx.membership.findUnique({
         where: { userId_teamId: { userId: target.id, teamId: input.organizationId } },
@@ -288,7 +295,7 @@ export class OrganizationInvitationService {
               continue;
             const recipient = await this.active(tx, invitation.binding.recipient);
             const org = await this.root(tx, invitation.organizationId);
-            let actionable = invitation.expires > now;
+            let actionable = invitation.expires > now && !!recipient.emailVerified;
             try {
               await this.admin(tx, invitation.binding.issuer, invitation.organizationId);
             } catch {
@@ -336,6 +343,8 @@ export class OrganizationInvitationService {
       const user = await this.active(tx, actor);
       await this.root(tx, invitation.organizationId);
       if (input.decision === "accept") {
+        if (!user.emailVerified)
+          throw invalid("Verify your account email before accepting an organization invitation");
         if (invitation.expires <= (await this.now(tx))) throw invalid("This invitation has expired");
         await this.admin(tx, invitation.binding.issuer, invitation.organizationId);
         const existingProfile = await tx.profile.findUnique({
@@ -417,6 +426,8 @@ export class OrganizationInvitationService {
         throw denied();
       await this.admin(tx, invitation.binding.issuer, invitation.organizationId);
       const target = await this.active(tx, invitation.binding.recipient);
+      if (!target.emailVerified)
+        throw invalid("The recipient email must be verified before sending another notice");
       const previous = await tx.enterpriseAuditEvent.findFirst({
         where: { entityId: input.invitationId, action },
         select: { createdAt: true },

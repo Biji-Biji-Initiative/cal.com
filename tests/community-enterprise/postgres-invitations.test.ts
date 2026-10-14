@@ -60,6 +60,7 @@ beforeEach(async () => {
         id,
         uuid: uuids[id],
         email: `person${id}@fixture.test`,
+        emailVerified: new Date(),
         username: `person-${id}`,
         name: `Person ${id}`,
         role: id === 7 ? "ADMIN" : "USER",
@@ -484,4 +485,51 @@ test("inbox pagination is bounded and the continuation does not lose invitations
   assert.equal(second.items.length, 1);
   assert.equal(second.nextCursor, null);
   assert.equal(new Set([...first.items, ...second.items].map((row) => row.id)).size, 51);
+});
+
+test("an unverified account cannot claim an invitation address merely by storing that email", async () => {
+  await prisma.user.update({ where: { id: 2 }, data: { emailVerified: null } });
+  const before = await counts();
+  await assert.rejects(service.invite(actor(1), inviteInput()));
+  assert.deepEqual(await counts(), before);
+});
+test("email verification must still hold when the bound account accepts", async () => {
+  await prisma.user.update({ where: { id: 2 }, data: { emailVerified: new Date() } });
+  const invitation = await service.invite(actor(1), inviteInput());
+  await prisma.user.update({ where: { id: 2 }, data: { emailVerified: null } });
+  await assert.rejects(service.respond(actor(2), responseInput(invitation.invitationId)));
+  assert.equal((await getMember())?.accepted, false);
+  assert.equal(await prisma.profile.count({ where: { userId: 2 } }), 0);
+  await service.respond(actor(2), responseInput(invitation.invitationId, "decline"));
+  assert.equal(await getMember(), null);
+});
+test("unverified email stops notices without blocking a harmless decline", async () => {
+  await prisma.user.update({ where: { id: 2 }, data: { emailVerified: new Date() } });
+  const invitation = await service.invite(actor(1), inviteInput());
+  await prisma.user.update({ where: { id: 2 }, data: { emailVerified: null } });
+  let attempts = 0;
+  await assert.rejects(
+    service.notify(actor(1), adminInput(invitation.invitationId), async () => {
+      attempts++;
+      return "submitted";
+    })
+  );
+  assert.equal(attempts, 0);
+});
+test("unverified recipient sees a non-actionable invitation, not an acceptance grant", async () => {
+  await prisma.user.update({ where: { id: 2 }, data: { emailVerified: new Date() } });
+  await service.invite(actor(1), inviteInput());
+  await prisma.user.update({ where: { id: 2 }, data: { emailVerified: null } });
+  assert.equal((await service.pending(actor(2), {})).items[0].actionable, false);
+});
+test("a legitimate verified email change does not transfer the identity-bound invitation", async () => {
+  await prisma.user.update({ where: { id: 2 }, data: { emailVerified: new Date() } });
+  const invitation = await service.invite(actor(1), inviteInput());
+  await prisma.user.update({
+    where: { id: 2 },
+    data: { email: "new-address@fixture.test", emailVerified: new Date() },
+  });
+  await service.respond(actor(2), responseInput(invitation.invitationId));
+  assert.equal((await getMember())?.accepted, true);
+  assert.equal(await prisma.profile.count({ where: { userId: 2, organizationId: 100 } }), 1);
 });

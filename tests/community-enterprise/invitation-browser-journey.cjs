@@ -92,6 +92,21 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
     memberEmails: [],
   });
   const org = await owner.client.mutation("provisionOrganization", review.input);
+  await pool.query('UPDATE users SET "emailVerified"=NULL WHERE id=7002');
+  await assert.rejects(
+    owner.client.mutation("inviteMember", {
+      organizationId: org.organizationId,
+      email: "invitee@example.test",
+      requestId: randomUUID(),
+    }),
+    (error) => error.data?.code === "BAD_REQUEST"
+  );
+  assert.equal(
+    (await pool.query('SELECT count(*)::int AS count FROM "Membership" WHERE "userId"=7002')).rows[0].count,
+    0
+  );
+  assert.equal(fixture.smtp.count(), 0);
+  await pool.query('UPDATE users SET "emailVerified"=NOW() WHERE id=7002');
   const memberBefore = (
     await pool.query('SELECT role,"organizationId","movedToProfileId" FROM users WHERE id=7002')
   ).rows[0];
@@ -158,6 +173,25 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
       }),
       (error) => error.data?.code === "FORBIDDEN"
     );
+    await memberPage.reload({ waitUntil: "domcontentloaded" });
+    await pool.query('UPDATE users SET "emailVerified"=NULL WHERE id=7002');
+    await assert.rejects(
+      member.client.mutation("respondToInvitation", {
+        invitationId: first.id,
+        decision: "accept",
+        requestId: randomUUID(),
+      }),
+      (error) => error.data?.code === "BAD_REQUEST"
+    );
+    assert.equal(
+      (
+        await pool.query('SELECT accepted FROM "Membership" WHERE "userId"=7002 AND "teamId"=$1', [
+          org.organizationId,
+        ])
+      ).rows[0].accepted,
+      false
+    );
+    await pool.query('UPDATE users SET "emailVerified"=NOW() WHERE id=7002');
     await memberPage.reload({ waitUntil: "domcontentloaded" });
     const invitation = memberPage.getByTestId(`invitation-${first.id}`);
     await expect(invitation).toBeVisible();
@@ -266,6 +300,7 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
     t.diagnostic(
       JSON.stringify({
         nativeIdentities: 3,
+        verifiedEmailRequiredAtIssueAndAccept: true,
         accepted: 1,
         declined: 2,
         cancelled: 1,

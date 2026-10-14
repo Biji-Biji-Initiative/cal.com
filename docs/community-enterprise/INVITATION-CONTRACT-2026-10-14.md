@@ -29,11 +29,13 @@ linkage and external directory lifecycle remain separate work.
 ## State and authority
 
 An active root-organization owner or administrator can invite an active existing
-human account as MEMBER. A global platform role without that organization
+human account with a verified email address as MEMBER. A global platform role without that organization
 membership, a child-team role, pending membership or a custom-role ADMIN hint is
 not sufficient. Directory-managed roots are protected from these local writes.
 The registered account's UUID, not a mutable email in a browser session, binds
-acceptance. The email is only the initiating lookup and notification destination.
+acceptance. The existing emailVerified state must hold when issuing, accepting
+or notifying: an unverified stored email string is not proof of ownership.
+The email is only the initiating lookup and notification destination.
 
 Issue creates an unaccepted ordinary Membership and a namespaced, expiring
 VerificationToken row with the exact membership/recipient/issuer binding. No
