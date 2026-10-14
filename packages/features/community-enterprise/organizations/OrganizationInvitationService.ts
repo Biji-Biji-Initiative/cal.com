@@ -25,7 +25,8 @@ export const invitationAdminInput = z
   .strict();
 type Actor = z.infer<typeof actorSchema>;
 type Transaction = Prisma.TransactionClient;
-const PREFIX = "cal.enterprise.invite.v1:";
+export const organizationInvitationPrefix = "cal.enterprise.invite.v1:";
+const PREFIX = organizationInvitationPrefix;
 const bodySchema = z
   .object({ recipient: actorSchema, membershipId: positiveId, issuer: actorSchema })
   .strict();
@@ -51,9 +52,10 @@ const userFields = {
 const denied = () => new ErrorWithCode(ErrorCode.Forbidden, "You cannot act on this organization invitation");
 const invalid = (message: string) => new ErrorWithCode(ErrorCode.BadRequest, message);
 const prefixFor = (uuid: string) => `${PREFIX}${uuid}:`;
-function envelope(identifier: string) {
+export function parseOrganizationInvitationBinding(identifier: string) {
   if (!identifier.startsWith(PREFIX)) throw denied();
   const end = identifier.indexOf(":", PREFIX.length);
+  if (end < 0) throw denied();
   const value = bodySchema.parse(JSON.parse(identifier.slice(end + 1)));
   if (identifier.slice(PREFIX.length, end) !== value.recipient.uuid) throw denied();
   return value;
@@ -176,7 +178,7 @@ export class OrganizationInvitationService {
   private async record(tx: Transaction, invitationId: number) {
     const row = await tx.verificationToken.findUnique({ where: { id: invitationId }, select: fields });
     if (!row || row.teamId === null) throw denied();
-    const binding = envelope(row.identifier);
+    const binding = parseOrganizationInvitationBinding(row.identifier);
     const member = await tx.membership.findFirst({
       where: { id: binding.membershipId, userId: binding.recipient.id, teamId: row.teamId },
       select: { id: true, role: true, customRoleId: true, accepted: true },
