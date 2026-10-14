@@ -6,6 +6,7 @@ import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import Link from "next/link";
 import { type FormEvent, useRef, useState } from "react";
+import OrganizationInvitations from "./organization-invitations";
 import OrganizationProvisioning from "./organization-provisioning";
 
 function useOperationKey() {
@@ -82,6 +83,7 @@ export default function EnterpriseTeamsView() {
   return (
     <SettingsHeader title={t("enterprise_teams_title")} description={t("enterprise_teams_description")}>
       <div className="space-y-6" data-testid="enterprise-teams">
+        <OrganizationInvitations />
         <OrganizationProvisioning
           onCreated={async (organizationId) => {
             setSelected(organizationId);
@@ -121,6 +123,12 @@ export default function EnterpriseTeamsView() {
                 ))}
               </select>
             </label>
+            {current.canInvite && (
+              <OrganizationInvitations
+                key={current.organization.id}
+                organizationId={current.organization.id}
+              />
+            )}
             {current.canManage && (
               <form
                 onSubmit={createTeam}
