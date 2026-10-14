@@ -504,6 +504,14 @@
           "command": "python3 scripts/run-community-enterprise-postgres.py --suite calendar-boundary --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
           "summary": "32 local Nest/controller/service/Prisma/PostgreSQL ownership cases pass, zero skips; fixture authentication and Google/OAuth boundaries explicit. Both existing aliases retained. Native full API/IdP/provider/per-action team scopes remain unfinished."
+        },
+        {
+          "file": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite organizations --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Real isolated PostgreSQL and built browser prove explicit initial organization/owner/member admission, scoped profile lookup and retained team administration; live IdP, external invitations and deployment remain open.",
+          "source_revision": "1ea54709db3670d454c82a0bd8aec693d10c289e"
         }
       ],
       "required_for_team_release": true,
@@ -514,7 +522,8 @@
         "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
         "docs/community-enterprise/API-KEY-CONTROLLER-2026-10-13.md"
       ],
-      "progress": "Calendar event reference read/update now carries authenticated owner ID and uses current primary selection. Focused native32 and existing unit47 tests verified; earlier key-controller receipt is separately linked, not rerun. Complete resource/API acceptance remains open."
+      "progress": "Calendar event reference read/update now carries authenticated owner ID and uses current primary selection. Focused native32 and existing unit47 tests verified; earlier key-controller receipt is separately linked, not rerun. Complete resource/API acceptance remains open.",
+      "progress_reference": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md"
     },
     {
       "id": "CAL-04.OIDC",
@@ -708,13 +717,22 @@
         "No automatic mapping of brand/email domain to a new organization without actual owner data.",
         "Provide the real operator-authorized first organization and initial membership provisioning path with audit/idempotency; identity-link plans do not create missing organizations. No manual SQL hidden behind a successful UI state."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite organizations --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Real isolated PostgreSQL and built browser prove explicit initial organization/owner/member admission, scoped profile lookup and retained team administration; live IdP, external invitations and deployment remain open.",
+          "source_revision": "1ea54709db3670d454c82a0bd8aec693d10c289e"
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 0,
-      "progress": "Organization-scoped team creation, active-member basic roles, last-owner protection, replay safety and atomic administrative audit implemented. Invitations, custom-role editing and complete directory-provenance operations remain open.",
-      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
+      "progress": "Retained-model initial organization admission now has real primary-state validation, stable replay, atomic audit and additive multi-org profiles. Existing team/member administration is reused. External invitations/consent, custom-role editing and full directory/offboarding lifecycle remain open.",
+      "progress_reference": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md"
     },
     {
       "id": "CAL-05.UI",
@@ -747,14 +765,22 @@
           "exit_code": 0,
           "summary": "Actual built browser, native session exchange against TLS test IdP, real PostgreSQL first-run setup, stale purchase drafts and legacy links. External calendar/conferencing steps explicitly skipped; not a deployed candidate or live IdP proof.",
           "source_revision": "4c76854e22561bae0cb1f08ecb9ff2c3e4f6c6e9"
+        },
+        {
+          "file": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite organization-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Real isolated PostgreSQL and built browser prove explicit initial organization/owner/member admission, scoped profile lookup and retained team administration; live IdP, external invitations and deployment remain open.",
+          "source_revision": "1ea54709db3670d454c82a0bd8aec693d10c289e"
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 1,
-      "progress": "Built Chromium test creates a team and saves membership through the actual authenticated UI; organization selector and public links are wired. Full onboarding, event creation/editing, all permission states and accessibility acceptance remain open.",
-      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md"
+      "progress": "Built browser starts from zero organizations, reviews and creates the root/owner/member admissions, then creates a team and adds a member through actual services. Prior first-run and team/guest regressions pass. Live identities, complete member lifecycle and wider accessibility acceptance remain open.",
+      "progress_reference": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md"
     },
     {
       "id": "CAL-05.API",
@@ -1202,7 +1228,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/ONBOARDING-2026-10-14.md",
+  "latest_evidence": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
@@ -1300,6 +1326,34 @@
       "CAL-05.CORE",
       "CAL-06.REUSE"
     ],
-    "next_ready_outcome": "Real operator-authorized organization/member bootstrap and completion of the first staff/admin/guest journey; not another unrelated API-only slice."
+    "next_ready_outcome": "Real operator-authorized organization/member bootstrap and completion of the first staff/admin/guest journey; not another unrelated API-only slice.",
+    "organization_admission": {
+      "scope": "established operator plus existing-account admission",
+      "evidence": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md",
+      "candidate_deployed": false,
+      "external_invitation_consent_implemented": false,
+      "no_automatic_operator_membership": true,
+      "personal_identity_and_calendars_not_relocated": true
+    },
+    "future_compatibility_contract": {
+      "current_foundation": [
+        "retained Cal.diy domain/schema",
+        "additive multi-organization profiles",
+        "server-authorized domain commands",
+        "exact-operation replay and audit",
+        "current-state resource and tenant checks"
+      ],
+      "future_adapters_require": [
+        "verified human/delegated-agent/service identities",
+        "explicit selected organization and granted actions",
+        "short-lived revocable authorization and real confirmation when required",
+        "versioned API/transport compatibility tests"
+      ],
+      "not_claimed_now": [
+        "public MCP or delegated agent grant implementation",
+        "community invitation/consent lifecycle",
+        "complete production or upstream-update acceptance"
+      ]
+    }
   }
 }

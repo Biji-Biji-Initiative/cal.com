@@ -1,5 +1,15 @@
 # Cal.diy-based enterprise service — implementation record
 
+## Latest: actual first-organization admission (2026-10-14)
+
+[Admission evidence](ORGANIZATION-ADMISSION-2026-10-14.md) records the established
+operator's real review/create/team-member journey on the assembled local candidate.
+[Reuse decision](ORGANIZATION-REUSE-DECISION-2026-10-14.md) explains the retained
+models, additive profiles and human/agent extension boundary. This is not a live
+enterprise deployment or completed community invitation/IdP lifecycle. The same
+39-task graph preserves those acceptance requirements.
+
+
 ## Current product direction and acceptance
 
 We are building our operator-hosted enterprise service on the retained Cal.diy
@@ -17,8 +27,8 @@ records the repaired first-run path, exact built-browser proof and unresolved wo
 The currently served dev application was read back as legacy v6.2.0. Restored
 availability and an Authentik redirect are not enterprise candidate acceptance.
 This source fixes the candidate's own stale plan chooser and incomplete first-run
-routing; deployment, real organization provisioning and live provider acceptance
-remain open. The mother-agent 246c07c3 authorization repair is included and retained.
+routing. The current local candidate also proves explicit initial organization
+admission; deployment, external invitations and live provider acceptance remain open. The mother-agent 246c07c3 authorization repair is included and retained.
 
 ## Historical implementation receipts
 
