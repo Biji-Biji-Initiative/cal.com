@@ -16,6 +16,7 @@ const { seedProviderFixture, runProviderJourney } = require("./provider-booking-
 const { startOidcTestProvider } = require("./oidc-test-provider.cjs");
 const { startSmtpTestSink } = require("./smtp-test-sink.cjs");
 const { seedTaskerFixture, runTaskerJourney } = require("./tasker-runtime-journey.cjs");
+const { seedCustomRoleFixture, runCustomRoleJourney } = require("./custom-role-browser.cjs");
 const {
   seedInvitationBrowserFixture,
   runInvitationBrowserJourney,
@@ -98,7 +99,10 @@ test(
         process.env.CAL_PROVIDER_BROWSER_JOURNEY === "true" ? await seedProviderFixture(pool) : null;
       const taskerFixture =
         process.env.CAL_TASKER_RUNTIME_JOURNEY === "true" ? await seedTaskerFixture(pool) : null;
+      const roleFixture =
+        process.env.CAL_ROLE_BROWSER_JOURNEY === "true" ? await seedCustomRoleFixture(pool) : null;
       const identityFixture =
+        roleFixture ||
         providerFixture ||
         handoffFixture ||
         memberFixture ||
@@ -133,11 +137,21 @@ test(
           directory: path.dirname(socket),
           pool,
           identities:
-            handoffFixture?.identities || memberFixture?.identities || invitationFixture?.identities,
+            roleFixture?.identities ||
+            handoffFixture?.identities ||
+            memberFixture?.identities ||
+            invitationFixture?.identities,
         });
         identityFixture.oidc = oidcProvider;
         Object.assign(environment, oidcProvider.environment);
-        if (onboardingFixture || organizationFixture || invitationFixture || memberFixture || handoffFixture)
+        if (
+          onboardingFixture ||
+          organizationFixture ||
+          invitationFixture ||
+          memberFixture ||
+          handoffFixture ||
+          roleFixture
+        )
           environment.CAL_AUTHENTIK_ONLY = "true";
         smtpSink = await startSmtpTestSink();
         identityFixture.smtp = smtpSink;
@@ -229,6 +243,7 @@ test(
       if (handoffFixture) await runHandoffJourney({ pool, fixture: handoffFixture, t });
       if (providerFixture) await runProviderJourney({ pool, fixture: providerFixture, t });
       if (taskerFixture) await runTaskerJourney({ pool, fixture: taskerFixture, t });
+      if (roleFixture) await runCustomRoleJourney({ pool, fixture: roleFixture, t });
       t.diagnostic(
         JSON.stringify({
           buildId,
