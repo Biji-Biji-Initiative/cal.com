@@ -111,11 +111,32 @@ export class TaskRepository {
     );
   }
 
+  private async writeClaim(
+    claim: TaskClaim,
+    write: (tx: Prisma.TransactionClient) => Promise<number>
+  ): Promise<number> {
+    return this.deps.prismaClient.$transaction(
+      async (tx) => {
+        // UPDATE may evaluate its expiry predicate before waiting on a row lock.
+        // Lock first; a separate READ COMMITTED statement must check the current
+        // clock and claim after that wait, not renew stale execution authority.
+        const held = await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT id FROM "Task" WHERE ${ownLease(claim)} FOR UPDATE`;
+        if (held.length !== 1) return 0;
+        return write(tx);
+      },
+      { isolationLevel: "ReadCommitted", maxWait: 5000, timeout: 10000 }
+    );
+  }
+
   async renew(claim: TaskClaim, leaseMs: number): Promise<boolean> {
     milliseconds(leaseMs);
-    const changed = await this.deps.prismaClient.$executeRaw`UPDATE "Task"
+    const changed = await this.writeClaim(
+      claim,
+      (tx) => tx.$executeRaw`UPDATE "Task"
       SET "scheduledAt"=${now}+(${leaseMs}::double precision * interval '1 millisecond'),"updatedAt"=${now}
-      WHERE ${ownLease(claim)} AND "scheduledAt" > ${now}`;
+      WHERE ${ownLease(claim)} AND "scheduledAt" > ${now}`
+    );
     return changed === 1;
   }
 
@@ -130,8 +151,11 @@ export class TaskRepository {
     // Late completion cannot overwrite a lost lease. Unknown-outcome marking
     // can occur after expiry, but still requires the exact original claim.
     const live = outcome === "unconfirmed" ? Prisma.empty : Prisma.sql`AND "scheduledAt" > ${now}`;
-    const changed = await this.deps.prismaClient.$executeRaw`UPDATE "Task" SET ${update},"updatedAt"=${now}
-      WHERE ${ownLease(claim)} ${live}`;
+    const changed = await this.writeClaim(
+      claim,
+      (tx) => tx.$executeRaw`UPDATE "Task" SET ${update},"updatedAt"=${now}
+      WHERE ${ownLease(claim)} ${live}`
+    );
     return changed === 1;
   }
 
@@ -223,9 +247,12 @@ export class TaskRepository {
     const context = taskExecution.getStore();
     if (context) {
       executionFor(taskId);
-      const changed = await this.deps.prismaClient
-        .$executeRaw`UPDATE "Task" SET payload=${newPayload},"updatedAt"=${now}
-        WHERE ${ownLease(context.claim)} AND "scheduledAt" > ${now}`;
+      const changed = await this.writeClaim(context.claim, (tx) => {
+        // Cooperative cancellation may have happened while waiting for the row.
+        executionFor(taskId);
+        return tx.$executeRaw`UPDATE "Task" SET payload=${newPayload},"updatedAt"=${now}
+          WHERE ${ownLease(context.claim)} AND "scheduledAt" > ${now}`;
+      });
       if (changed !== 1) throw taskStateError();
     } else {
       const changed = await this.deps.prismaClient.task.updateMany({

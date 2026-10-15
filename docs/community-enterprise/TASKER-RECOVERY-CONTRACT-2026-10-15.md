@@ -24,6 +24,17 @@ replacement attempt, change an uncertain payload or erase completion evidence.
 The database clock determines due/lease boundaries, aligned to the retained UTC
 naive timestamp columns; the application clock does not grant execution authority.
 
+Lease validation occurs after obtaining the exact claim's row lock. A guarded
+UPDATE alone can evaluate its time predicate before a lock wait and then write
+after expiry. Renewal, settlement and active payload writes therefore use a short
+READ COMMITTED transaction: lock the matching claim, then run the clock/identity
+check in a fresh statement. A cancellation signal is rechecked after a payload
+writer's wait. Unknown-outcome marking may still follow expiry for the original
+claim; it must not be confused with permission to renew, retry or report success.
+No row transaction spans a provider call. The tests observe both the actual
+PostgreSQL lock wait and elapsed database deadline before releasing the blocker.
+
+
 ## Versioned state in the retained schema
 
 There is no new table or schema migration. While a task is running, scheduledAt

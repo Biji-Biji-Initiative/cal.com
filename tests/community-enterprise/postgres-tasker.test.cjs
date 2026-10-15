@@ -673,3 +673,143 @@ test("default-created work is due in the actual database timezone", async (t) =>
   );
   assert.equal((await repository.claimNext(10000))?.id, id);
 });
+
+// A lease can expire while SQL is blocked behind a row lock, not only before
+// the request starts. Observe the real blocked writer, then the database clock.
+async function afterLeaseExpiresBehindRowLock(operation) {
+  const id = await create("waiting-lease");
+  const claim = await repository.claimNext(10000);
+  await db.$executeRaw`UPDATE "Task" SET "scheduledAt"=(clock_timestamp() AT TIME ZONE 'UTC') + interval '2500 milliseconds' WHERE id=${id}`;
+  const before = await row(id);
+  const entered = gate(),
+    release = gate();
+  const blocker = db.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Task" WHERE id=${id} FOR UPDATE`;
+      entered.resolve();
+      await release.promise;
+    },
+    { maxWait: 5000, timeout: 10000 }
+  );
+  let result;
+  try {
+    await entered.promise;
+    result = operation(claim, id).then(
+      (value) => ({ value }),
+      (error) => ({ error })
+    );
+    let blocked = false;
+    const waitingDeadline = performance.now() + 2000;
+    while (!blocked && performance.now() < waitingDeadline) {
+      const [observer] = await db.$queryRaw`SELECT EXISTS (
+        SELECT 1 FROM pg_stat_activity WHERE datname=current_database()
+          AND pid<>pg_backend_pid() AND wait_event_type='Lock'
+          AND position('Task' in query)>0
+      ) AS blocked`;
+      blocked = observer.blocked;
+      if (!blocked) await new Promise((resolve) => setTimeout(resolve, 15));
+    }
+    assert.ok(
+      blocked,
+      "The actual task mutation must be waiting on the held row, not just started concurrently"
+    );
+    const deadline = performance.now() + 4000;
+    let expired = false;
+    while (!expired && performance.now() < deadline) {
+      const [clock] =
+        await db.$queryRaw`SELECT "scheduledAt" <= (clock_timestamp() AT TIME ZONE 'UTC') AS expired FROM "Task" WHERE id=${id}`;
+      expired = clock.expired;
+      if (!expired) await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert.ok(expired, "Database lease deadline must pass before the row is released");
+  } finally {
+    release.resolve();
+    await blocker;
+  }
+  return { id, claim, before, result: await result, after: await row(id) };
+}
+for (const action of ["renew", "succeed"]) {
+  test(`a ${action} that waited past its lease cannot regain authority`, async () => {
+    const checked = await afterLeaseExpiresBehindRowLock((claim) =>
+      action === "renew" ? repository.renew(claim, 10000) : repository.settle(claim, "succeeded")
+    );
+    assert.deepEqual(checked.result, { value: false });
+    assert.deepEqual(checked.after, checked.before);
+    assert.equal(await repository.recoverExpired(), 1);
+    assert.equal(await repository.claimNext(10000), null);
+  });
+}
+
+test("retry settlement cannot schedule another effect after waiting past the lease", async () => {
+  const checked = await afterLeaseExpiresBehindRowLock((claim) => repository.settle(claim, "retry"));
+  assert.deepEqual(checked.result, { value: false });
+  assert.deepEqual(checked.after, checked.before);
+  assert.equal(await repository.recoverExpired(), 1);
+  assert.equal(await repository.claimNext(10000), null);
+});
+test("an active payload update blocked past expiry cannot change the uncertain operation", async () => {
+  const checked = await afterLeaseExpiresBehindRowLock((claim, id) =>
+    withLease(claim, () => repository.updatePayload(id, "late-rewritten-effect"))
+  );
+  assert.ok(checked.result.error);
+  assert.match(checked.result.error.message, /cannot be overwritten/);
+  assert.deepEqual(checked.after, checked.before);
+  assert.equal(await repository.recoverExpired(), 1);
+  assert.equal((await row(checked.id)).payload, "waiting-lease");
+});
+test("uncertainty recording still works after a lock wait consumes the lease", async () => {
+  const checked = await afterLeaseExpiresBehindRowLock((claim) => repository.settle(claim, "unconfirmed"));
+  assert.deepEqual(checked.result, { value: true });
+  assert.equal(checked.after.succeededAt, null);
+  assert.equal(checked.after.attempts, checked.before.attempts);
+  assert.equal(checked.after.payload, checked.before.payload);
+  assert.match(checked.after.lastError, /^tasker:v1:unconfirmed:/);
+  assert.equal(await repository.claimNext(10000), null);
+});
+
+test("payload cancellation during a lock wait is rechecked before the still-live write", async () => {
+  const id = await create("cancelled-waiter");
+  const claim = await repository.claimNext(30000);
+  const before = await row(id);
+  const controller = new AbortController();
+  const entered = gate(),
+    release = gate();
+  const blocking = db.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Task" WHERE id=${id} FOR UPDATE`;
+      entered.resolve();
+      await release.promise;
+    },
+    { maxWait: 5000, timeout: 10000 }
+  );
+  let result;
+  try {
+    await entered.promise;
+    result = withLease(claim, () => repository.updatePayload(id, "must-not-change"), controller.signal).then(
+      (value) => ({ value }),
+      (error) => ({ error })
+    );
+    let blocked = false;
+    const deadline = performance.now() + 2000;
+    while (!blocked && performance.now() < deadline) {
+      const [observer] = await db.$queryRaw`SELECT EXISTS (
+        SELECT 1 FROM pg_stat_activity WHERE datname=current_database()
+          AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND position('Task' in query)>0
+      ) AS blocked`;
+      blocked = observer.blocked;
+      if (!blocked) await new Promise((resolve) => setTimeout(resolve, 15));
+    }
+    assert.ok(blocked);
+    controller.abort();
+  } finally {
+    release.resolve();
+    await blocking;
+  }
+  const outcome = await result;
+  assert.ok(outcome.error);
+  assert.match(outcome.error.message, /no longer owns/);
+  const [clock] =
+    await db.$queryRaw`SELECT "scheduledAt" > (clock_timestamp() AT TIME ZONE 'UTC') AS live FROM "Task" WHERE id=${id}`;
+  assert.equal(clock.live, true, "This refusal must come from cancellation, not lease expiry");
+  assert.deepEqual(await row(id), before);
+});
