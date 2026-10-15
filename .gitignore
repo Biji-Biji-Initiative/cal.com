@@ -42,6 +42,15 @@ yarn-error.log*
 !.env.example
 !.env.appStore.example
 
+# Retained deployment filenames do not all start with .env. Keep real local
+# credentials and deployment output out of this public source repository.
+calcom.env
+calcom-k8s.env
+env-vars-production.yaml
+env-vars-api-v2.yaml
+google-credentials.json
+.deploy_api_v2*.log
+
 # vercel
 .vercel
 
