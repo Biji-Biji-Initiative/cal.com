@@ -134,8 +134,10 @@ async function runTaskerJourney({ pool, fixture, t }) {
         'INSERT INTO "Task" (id,type,payload,"scheduledAt","updatedAt") VALUES ($1,$2,$3,$4,NOW())',
         [id, "sendWebhook", payload, new Date(0)]
       );
+      // The application exposes the existing GET cron wrapper; the feature
+      // module's POST function has source tests but is not a public route.
       const requestResult = await fetch(origin + "/api/tasks/cron", {
-        method: "POST",
+        method: "GET",
         headers: { Authorization: `Bearer ${fixture.secret}` },
         signal: AbortSignal.timeout(30000),
       });
