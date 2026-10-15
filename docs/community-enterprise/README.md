@@ -1,6 +1,17 @@
 # Cal.diy-based enterprise service — implementation record
 
-## Latest: retained provider resource identity and ordinary appointment lifecycle
+## Latest: claimed task execution and truthful delivery outcomes
+
+[Tasker recovery evidence](TASKER-RECOVERY-2026-10-15.md) records actual claim,
+crash, unknown-effect and signed-local-delivery behavior in the retained worker.
+[The execution contract](TASKER-RECOVERY-CONTRACT-2026-10-15.md) distinguishes
+local execution ownership from provider truth and defines the required old-worker
+cutover. Uncertain tasks are not silently replayed, and persisted failures remain
+visible on later cron passes. This is not a completed provider transfer, recovery
+UI, tenant-safe task API, live deployment or exactly-once external guarantee.
+
+
+## Previous: retained provider resource identity and ordinary appointment lifecycle
 
 [Provider acceptance](PROVIDER-LIFECYCLE-2026-10-15.md) records the actual native
 Google/Microsoft-backed create→change-default→reschedule→cancel journey with only

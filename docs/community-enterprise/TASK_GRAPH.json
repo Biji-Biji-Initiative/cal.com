@@ -520,6 +520,14 @@
           "exit_code": 0,
           "summary": "Retained webhook guard now checks current team/instance authority and rejects conflicting scope; source controls and native shared-webhook access prove this slice. Other route/handler atomicity and complete API inventory remain open.",
           "source_revision": "3ee12ff80d110b077f15ac5d6c1fd037e7cc89f7"
+        },
+        {
+          "file": "docs/community-enterprise/TASKER-RECOVERY-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite tasker-runtime --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Native cron/cleanup configuration and authorization tests reject missing/incorrect secret without queue effects; no broad route audit closure.",
+          "application_source": "2a8e335a652ad4aa8fc2ca6469b14e1c15f43fab"
         }
       ],
       "required_for_team_release": true,
@@ -935,6 +943,14 @@
           "exit_code": 0,
           "summary": "Actual built app, provider auth/adapter/SDK source, native booking/reference persistence and local SMTP. External provider HTTP intercepted with synthetic resources/tokens; not live provider or future-appointment transfer acceptance.",
           "source_revision": "8ef8268a1fe348549cfa75beed8ca248fd1e30a6"
+        },
+        {
+          "file": "docs/community-enterprise/TASKER-RECOVERY-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite tasker-runtime --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Retained Tasker provides a claimed/fenced execution prerequisite before future-provider handoff. No provider-organizer transfer is implemented.",
+          "application_source": "2a8e335a652ad4aa8fc2ca6469b14e1c15f43fab"
         }
       ],
       "required_for_team_release": true,
@@ -1072,6 +1088,14 @@
           "exit_code": 0,
           "summary": "Handoff and exact administrative audit commit together with replay and real constraint-failure rollback; no distributed provider transaction or durable notification completion.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
+        },
+        {
+          "file": "docs/community-enterprise/TASKER-RECOVERY-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite tasker-runtime --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Durable claim and success/uncertainty accounting proven across real process crash and lost database acknowledgement; not a full domain audit/outbox transaction.",
+          "application_source": "2a8e335a652ad4aa8fc2ca6469b14e1c15f43fab"
         }
       ],
       "required_for_team_release": true,
@@ -1102,7 +1126,16 @@
         "No duplicate sender; cancel/reschedule invalidates stale jobs; duplicate/retry/ambiguous external delivery tested.",
         "One test message delivered to an explicitly controlled recipient; receipt separates internal queue success from delivery."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/TASKER-RECOVERY-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite tasker-runtime --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Actual signed local webhook acknowledgement/refusal and no-show task cancellation boundary pass; live reminders and all legacy-handler idempotency remain open.",
+          "application_source": "2a8e335a652ad4aa8fc2ca6469b14e1c15f43fab"
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
@@ -1365,7 +1398,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/PROVIDER-LIFECYCLE-2026-10-15.md",
+  "latest_evidence": "docs/community-enterprise/TASKER-RECOVERY-2026-10-15.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
@@ -1549,6 +1582,22 @@
         "test_only_revision": "09301a2718192421b981984cf92ad2e2785e7642",
         "application_source_unchanged": true
       }
+    },
+    "tasker_recovery": {
+      "application_source": "2a8e335a652ad4aa8fc2ca6469b14e1c15f43fab",
+      "contract": "docs/community-enterprise/TASKER-RECOVERY-CONTRACT-2026-10-15.md",
+      "evidence": "docs/community-enterprise/TASKER-RECOVERY-2026-10-15.md",
+      "protocol": "tasker:v1 markers in retained Task fields",
+      "candidate_deployed": false,
+      "native_local_delivery_verified": true,
+      "automatic_unconfirmed_replay": false,
+      "exactly_once_external_effects_claimed": false,
+      "mixed_legacy_worker_rollout_safe": false,
+      "next_scope": "Provider/resource-specific authorized outcome reconciliation and transfer progress, with live acceptance and existing deployment gates.",
+      "lease_validation_after_row_lock": true,
+      "lock_wait_refusal_cases": 4,
+      "real_database_cases": 45,
+      "operator_reconciliation_interface_implemented": false
     }
   }
 }
