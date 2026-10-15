@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { TaskExecutionContext } from "./execution";
 
 type BookingAuditTaskConsumerPayload = string;
 
@@ -26,7 +27,11 @@ type TaskPayloads = {
   >;
 };
 export type TaskTypes = keyof TaskPayloads;
-export type TaskHandler = (payload: string, taskId?: string) => Promise<void>;
+export type TaskHandler = (
+  payload: string,
+  taskId?: string,
+  execution?: TaskExecutionContext
+) => Promise<void>;
 export type TaskerCreate = <TaskKey extends keyof TaskPayloads>(
   type: TaskKey,
   payload: TaskPayloads[TaskKey],
