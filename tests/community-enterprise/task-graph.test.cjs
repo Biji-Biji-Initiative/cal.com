@@ -7,6 +7,7 @@ const {
   validateGraph,
   readyTasks,
   isComplete,
+  taskStatus,
 } = require("../../scripts/verify-community-enterprise-task-graph.cjs");
 const root = path.resolve(__dirname, "../..");
 const read = () =>
@@ -124,7 +125,9 @@ test("source-only evidence cannot satisfy a runtime prerequisite", () => {
   assert.ok(!readyTasks(graph).some((task) => task.id === "CAL-09.ACCEPT"));
 });
 test("runnable work includes the retained engine without waiting for full administration", () => {
-  const ready = readyTasks(read()).map((task) => task.id);
+  const graph = read();
+  graph.tasks.find((task) => task.id === "CAL-06.REUSE").state = "open";
+  const ready = readyTasks(graph).map((task) => task.id);
   assert.equal(ready[0], "CAL-05.CORE");
   assert.ok(ready.includes("CAL-06.REUSE"));
   assert.ok(ready.includes("CAL-05.CORE"));
@@ -192,4 +195,49 @@ test("product phases only reference the same canonical task identities", () => {
     for (const id of phase.tasks) assert.ok(ids.has(id));
   }
   assert.equal(typeof graph.product_delivery.candidate_deployed, "boolean");
+});
+
+test("completed task cannot outrun an unfinished prerequisite", () => {
+  assert.ok(
+    errorsAfter((graph) => {
+      graph.tasks.find((task) => task.id === "CAL-02.INSTALL").state = "in_progress";
+    }).some((error) => error.includes("unfinished prerequisite"))
+  );
+});
+test("burndown counts executable work separately from parent containers", () => {
+  const graph = read();
+  const status = taskStatus(graph);
+  assert.equal(status.records, 39);
+  assert.equal(status.epics, 10);
+  assert.equal(status.executableTasks, 29);
+  assert.equal(status.completed.length + status.remaining, 29);
+  assert.ok(status.completed.every((id) => graph.tasks.find((task) => task.id === id).kind === "task"));
+  assert.ok(status.milestones.every((milestone) => !milestone.complete));
+});
+test("downstream impact counts waiting tasks and does not invent task records", () => {
+  const graph = read();
+  const status = taskStatus(graph);
+  const core = status.ready.find((task) => task.id === "CAL-05.CORE");
+  assert.ok(core.pendingDescendants > 0);
+  assert.ok(status.waiting.find((task) => task.id === "CAL-04.SCIM").prerequisites.includes("CAL-05.CORE"));
+  for (const milestone of status.milestones) {
+    assert.equal(new Set(milestone.pendingTasks).size, milestone.pendingTasks.length);
+    assert.ok(
+      milestone.pendingTasks.every((id) => graph.tasks.some((task) => task.id === id && task.kind === "task"))
+    );
+  }
+});
+test("status command is machine-readable and does not mutate the graph", () => {
+  const { execFileSync } = require("node:child_process");
+  const graphFile = path.join(root, "docs/community-enterprise/TASK_GRAPH.json");
+  const before = fs.readFileSync(graphFile);
+  const report = JSON.parse(
+    execFileSync(
+      process.execPath,
+      [path.join(root, "scripts/verify-community-enterprise-task-graph.cjs"), "--status"],
+      { encoding: "utf8" }
+    )
+  );
+  assert.deepEqual(report, taskStatus(read()));
+  assert.deepEqual(fs.readFileSync(graphFile), before);
 });

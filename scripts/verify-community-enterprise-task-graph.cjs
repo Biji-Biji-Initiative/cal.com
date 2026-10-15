@@ -24,6 +24,46 @@ function readyTasks(graph) {
     .sort((a, b) => a.priority - b.priority || rank(a.id) - rank(b.id) || a.id.localeCompare(b.id));
 }
 
+function taskStatus(graph) {
+  const tasks = graph.tasks.filter((task) => task.kind === "task");
+  const byId = new Map(graph.tasks.map((task) => [task.id, task]));
+  const pending = tasks.filter((task) => !isComplete(task));
+  const depends = (task, wanted, seen = new Set()) => {
+    if (seen.has(task.id)) return false;
+    seen.add(task.id);
+    return task.requires.some((id) => id === wanted || (byId.has(id) && depends(byId.get(id), wanted, seen)));
+  };
+  return {
+    records: graph.tasks.length,
+    epics: graph.tasks.length - tasks.length,
+    executableTasks: tasks.length,
+    completed: tasks.filter(isComplete).map((task) => task.id),
+    remaining: pending.length,
+    // Count downstream work, not completed parents or invented percentages.
+    ready: readyTasks(graph).map((task) => ({
+      id: task.id,
+      title: task.title,
+      pendingDescendants: pending.filter((other) => other.id !== task.id && depends(other, task.id)).length,
+      blockers: task.blockers ?? [],
+    })),
+    waiting: pending
+      .filter((task) => task.requires.some((id) => !isComplete(byId.get(id))) || task.state === "blocked")
+      .map((task) => ({
+        id: task.id,
+        state: task.state,
+        prerequisites: task.requires.filter((id) => !isComplete(byId.get(id))),
+        blockers: task.blockers ?? [],
+      })),
+    milestones: (graph.milestones ?? []).map((milestone) => ({
+      id: milestone.id,
+      complete: milestone.requires.every((id) => isComplete(byId.get(id))),
+      pendingTasks: pending
+        .filter((task) => milestone.requires.some((id) => task.id === id || depends(byId.get(id), task.id)))
+        .map((task) => task.id),
+    })),
+  };
+}
+
 function validateGraph(graph, root) {
   const errors = [];
   if (graph.schema_version !== 2) errors.push("Unsupported graph schema");
@@ -72,6 +112,9 @@ function validateGraph(graph, root) {
         errors.push(`${task.id}: depend on executable children, not whole epics`);
     }
     if (task.kind === "task") {
+      if (isComplete(task) && task.requires.some((id) => !isComplete(byId.get(id)))) {
+        errors.push(`${task.id}: completed task has an unfinished prerequisite`);
+      }
       const parent = byId.get(task.parent);
       if (parent?.kind !== "epic" || !parent.children.includes(task.id))
         errors.push(`${task.id}: invalid parent mapping`);
@@ -133,6 +176,8 @@ if (require.main === module) {
   if (errors.length) {
     console.error(errors.join("\n"));
     process.exitCode = 1;
+  } else if (process.argv.includes("--status")) {
+    console.log(JSON.stringify(taskStatus(graph), null, 2));
   } else if (process.argv.includes("--ready")) {
     console.log(
       JSON.stringify(
@@ -154,4 +199,4 @@ if (require.main === module) {
     );
   }
 }
-module.exports = { validateGraph, readyTasks, isComplete };
+module.exports = { validateGraph, readyTasks, isComplete, taskStatus };
