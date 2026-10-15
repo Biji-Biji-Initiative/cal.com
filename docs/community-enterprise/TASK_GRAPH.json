@@ -927,6 +927,14 @@
           "exit_code": 0,
           "summary": "Reuses retained qualified-host/booking engine and ordered host locks; actual two-order transaction races plus unchanged-link successor guest booking pass. Managed/automatic/provider/future-appointment reassignment remain open.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
+        },
+        {
+          "file": "docs/community-enterprise/PROVIDER-LIFECYCLE-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite provider-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Actual built app, provider auth/adapter/SDK source, native booking/reference persistence and local SMTP. External provider HTTP intercepted with synthetic resources/tokens; not live provider or future-appointment transfer acceptance.",
+          "source_revision": "8ef8268a1fe348549cfa75beed8ca248fd1e30a6"
         }
       ],
       "required_for_team_release": true,
@@ -1002,6 +1010,14 @@
           "exit_code": 0,
           "summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
+        },
+        {
+          "file": "docs/community-enterprise/PROVIDER-LIFECYCLE-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite provider-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "Actual built app, provider auth/adapter/SDK source, native booking/reference persistence and local SMTP. External provider HTTP intercepted with synthetic resources/tokens; not live provider or future-appointment transfer acceptance.",
+          "source_revision": "8ef8268a1fe348549cfa75beed8ca248fd1e30a6"
         }
       ],
       "required_for_team_release": true,
@@ -1349,7 +1365,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/SCHEDULING-HANDOFF-2026-10-15.md",
+  "latest_evidence": "docs/community-enterprise/PROVIDER-LIFECYCLE-2026-10-15.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
@@ -1510,6 +1526,29 @@
       "candidate_deployed": false,
       "future_appointments_reassigned": false,
       "provider_credentials_transferred": false
+    },
+    "provider_lifecycle": {
+      "date": "2026-10-15",
+      "application_source": "8ef8268a1fe348549cfa75beed8ca248fd1e30a6",
+      "evidence": "docs/community-enterprise/PROVIDER-LIFECYCLE-2026-10-15.md",
+      "ordinary_create_reschedule_cancel": "local built acceptance with intercepted provider HTTP",
+      "existing_appointment_transfer": "not implemented; previous handoff blockers retained",
+      "candidate_deployed": false,
+      "remaining": [
+        "Durable provider partial-outcome reconciliation",
+        "Actual provider-specific organizer transfer and participant notification",
+        "Live OAuth/provider/IdP acceptance",
+        "Image security/publication and staged deployment"
+      ],
+      "resumed_verification": {
+        "provider_contract_cases": 40,
+        "source_regression_cases": 488,
+        "database_cases": 14,
+        "native_functional_cases": 65,
+        "built_provider_journey_repeated": true,
+        "test_only_revision": "09301a2718192421b981984cf92ad2e2785e7642",
+        "application_source_unchanged": true
+      }
     }
   }
 }

@@ -1,6 +1,16 @@
 # Cal.diy-based enterprise service — implementation record
 
-## Latest: explicit shared scheduling handoff (2026-10-15)
+## Latest: retained provider resource identity and ordinary appointment lifecycle
+
+[Provider acceptance](PROVIDER-LIFECYCLE-2026-10-15.md) records the actual native
+Google/Microsoft-backed create→change-default→reschedule→cancel journey with only
+external HTTP intercepted. [The contract](PROVIDER-LIFECYCLE-CONTRACT-2026-10-15.md)
+separates this repair from future organizer transfer, durable recovery and live
+provider acceptance. The existing scheduling-handoff blockers are not waived.
+The graph retains all prior IDs, evidence, dependencies and release requirements.
+
+
+## Previous: explicit shared scheduling handoff (2026-10-15)
 
 [Assembled handoff evidence](SCHEDULING-HANDOFF-2026-10-15.md) proves an eligible
 shared host assignment can move to an accepted successor's own schedule, unblock
