@@ -7,7 +7,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { createRequire } = require("node:module");
 const ts = require("typescript");
-const { PrismaClient, Prisma } = require("@prisma/client");
+const { PrismaClient } = require("@prisma/client");
+const { sqltag, join, empty } = require("@prisma/client/runtime/library");
+const Prisma = { sql: sqltag, join, empty };
 const { PrismaPg } = require("@prisma/adapter-pg");
 const root = path.resolve(__dirname, "../..");
 
