@@ -32,7 +32,7 @@
     ],
     "rule": "One build/integration owner; other work is disjoint. Do not claim workers are dispatched without actual registration and evidence.",
     "ready_command": "node scripts/verify-community-enterprise-task-graph.cjs --ready",
-    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task’s own required level.",
+    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task\u2019s own required level.",
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
       "CAL-05.CORE",
@@ -661,7 +661,7 @@
       "parent": "CAL-04",
       "kind": "task",
       "title": "Link reviewed synthetic and migrated accounts without SQL hand edits",
-      "state": "in_progress",
+      "state": "runtime_proven",
       "requires": [
         "CAL-04.OIDC"
       ],
@@ -691,14 +691,22 @@
           "command": "yarn test:community-enterprise:identity-link --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
           "summary": "24 real database/CLI checks in an isolated synthetic database. Not a deployed preview, real IdP provisioning or migrated-staff acceptance."
+        },
+        {
+          "file": "docs/community-enterprise/IDENTITY-LINK-ACCEPTANCE-2026-10-16.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite identity-link --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "application_source": "509a3ea2d2752c9f91e53dd9316bc9088532074a",
+          "summary": "28 actual database/CLI cases passed twice, plus 41 source/loopback/CLI cases. The original source failed the new observed organization/users lock-order control. Native current acceptance preserves account/calendar ownership and atomic audit; real staff/IdP/migration acceptance is not claimed."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 0,
-      "progress": "Reviewed operator plan/apply CLI and atomic batch linkage/audit implemented. 24 real PostgreSQL checks pass, including native sign-in compatibility and actual CLI. Live preview mappings and operator execution remain open; no staff identity changed.",
-      "progress_reference": "docs/community-enterprise/IDENTITY-ONBOARDING-2026-10-13.md"
+      "progress": "Original operator-service/CLI contract accepted on real private PostgreSQL, with observed lock-order repair, current-state/expiry checks, atomic audit and preserved calendar/booking rows. Live preview identities, actual migrated data and SCIM revocation remain their separate release tasks.",
+      "progress_reference": "docs/community-enterprise/IDENTITY-LINK-ACCEPTANCE-2026-10-16.md"
     },
     {
       "id": "CAL-04.SCIM",
@@ -1083,7 +1091,7 @@
           "level": "runtime",
           "command": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
-          "summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
+          "summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         },
         {
@@ -1101,7 +1109,7 @@
       "priority": 1,
       "progress": "Packaged native OIDC through a TLS fixture, Chromium team administration, directed/same-host/rerouted bookings and collective availability are locally proven with PostgreSQL and non-relaying SMTP. Not deployed Authentik, connected external calendars or shared preview admission.",
       "progress_reference": "docs/community-enterprise/MULTI-HOST-2026-10-12.md",
-      "progress_summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
+      "progress_summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
     },
     {
       "id": "CAL-07.AUDIT",
