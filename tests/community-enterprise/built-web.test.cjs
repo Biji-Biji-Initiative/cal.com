@@ -12,6 +12,7 @@ const root = path.resolve(__dirname, "../..");
 const { seedTeamBrowserFixture, runTeamBrowserJourney } = require("./team-browser-journey.cjs");
 const { seedMemberLifecycleFixture, runMemberLifecycleJourney } = require("./member-lifecycle-browser.cjs");
 const { seedHandoffFixture, runHandoffJourney } = require("./scheduling-handoff-browser.cjs");
+const { seedProviderFixture, runProviderJourney } = require("./provider-booking-browser.cjs");
 const { startOidcTestProvider } = require("./oidc-test-provider.cjs");
 const { startSmtpTestSink } = require("./smtp-test-sink.cjs");
 const {
@@ -92,7 +93,10 @@ test(
         process.env.CAL_MEMBER_BROWSER_JOURNEY === "true" ? await seedMemberLifecycleFixture(pool) : null;
       const handoffFixture =
         process.env.CAL_HANDOFF_BROWSER_JOURNEY === "true" ? await seedHandoffFixture(pool) : null;
+      const providerFixture =
+        process.env.CAL_PROVIDER_BROWSER_JOURNEY === "true" ? await seedProviderFixture(pool) : null;
       const identityFixture =
+        providerFixture ||
         handoffFixture ||
         memberFixture ||
         invitationFixture ||
@@ -136,7 +140,14 @@ test(
         identityFixture.smtp = smtpSink;
         Object.assign(environment, smtpSink.environment);
       }
+      if (providerFixture) {
+        environment.CAL_TEST_PROVIDER_DIRECTORY = path.dirname(socket);
+        environment.CAL_ENTERPRISE_TEST_SOCKET = socket;
+        environment.NODE_OPTIONS +=
+          " --require=" + path.join(root, "tests/community-enterprise/provider-network-preload.cjs");
+      }
       sensitiveValues = [
+        ...(providerFixture?.redactions || []),
         environment.CAL_AUTHENTIK_CLIENT_SECRET,
         environment.NEXTAUTH_SECRET,
         environment.CALENDSO_ENCRYPTION_KEY,
@@ -210,6 +221,7 @@ test(
       if (invitationFixture) await runInvitationBrowserJourney({ pool, fixture: invitationFixture, t });
       if (memberFixture) await runMemberLifecycleJourney({ pool, fixture: memberFixture, t });
       if (handoffFixture) await runHandoffJourney({ pool, fixture: handoffFixture, t });
+      if (providerFixture) await runProviderJourney({ pool, fixture: providerFixture, t });
       t.diagnostic(
         JSON.stringify({
           buildId,
