@@ -228,3 +228,67 @@ test("reference metadata uses the explicit delegation identity rather than an ob
     undefined
   );
 });
+
+// An online-meeting body is part of the provider resource, not optional UI text.
+// A failed read must not be followed by a blind write that removes that content.
+for (const status of [403, 404]) {
+  test(`Microsoft meeting body read ${status} blocks PATCH and calendar fallback`, async () => {
+    f.status = status;
+    await assert.rejects(
+      office
+        .default(credential("office365_calendar"))
+        .updateEvent("stored-event", { ...event(), location: "integrations:msteams" }, "original-calendar")
+    );
+    assert.deepEqual(
+      calls.map((call) => call.method),
+      ["GET"]
+    );
+    assert.equal(calls[0].url.pathname, "/v1.0/me/calendars/original-calendar/events/stored-event");
+  });
+  test(`Microsoft cleanup refusal ${status} cannot probe another calendar`, async () => {
+    f.status = status;
+    await assert.rejects(
+      office
+        .default(credential("office365_calendar"))
+        .deleteEvent("stored-event", event(), "original-calendar")
+    );
+    assert.deepEqual(
+      calls.map((call) => call.method),
+      ["DELETE"]
+    );
+    assert.equal(calls[0].url.pathname, "/v1.0/me/calendars/original-calendar/events/stored-event");
+  });
+}
+test("Google failed stored-calendar update does not fall back to the new preference", async () => {
+  f.status = 404;
+  await assert.rejects(
+    google.default(credential()).updateEvent("stored-event", event(), "original-calendar")
+  );
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].method, "PUT");
+  assert.match(calls[0].url.pathname, /\/calendars\/original-calendar\/events\/stored-event$/);
+});
+test("Microsoft legacy deletion uses the all-calendar endpoint and accepts no-content success", async () => {
+  f.status = 204;
+  await office.default(credential("office365_calendar")).deleteEvent("opaque/event?part", event());
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].method, "DELETE");
+  assert.equal(calls[0].url.pathname, "/v1.0/me/events/opaque%2Fevent%3Fpart");
+  assert.equal(calls[0].url.search, "");
+});
+test("nonfinite and nonpositive numeric IDs cannot become provider success", async () => {
+  for (const id of [0, -1, NaN, Infinity, -Infinity]) {
+    f.adapter = { createEvent: async () => ({ id }), updateEvent: async () => ({ id }) };
+    assert.equal((await manager.createEvent(credential(), event())).success, false);
+    assert.equal(
+      (await manager.updateEvent(credential(), event(), "stored-event", "stored-calendar")).success,
+      false
+    );
+  }
+  f.adapter = { createEvent: async () => ({ id: 42 }), updateEvent: async () => [{ id: 42 }] };
+  assert.equal((await manager.createEvent(credential(), event())).success, true);
+  assert.equal(
+    (await manager.updateEvent(credential(), event(), "stored-event", "stored-calendar")).success,
+    true
+  );
+});

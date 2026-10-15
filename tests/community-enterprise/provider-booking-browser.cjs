@@ -17,15 +17,18 @@ async function seedProviderFixture(pool) {
     const access = randomBytes(24).toString("hex"),
       secret = randomBytes(24).toString("hex");
     fixture.redactions.push(access, secret);
-    await pool.query('INSERT INTO "App" (slug,"dirName",enabled,keys) VALUES ($1,$2,true,$3)', [
-      slug,
-      dirName,
-      JSON.stringify({
-        client_id: "synthetic-client",
-        client_secret: secret,
-        redirect_uris: [origin + "/unused-fixture-callback"],
-      }),
-    ]);
+    await pool.query(
+      'INSERT INTO "App" (slug,"dirName",enabled,keys,categories,"updatedAt") VALUES ($1,$2,true,$3,ARRAY[\'calendar\']::"AppCategories"[],NOW())',
+      [
+        slug,
+        dirName,
+        JSON.stringify({
+          client_id: "synthetic-client",
+          client_secret: secret,
+          redirect_uris: [origin + "/unused-fixture-callback"],
+        }),
+      ]
+    );
     await pool.query('INSERT INTO "Credential" (id,type,"appId","userId",key) VALUES ($1,$2,$3,$4,$5)', [
       id,
       type,
