@@ -1,14 +1,10 @@
-import { cloneDeep, merge } from "lodash";
-import { v5 as uuidv5 } from "uuid";
-import type { z } from "zod";
-
-import { getCalendar } from "@calcom/app-store/_utils/getCalendar";
+import process from "node:process";
 import { FAKE_DAILY_CREDENTIAL } from "@calcom/app-store/dailyvideo/lib/VideoApiAdapter";
 import { appKeysSchema as calVideoKeysSchema } from "@calcom/app-store/dailyvideo/zod";
 import { getLocationFromApp, MeetLocationType, MSTeamsLocationType } from "@calcom/app-store/locations";
 import getApps from "@calcom/app-store/utils";
-import { createEvent, updateEvent, deleteEvent } from "@calcom/features/calendars/lib/CalendarManager";
-import { createMeeting, updateMeeting, deleteMeeting } from "@calcom/features/conferencing/lib/videoClient";
+import { createEvent, deleteEvent, updateEvent } from "@calcom/features/calendars/lib/CalendarManager";
+import { createMeeting, deleteMeeting, updateMeeting } from "@calcom/features/conferencing/lib/videoClient";
 import { CredentialRepository } from "@calcom/features/credentials/repositories/CredentialRepository";
 import CrmManager from "@calcom/features/crmManager/crmManager";
 import CRMScheduler from "@calcom/features/crmManager/crmScheduler";
@@ -18,14 +14,14 @@ import { symmetricDecrypt } from "@calcom/lib/crypto";
 import { isDelegationCredential } from "@calcom/lib/delegationCredential";
 import logger from "@calcom/lib/logger";
 import {
+  getPiiFreeCalendarEvent,
+  getPiiFreeCredential,
   getPiiFreeDestinationCalendar,
   getPiiFreeUser,
-  getPiiFreeCredential,
-  getPiiFreeCalendarEvent,
 } from "@calcom/lib/piiFreeData";
 import { safeStringify } from "@calcom/lib/safeStringify";
 import { prisma } from "@calcom/prisma";
-import type { DestinationCalendar, BookingReference } from "@calcom/prisma/client";
+import type { BookingReference, DestinationCalendar } from "@calcom/prisma/client";
 import { createdEventSchema } from "@calcom/prisma/zod-utils";
 import type { AdditionalInformation, CalendarEvent, NewCalendarEventType } from "@calcom/types/Calendar";
 import type { CredentialForCalendarService } from "@calcom/types/Credential";
@@ -36,6 +32,9 @@ import type {
   PartialBooking,
   PartialReference,
 } from "@calcom/types/EventManager";
+import { cloneDeep, merge } from "lodash";
+import { v5 as uuidv5 } from "uuid";
+import type { z } from "zod";
 
 const log = logger.getSubLogger({ prefix: ["EventManager"] });
 const CALENDSO_ENCRYPTION_KEY = process.env.CALENDSO_ENCRYPTION_KEY || "";
@@ -129,6 +128,26 @@ export type EventManagerInitParams = {
   user: EventManagerUser;
   eventTypeAppMetadata?: Record<string, any>;
 };
+
+// Results can contain failures without references and several accounts of one
+// provider. Array position or provider name alone is not a resource association.
+export function findResultForReference<T>(
+  results: readonly EventResult<T>[],
+  reference?: PartialReference
+): EventResult<T> | undefined {
+  if (!reference) return undefined;
+  const matches = results.filter(
+    (result) =>
+      result.success &&
+      result.type === reference.type &&
+      (reference.delegationCredentialId != null ||
+        reference.credentialId == null ||
+        result.credentialId === reference.credentialId) &&
+      (result.delegatedToId ?? null) === (reference.delegationCredentialId ?? null) &&
+      (result.externalId ?? null) === (reference.externalCalendarId ?? null)
+  );
+  return matches.length === 1 ? matches[0] : undefined;
+}
 
 export default class EventManager {
   calendarCredentials: CredentialForCalendarService[];
@@ -385,29 +404,32 @@ export default class EventManager {
     results.push(...createdCRMEvents);
 
     // References can be any type: calendar/video
-    const referencesToCreate = results.map((result) => {
-      let thirdPartyRecurringEventId;
-      let createdEventObj: createdEventSchema | null = null;
-      if (typeof result?.createdEvent === "string") {
-        createdEventObj = createdEventSchema.parse(JSON.parse(result.createdEvent));
-      }
-      const isCalendarType = isCalendarResult(result);
-      if (isCalendarType) {
-        evt.iCalUID = result.iCalUID || event.iCalUID || undefined;
-        thirdPartyRecurringEventId = result.createdEvent?.thirdPartyRecurringEventId;
-      }
+    const referencesToCreate = results
+      .filter((result) => result.success)
+      .map((result) => {
+        let thirdPartyRecurringEventId;
+        let createdEventObj: createdEventSchema | null = null;
+        if (typeof result?.createdEvent === "string") {
+          createdEventObj = createdEventSchema.parse(JSON.parse(result.createdEvent));
+        }
+        const isCalendarType = isCalendarResult(result);
+        if (isCalendarType) {
+          evt.iCalUID = result.iCalUID || event.iCalUID || undefined;
+          thirdPartyRecurringEventId = result.createdEvent?.thirdPartyRecurringEventId;
+        }
 
-      return {
-        type: result.type,
-        uid: createdEventObj ? createdEventObj.id : (result.createdEvent?.id?.toString() ?? ""),
-        thirdPartyRecurringEventId: isCalendarType ? thirdPartyRecurringEventId : undefined,
-        meetingId: createdEventObj ? createdEventObj.id : result.createdEvent?.id?.toString(),
-        meetingPassword: createdEventObj ? createdEventObj.password : result.createdEvent?.password,
-        meetingUrl: createdEventObj ? createdEventObj.onlineMeetingUrl : result.createdEvent?.url,
-        externalCalendarId: isCalendarType ? result.externalId : undefined,
-        ...getCredentialPayload(result),
-      };
-    });
+        return {
+          type: result.type,
+          uid: createdEventObj ? createdEventObj.id : (result.createdEvent?.id?.toString() ?? ""),
+          thirdPartyRecurringEventId: isCalendarType ? thirdPartyRecurringEventId : undefined,
+          meetingId: createdEventObj ? createdEventObj.id : result.createdEvent?.id?.toString(),
+          meetingPassword: createdEventObj ? createdEventObj.password : result.createdEvent?.password,
+          meetingUrl: createdEventObj ? createdEventObj.onlineMeetingUrl : result.createdEvent?.url,
+          externalCalendarId: isCalendarType ? result.externalId : undefined,
+          ...getCredentialPayload(result),
+        };
+      })
+      .filter((reference) => reference.uid.trim().length > 0);
 
     return {
       results,
@@ -452,39 +474,44 @@ export default class EventManager {
       }
     }
 
-    const referencesToCreate = results.map((result) => {
-      // For update operations, check updatedEvent first, then fall back to createdEvent
-      const updatedEvent = Array.isArray(result.updatedEvent) ? result.updatedEvent[0] : result.updatedEvent;
-      const createdEvent = result.createdEvent;
-      let event = updatedEvent;
-      if (!event) {
-        log.warn(
-          "updateLocation: No updatedEvent when doing updateLocation. Falling back to createdEvent but this is probably not what we want",
-          safeStringify({ bookingId: booking.id })
-        );
-        event = createdEvent;
-      }
+    const referencesToCreate = results
+      .filter((result) => result.success)
+      .map((result) => {
+        // For update operations, check updatedEvent first, then fall back to createdEvent
+        const updatedEvent = Array.isArray(result.updatedEvent)
+          ? result.updatedEvent[0]
+          : result.updatedEvent;
+        const createdEvent = result.createdEvent;
+        let event = updatedEvent;
+        if (!event) {
+          log.warn(
+            "updateLocation: No updatedEvent when doing updateLocation. Falling back to createdEvent but this is probably not what we want",
+            safeStringify({ bookingId: booking.id })
+          );
+          event = createdEvent;
+        }
 
-      const uid = event?.id?.toString() ?? "";
-      const meetingId = event?.id?.toString();
+        const uid = event?.id?.toString() ?? "";
+        const meetingId = event?.id?.toString();
 
-      if (!uid) {
-        log.error(
-          "updateLocation: No uid for booking reference. The corresponding record in third party if created is orphan now",
-          safeStringify({ result })
-        );
-      }
+        if (!uid) {
+          log.error(
+            "updateLocation: No uid for booking reference. The corresponding record in third party if created is orphan now",
+            safeStringify({ result })
+          );
+        }
 
-      return {
-        type: result.type,
-        uid,
-        meetingId,
-        meetingPassword: event?.password,
-        meetingUrl: event?.url,
-        externalCalendarId: result.externalId,
-        ...(result.credentialId && result.credentialId > 0 ? { credentialId: result.credentialId } : {}),
-      };
-    });
+        return {
+          type: result.type,
+          uid,
+          meetingId,
+          meetingPassword: event?.password,
+          meetingUrl: event?.url,
+          externalCalendarId: result.externalId,
+          ...getCredentialPayload(result),
+        };
+      })
+      .filter((reference) => reference.uid.trim().length > 0);
 
     return {
       results,
@@ -524,14 +551,13 @@ export default class EventManager {
       reference.delegationCredentialId
     );
 
-    if (calendarCredential) {
-      await deleteEvent({
-        credential: calendarCredential,
-        bookingRefUid,
-        event,
-        externalCalendarId: bookingExternalCalendarId,
-      });
-    }
+    if (!calendarCredential) throw new Error("Calendar reference account is unavailable or ambiguous");
+    await deleteEvent({
+      credential: calendarCredential,
+      bookingRefUid,
+      event,
+      externalCalendarId: bookingExternalCalendarId,
+    });
   }
 
   private async deleteVideoEventForBookingReference({ reference }: { reference: PartialReference }) {
@@ -578,32 +604,35 @@ export default class EventManager {
     credentialId: number | null | undefined,
     type: string,
     delegationCredentialId?: string | null
-  ): Promise<CredentialForCalendarService | null | undefined> {
+  ): Promise<CredentialForCalendarService | null> {
     if (delegationCredentialId) {
-      return this.calendarCredentials.find((cred) => cred.delegatedToId === delegationCredentialId);
-    }
-    const credential = this.calendarCredentials.find((cred) => cred.id === credentialId);
-    if (credential) {
-      return credential;
-    }
-
-    const foundCredential =
-      typeof credentialId === "number" && credentialId > 0
-        ? await CredentialRepository.findCredentialForCalendarServiceById({ id: credentialId })
-        : this.calendarCredentials.find((cred) => cred.type === type) || null;
-
-    if (!foundCredential) {
-      log.error(
-        "getCalendarCredential: Could not find calendar credential",
-        safeStringify({
-          credentialId,
-          type,
-          calendarCredentialIds: this.calendarCredentials.map((cred) => cred.id),
-        })
+      const matches = this.calendarCredentials.filter(
+        (credential) =>
+          credential.delegatedToId === delegationCredentialId &&
+          credential.type === type &&
+          !credential.invalid
       );
+      return matches.length === 1 ? matches[0] : null;
     }
-
-    return foundCredential;
+    if (typeof credentialId === "number" && credentialId > 0) {
+      const credential =
+        this.calendarCredentials.find((candidate) => candidate.id === credentialId) ??
+        (await CredentialRepository.findCredentialForCalendarServiceById({ id: credentialId }));
+      return credential &&
+        credential.id === credentialId &&
+        credential.type === type &&
+        !credential.invalid &&
+        !credential.delegatedToId
+        ? credential
+        : null;
+    }
+    if (credentialId != null && credentialId !== 0) return null;
+    // A historical reference without an account binding is safe only when its
+    // provider has one eligible account. Never fan out a mutation across accounts.
+    const matches = this.calendarCredentials.filter(
+      (credential) => credential.type === type && !credential.invalid && !credential.delegatedToId
+    );
+    return matches.length === 1 ? matches[0] : null;
   }
 
   /**
@@ -652,6 +681,8 @@ export default class EventManager {
             meetingUrl: true,
             externalCalendarId: true,
             credentialId: true,
+            delegationCredentialId: true,
+            thirdPartyRecurringEventId: true,
           },
         },
         destinationCalendar: true,
@@ -671,6 +702,7 @@ export default class EventManager {
     }
 
     const results: Array<EventResult<Event>> = [];
+    const cleanupFailures: EventResult<never>[] = [];
     const updatedBookingReferences: Array<PartialReference> = [];
     const isLocationChanged = !!evt.location && !!booking.location && evt.location !== booking.location;
 
@@ -690,13 +722,15 @@ export default class EventManager {
       if (!skipDeleteEventsAndMeetings) {
         log.debug("RescheduleRequiresConfirmation: Deleting Event and Meeting for previous booking");
         // As the reschedule requires confirmation, we can't update the events and meetings to new time yet. So, just delete them and let it be handled when organizer confirms the booking.
-        await this.deleteEventsAndMeetings({
-          event: {
-            ...event,
-            destinationCalendar: previousHostDestinationCalendar,
-          },
-          bookingReferences: booking.references,
-        });
+        cleanupFailures.push(
+          ...(await this.deleteEventsAndMeetings({
+            event: {
+              ...event,
+              destinationCalendar: previousHostDestinationCalendar,
+            },
+            bookingReferences: booking.references,
+          }))
+        );
       } else {
         log.debug(
           "RescheduleRequiresConfirmation: Skipping deletion of Event and Meeting due to skipDeleteEventsAndMeetings flag"
@@ -706,10 +740,12 @@ export default class EventManager {
       if (changedOrganizer) {
         if (!skipDeleteEventsAndMeetings) {
           log.debug("RescheduleOrganizerChanged: Deleting Event and Meeting for previous booking");
-          await this.deleteEventsAndMeetings({
-            event: { ...event, destinationCalendar: previousHostDestinationCalendar },
-            bookingReferences: booking.references,
-          });
+          cleanupFailures.push(
+            ...(await this.deleteEventsAndMeetings({
+              event: { ...event, destinationCalendar: previousHostDestinationCalendar },
+              bookingReferences: booking.references,
+            }))
+          );
         }
 
         log.debug("RescheduleOrganizerChanged: Creating Event and Meeting for new booking");
@@ -769,7 +805,7 @@ export default class EventManager {
     }
 
     return {
-      results,
+      results: [...results, ...cleanupFailures],
       referencesToCreate: shouldUpdateBookingReferences ? updatedBookingReferences : [...booking.references],
     };
   }
@@ -797,57 +833,44 @@ export default class EventManager {
     event: CalendarEvent;
     bookingReferences: PartialReference[];
     isBookingInRecurringSeries?: boolean;
-  }) {
-    const log = logger.getSubLogger({ prefix: [`[deleteEventsAndMeetings]: ${event?.uid}`] });
-    const calendarReferences = [],
-      videoReferences = [],
-      crmReferences = [],
-      allPromises = [];
-
-    for (const reference of bookingReferences) {
-      if (reference.type.includes("_calendar") && !reference.type.includes("other_calendar")) {
-        calendarReferences.push(reference);
-        allPromises.push(
-          this.deleteCalendarEventForBookingReference({
-            reference,
-            event,
-            isBookingInRecurringSeries,
-          })
-        );
+  }): Promise<Array<EventResult<never>>> {
+    // Best-effort cleanup still attempts independent integrations, but callers
+    // now receive its failures. Absence of a thrown exception is not a receipt
+    // that every old provider resource was removed.
+    const attempts = bookingReferences.map(async (reference) => {
+      if (!reference.uid?.trim()) throw new Error("Provider reference is missing");
+      if (reference.type.endsWith("_calendar") && !reference.type.includes("other_calendar")) {
+        return this.deleteCalendarEventForBookingReference({ reference, event, isBookingInRecurringSeries });
       }
-
-      if (reference.type.includes("_video")) {
-        videoReferences.push(reference);
-        allPromises.push(
-          this.deleteVideoEventForBookingReference({
-            reference,
-          })
-        );
+      if (reference.type.endsWith("_video")) return this.deleteVideoEventForBookingReference({ reference });
+      if (reference.type.endsWith("_crm") || reference.type.includes("other_calendar")) {
+        return this.deleteCRMEvent({ reference, event });
       }
-
-      if (reference.type.includes("_crm") || reference.type.includes("other_calendar")) {
-        crmReferences.push(reference);
-        allPromises.push(this.deleteCRMEvent({ reference, event }));
-      }
-    }
-
-    log.debug("deleteEventsAndMeetings", safeStringify({ calendarReferences, videoReferences }));
-
-    // Using allSettled to ensure that if one of the promises rejects, the others will still be executed.
-    // Because we are just cleaning up the events and meetings, we don't want to throw an error if one of them fails.
-    (await Promise.allSettled(allPromises)).some((result) => {
-      if (result.status === "rejected") {
-        // Make it a soft error because in case a PENDING booking is rescheduled there would be no calendar events or video meetings.
-        log.warn(
-          "Error deleting calendar event or video meeting for booking",
-          safeStringify({ error: result.reason })
-        );
-      }
+      throw new Error("Provider reference type is unsupported");
     });
-
-    if (!allPromises.length) {
-      log.warn("No calendar or video references found for booking - Couldn't delete events or meetings");
-    }
+    const settled = await Promise.allSettled(attempts);
+    return settled.flatMap((result, index): EventResult<never>[] => {
+      if (result.status === "fulfilled") return [];
+      const reference = bookingReferences[index];
+      log.warn("Provider cleanup was not confirmed", {
+        type: reference.type,
+        credentialId: reference.credentialId,
+      });
+      return [
+        {
+          appName: "Previous integration",
+          type: reference.type,
+          success: false,
+          uid: reference.uid,
+          originalEvent: event,
+          calError: "Previous provider resource cleanup was not confirmed",
+          credentialId:
+            reference.credentialId && reference.credentialId > 0 ? reference.credentialId : undefined,
+          delegatedToId: reference.delegationCredentialId,
+          externalId: reference.externalCalendarId,
+        },
+      ];
+    });
   }
 
   public async updateCalendarAttendees(event: CalendarEvent, booking: PartialBooking) {
@@ -1008,7 +1031,7 @@ export default class EventManager {
       log.warn(
         "No destination Calendar found, falling back to first connected calendar",
         safeStringify({
-          calendarCredentials: this.calendarCredentials,
+          calendarCredentials: this.calendarCredentials.map(getPiiFreeCredential),
         })
       );
       await fallbackToFirstCalendarInTheList();
@@ -1102,132 +1125,87 @@ export default class EventManager {
     booking: PartialBooking,
     newBookingId?: number
   ): Promise<Array<EventResult<NewCalendarEventType>>> {
-    let calendarReference: PartialReference[] | undefined = undefined,
-      credential;
-    log.silly("updateAllCalendarEvents", JSON.stringify({ event, booking, newBookingId }));
-    try {
-      // If a newBookingId is given, update that calendar event
-      let newBooking;
-      if (newBookingId) {
-        newBooking = await prisma.booking.findUnique({
-          where: {
-            id: newBookingId,
-          },
+    const failed = (reference: PartialReference, message: string): EventResult<NewCalendarEventType> => ({
+      appName: "calendar",
+      type: reference.type,
+      success: false,
+      uid: reference.uid,
+      originalEvent: event,
+      calError: message,
+      credentialId: reference.credentialId && reference.credentialId > 0 ? reference.credentialId : undefined,
+      delegatedToId: reference.delegationCredentialId,
+      externalId: reference.externalCalendarId,
+    });
+    const originals = booking.references.filter((reference) => reference.type.includes("_calendar"));
+    const target = newBookingId
+      ? await prisma.booking.findUnique({
+          where: { id: newBookingId },
           select: {
-            references: true,
+            references: {
+              where: { deleted: null },
+              select: {
+                type: true,
+                uid: true,
+                credentialId: true,
+                delegationCredentialId: true,
+                externalCalendarId: true,
+              },
+            },
           },
-        });
-      }
-
-      calendarReference = newBooking?.references.length
-        ? newBooking.references.filter((reference) => reference.type.includes("_calendar"))
-        : booking.references.filter((reference) => reference.type.includes("_calendar"));
-
-      if (calendarReference.length === 0) {
-        return [];
-      }
-      // process all calendar references
-      let result = [];
-      for (const reference of calendarReference) {
-        const { uid: bookingRefUid, externalCalendarId: bookingExternalCalendarId } = reference;
-        let calendarExternalId: string | null = null;
-        if (bookingExternalCalendarId) {
-          calendarExternalId = bookingExternalCalendarId;
-        }
-
-        if (reference.credentialId) {
-          credential = this.calendarCredentials.filter(
-            (credential) => credential.id === reference?.credentialId
-          )[0];
-          if (!credential) {
-            // Fetch credential from DB
-            const credentialFromDB = await CredentialRepository.findCredentialForCalendarServiceById({
-              id: reference.credentialId,
-            });
-            if (credentialFromDB && credentialFromDB.appId) {
-              credential = {
-                id: credentialFromDB.id,
-                type: credentialFromDB.type,
-                key: credentialFromDB.key,
-                userId: credentialFromDB.userId,
-                teamId: credentialFromDB.teamId,
-                invalid: credentialFromDB.invalid,
-                appId: credentialFromDB.appId,
-                user: credentialFromDB.user,
-                encryptedKey: credentialFromDB.encryptedKey,
-                delegatedToId: credentialFromDB.delegatedToId,
-                delegatedTo: credentialFromDB.delegatedTo,
-                delegationCredentialId: credentialFromDB.delegationCredentialId,
-              };
-            }
-          }
-          result.push(updateEvent(credential, event, bookingRefUid, calendarExternalId));
-        } else {
-          const credentials = this.calendarCredentials.filter(
-            (credential) => credential.type === reference?.type
+        })
+      : null;
+    const references = newBookingId
+      ? target?.references.filter((reference) => reference.type.includes("_calendar"))
+      : originals;
+    if (!references?.length)
+      return newBookingId
+        ? originals.map((reference) => failed(reference, "Replacement calendar reference is unavailable"))
+        : [];
+    const results = await Promise.all(
+      references.map(async (reference) => {
+        try {
+          if (!reference.uid?.trim()) return failed(reference, "Calendar event reference is missing");
+          const credential = await this.getCalendarCredential(
+            reference.credentialId,
+            reference.type,
+            reference.delegationCredentialId
           );
-          for (const credential of credentials) {
-            log.silly("updateAllCalendarEvents-credential", JSON.stringify({ credentials }));
-            result.push(updateEvent(credential, event, bookingRefUid, calendarExternalId));
-          }
+          if (!credential) return failed(reference, "Calendar reference account is unavailable or ambiguous");
+          return await updateEvent(credential, event, reference.uid, reference.externalCalendarId ?? null);
+        } catch {
+          // Do not return a provider exception containing tokens, request headers
+          // or another account's event to the booking response/log surface.
+          return failed(reference, "Calendar provider update was not confirmed");
         }
-      }
-      // If we are merging two calendar events we should delete the old calendar event
-      if (newBookingId) {
-        const oldCalendarEvent = booking.references.find((reference) => reference.type.includes("_calendar"));
-
-        if (oldCalendarEvent?.credentialId) {
-          const calendarCredential = await CredentialRepository.findCredentialForCalendarServiceById({
-            id: oldCalendarEvent.credentialId,
+      })
+    );
+    // A merge cannot delete the original while its replacement updates are
+    // unresolved or failed. Already-identical resources are never deleted.
+    if (newBookingId && results.length && results.every((result) => result.success)) {
+      for (const original of originals) {
+        if (
+          references.some((reference) => reference.type === original.type && reference.uid === original.uid)
+        )
+          continue;
+        try {
+          const credential = await this.getCalendarCredential(
+            original.credentialId,
+            original.type,
+            original.delegationCredentialId
+          );
+          if (!credential) throw new Error("Unresolved original calendar account");
+          await deleteEvent({
+            credential,
+            bookingRefUid: original.uid,
+            event,
+            externalCalendarId: original.externalCalendarId,
           });
-          const calendar = await getCalendar(calendarCredential, "booking");
-          await calendar?.deleteEvent(oldCalendarEvent.uid, event, oldCalendarEvent.externalCalendarId);
+        } catch {
+          results.push(failed(original, "Original calendar cleanup was not confirmed"));
         }
       }
-
-      // Taking care of non-traditional calendar integrations
-      result = result.concat(
-        this.calendarCredentials
-          .filter((cred) => cred.type.includes("other_calendar"))
-          .map(async (cred) => {
-            const calendarReference = booking.references.find((ref) => ref.type === cred.type);
-
-            if (!calendarReference) {
-              return {
-                appName: cred.appName || cred.appId || "",
-                type: cred.type,
-                success: false,
-                uid: "",
-                originalEvent: event,
-                credentialId: cred.id,
-              };
-            }
-            const { externalCalendarId: bookingExternalCalendarId, meetingId: bookingRefUid } =
-              calendarReference;
-            return await updateEvent(cred, event, bookingRefUid ?? null, bookingExternalCalendarId ?? null);
-          })
-      );
-
-      return Promise.all(result);
-    } catch (error) {
-      let message = `Tried to 'updateAllCalendarEvents' but there was no '{thing}' for '${credential?.type}', userId: '${credential?.userId}', bookingId: '${booking?.id}'`;
-      if (error instanceof Error) {
-        message = message.replace("{thing}", error.message);
-      }
-
-      return Promise.resolve(
-        calendarReference?.map((reference) => {
-          return {
-            appName: "none",
-            type: reference?.type || "calendar",
-            success: false,
-            uid: "",
-            originalEvent: event,
-            credentialId: 0,
-          };
-        }) ?? ([] as Array<EventResult<NewCalendarEventType>>)
-      );
     }
+    return results;
   }
 
   /**

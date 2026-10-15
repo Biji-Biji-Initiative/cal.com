@@ -21,7 +21,10 @@ import type {
   CreateBookingMeta,
   CreateRegularBookingData,
 } from "@calcom/features/bookings/lib/dto/types";
-import EventManager, { placeholderCreatedEvent } from "@calcom/features/bookings/lib/EventManager";
+import EventManager, {
+  findResultForReference,
+  placeholderCreatedEvent,
+} from "@calcom/features/bookings/lib/EventManager";
 import { getAssignmentReasonCategory } from "@calcom/features/bookings/lib/getAssignmentReasonCategory";
 import type { CheckBookingAndDurationLimitsService } from "@calcom/features/bookings/lib/handleNewBooking/checkBookingAndDurationLimits";
 import { handlePayment } from "@calcom/features/bookings/lib/handlePayment";
@@ -1864,6 +1867,7 @@ async function handler(
       evt.hasOrganizerChanged = true;
     }
 
+    let previousProviderCleanup: EventResult<never>[] = [];
     if (changedOrganizer && originalRescheduledBooking?.user) {
       const originalHostCredentials = await getAllCredentialsIncludeServiceAccountKey(
         originalRescheduledBooking.user,
@@ -1901,7 +1905,7 @@ async function handler(
       };
 
       if (!skipCalendarSyncTaskCreation) {
-        await originalHostEventManager.deleteEventsAndMeetings({
+        previousProviderCleanup = await originalHostEventManager.deleteEventsAndMeetings({
           event: deletionEvent,
           bookingReferences: originalRescheduledBooking.references,
         });
@@ -1923,7 +1927,7 @@ async function handler(
         )
       : placeholderCreatedEvent;
 
-    results = updateManager.results;
+    results = [...updateManager.results, ...previousProviderCleanup];
     referencesToCreate = updateManager.referencesToCreate;
 
     videoCallUrl = evt.videoCallData?.url ? evt.videoCallData.url : null;
@@ -1968,7 +1972,10 @@ async function handler(
           const googleCalIndex = updateManager.referencesToCreate.findIndex(
             (ref) => ref.type === "google_calendar"
           );
-          const googleCalResult = results[googleCalIndex];
+          const googleCalResult = findResultForReference(
+            results,
+            updateManager.referencesToCreate[googleCalIndex]
+          );
 
           if (!googleCalResult) {
             tracingLogger.warn("Google Calendar not installed but using Google Meet as location");
@@ -1983,7 +1990,7 @@ async function handler(
             ? googleCalResult.updatedEvent[0]?.hangoutLink
             : (googleCalResult?.updatedEvent?.hangoutLink ?? googleCalResult?.createdEvent?.hangoutLink);
 
-          if (googleHangoutLink) {
+          if (googleCalResult && googleHangoutLink && googleCalIndex >= 0) {
             results.push({
               ...googleMeetResult,
               success: true,
@@ -2095,7 +2102,10 @@ async function handler(
           const googleCalIndex = createManager.referencesToCreate.findIndex(
             (ref) => ref.type === "google_calendar"
           );
-          const googleCalResult = results[googleCalIndex];
+          const googleCalResult = findResultForReference(
+            results,
+            createManager.referencesToCreate[googleCalIndex]
+          );
 
           if (!googleCalResult) {
             tracingLogger.warn("Google Calendar not installed but using Google Meet as location");
@@ -2106,7 +2116,7 @@ async function handler(
             });
           }
 
-          if (googleCalResult?.createdEvent?.hangoutLink) {
+          if (googleCalResult?.createdEvent?.hangoutLink && googleCalIndex >= 0) {
             results.push({
               ...googleMeetResult,
               success: true,
