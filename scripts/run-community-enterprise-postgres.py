@@ -19,9 +19,18 @@ def main() -> int:
     parser.add_argument("--pg-bin", type=Path, help="Directory containing initdb and pg_ctl")
     parser.add_argument("--scratch-root", type=Path, help="Parent for the disposable fixture")
     parser.add_argument("--prisma-cli", type=Path, help="Explicit installed Prisma CLI; its version must match the repo pin")
-    parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "hosts", "team-journey", "identity-link", "api-keys", "api-auth", "api-key-http", "calendar-boundary", "migration-preflight", "onboarding-journey", "organizations", "organization-journey", "invitations", "invitation-journey", "member-lifecycle", "member-journey", "scheduling-handoff", "handoff-journey", "provider-lifecycle", "provider-journey", "tasker", "tasker-runtime"), default="bookings")
+    parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "hosts", "team-journey", "identity-link", "api-keys", "api-auth", "api-key-http", "calendar-boundary", "migration-preflight", "onboarding-journey", "organizations", "organization-journey", "invitations", "invitation-journey", "member-lifecycle", "member-journey", "scheduling-handoff", "handoff-journey", "provider-lifecycle", "provider-journey", "tasker", "tasker-runtime", "api-assembled"), default="bookings")
     parser.add_argument("--concurrency", action="store_true", help="Run the additional deterministic booking-conflict acceptance probe")
+    parser.add_argument("--api-node-image", help="Existing local Node runtime image ID; no pull or publication")
+    parser.add_argument("--api-redis-image", help="Existing local Redis runtime image ID; no pull or publication")
     args = parser.parse_args()
+    if args.suite == "api-assembled":
+        for value in (args.api_node_image, args.api_redis_image):
+            if not value or not value.startswith("sha256:") or len(value) != 71 or any(c not in "0123456789abcdef" for c in value[7:]):
+                parser.error("api-assembled requires explicit local sha256 image IDs via --api-node-image and --api-redis-image")
+    elif args.api_node_image or args.api_redis_image:
+        parser.error("API fixture image inputs require --suite api-assembled")
+
     if args.concurrency and args.suite != "team-journey":
         parser.error("--concurrency requires --suite team-journey")
     root = Path(__file__).resolve().parent.parent
@@ -52,6 +61,10 @@ def main() -> int:
     print(f"Schema CLI: Prisma {actual} at {prisma}", flush=True)
     environment = {name: os.environ[name] for name in ("PATH", "HOME", "USER", "LANG", "NODE_PATH") if name in os.environ}
     environment["PRISMA_GENERATE_SKIP_AUTOINSTALL"] = "true"
+    if args.suite == "api-assembled":
+        environment["CAL_ENTERPRISE_API_NODE_IMAGE"] = args.api_node_image
+        environment["CAL_ENTERPRISE_API_REDIS_IMAGE"] = args.api_redis_image
+
     if args.suite == "team-journey":
         environment["CAL_TEAM_BROWSER_JOURNEY"] = "true"
     if args.suite == "onboarding-journey":
@@ -97,7 +110,7 @@ def main() -> int:
             command = ([node, "node_modules/vitest/vitest.mjs", "run", "--config", "tests/community-enterprise/vitest.postgres.config.mts", {"hosts": "tests/community-enterprise/postgres-hosts.test.ts", "teams": "tests/community-enterprise/postgres-teams.test.ts", "identity-link": "tests/community-enterprise/postgres-identity-link.test.ts", "organizations": "tests/community-enterprise/postgres-organizations.test.ts", "invitations": "tests/community-enterprise/postgres-invitations.test.ts", "member-lifecycle": "tests/community-enterprise/postgres-member-lifecycle.test.ts", "scheduling-handoff": "tests/community-enterprise/postgres-scheduling-handoff.test.ts"}[args.suite]]
                        if args.suite in ("teams", "hosts", "identity-link", "organizations", "invitations", "member-lifecycle", "scheduling-handoff") else
                        [node, "--test", "--test-reporter=spec", {"provider-lifecycle": "tests/community-enterprise/postgres-provider-lifecycle.test.cjs", "tasker": "tests/community-enterprise/postgres-tasker.test.cjs", "api-keys": "tests/community-enterprise/postgres-api-keys.test.cjs", "api-auth": "tests/community-enterprise/postgres-api-auth.test.cjs",
-                "api-key-http": "tests/community-enterprise/postgres-api-key-controller.test.cjs", "migration-preflight": "tests/community-enterprise/postgres-migration-preflight.test.cjs", "calendar-boundary": "tests/community-enterprise/postgres-calendar-boundary.test.cjs", "bookings": "tests/community-enterprise/postgres-bookings.test.cjs", "built-web": "tests/community-enterprise/built-web.test.cjs", "team-journey": "tests/community-enterprise/built-web.test.cjs", "onboarding-journey": "tests/community-enterprise/built-web.test.cjs", "organization-journey": "tests/community-enterprise/built-web.test.cjs", "invitation-journey": "tests/community-enterprise/built-web.test.cjs", "member-journey": "tests/community-enterprise/built-web.test.cjs", "handoff-journey": "tests/community-enterprise/built-web.test.cjs", "provider-journey": "tests/community-enterprise/built-web.test.cjs", "tasker-runtime": "tests/community-enterprise/built-web.test.cjs"}[args.suite]])
+                "api-key-http": "tests/community-enterprise/postgres-api-key-controller.test.cjs", "migration-preflight": "tests/community-enterprise/postgres-migration-preflight.test.cjs", "calendar-boundary": "tests/community-enterprise/postgres-calendar-boundary.test.cjs", "bookings": "tests/community-enterprise/postgres-bookings.test.cjs", "built-web": "tests/community-enterprise/built-web.test.cjs", "team-journey": "tests/community-enterprise/built-web.test.cjs", "onboarding-journey": "tests/community-enterprise/built-web.test.cjs", "organization-journey": "tests/community-enterprise/built-web.test.cjs", "invitation-journey": "tests/community-enterprise/built-web.test.cjs", "member-journey": "tests/community-enterprise/built-web.test.cjs", "handoff-journey": "tests/community-enterprise/built-web.test.cjs", "provider-journey": "tests/community-enterprise/built-web.test.cjs", "tasker-runtime": "tests/community-enterprise/built-web.test.cjs", "api-assembled": "tests/community-enterprise/api-assembled.test.cjs"}[args.suite]])
             result = subprocess.run(command, cwd=root, env=environment, timeout=480 if args.suite in ("team-journey", "onboarding-journey", "organization-journey", "invitation-journey", "member-journey", "handoff-journey", "provider-journey", "tasker-runtime") else 300)
             return result.returncode
         finally:
