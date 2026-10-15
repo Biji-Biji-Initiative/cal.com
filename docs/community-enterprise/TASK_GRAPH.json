@@ -4,7 +4,7 @@
   "programme": "Mereka hosted enterprise calendar",
   "decision_date": "2026-10-13",
   "goal": "One operator-hosted scheduling platform on the existing Cal.diy enterprise branch; retain historical value, Authentik, teams/organizations/roles, scoped APIs and community updates. No repository or deployment migration.",
-  "production_status": "unchanged; local single-host journey exercised; candidate not promotable",
+  "production_status": "Unchanged by this wave; complete current local web/API and bounded administration acceptance; no registry publication, shared preview admission or production authorization.",
   "tracking": {
     "canonical_source": "docs/community-enterprise/TASK_GRAPH.json",
     "handover_issue": 78,
@@ -32,7 +32,7 @@
     ],
     "rule": "One build/integration owner; other work is disjoint. Do not claim workers are dispatched without actual registration and evidence.",
     "ready_command": "node scripts/verify-community-enterprise-task-graph.cjs --ready",
-    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task\u2019s own required level.",
+    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task’s own required level.",
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
       "CAL-05.CORE",
@@ -346,6 +346,14 @@
           "exit_code": 0,
           "summary": "Local exact dev-origin web build/image passes; registry publication and deployed candidate are not implied.",
           "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2"
+        },
+        {
+          "file": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
+          "level": "runtime",
+          "command": "Native current-source generation, build and nine assembled web journeys; exact commands in preserved receipt",
+          "exit_code": 0,
+          "application_source": "167f457dfe1004d897144c2c6323c23df240a8c7",
+          "summary": "Fresh current immutable native build and same-source runtime acceptance; no deployed image or live external provider acceptance inferred."
         }
       ],
       "required_for_team_release": true,
@@ -389,6 +397,14 @@
           "exit_code": 0,
           "summary": "Native platform/API build and full compiled main/AppModule/bootstrap run against same current schema, real PostgreSQL and Redis. Actual profile, cookie/key, validation, rotation/audit and revocation behavior pass. No services substituted; packaging, optional worker modes and broad API scope acceptance remain separate.",
           "source_revision": "fd04d517c60ed3cdbcc2cb1dc040d6f85e40b8b5"
+        },
+        {
+          "file": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
+          "level": "runtime",
+          "command": "Native current-source generation, build and full compiled API AppModule startup with isolated PostgreSQL/Redis; exact commands in preserved receipt",
+          "exit_code": 0,
+          "application_source": "167f457dfe1004d897144c2c6323c23df240a8c7",
+          "summary": "Fresh current immutable native build and same-source runtime acceptance; no deployed image or live external provider acceptance inferred."
         }
       ],
       "required_for_team_release": true,
@@ -438,18 +454,28 @@
           "exit_code": 0,
           "summary": "Existing runtime preparer rejects uncommitted source before copying and observed source changes during preparation; completion manifest follows context/source validation. 29 bounded packaging/entrypoint cases pass; real Git/filesystem/tar with explicit trace/notice fixture boundaries. Not a fresh application build, image publication or deployed preview.",
           "code_revision": "9380134e36b50247d0cb16a9d08f7ff04a902e98"
+        },
+        {
+          "file": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
+          "level": "runtime",
+          "command": "Retained exact-source HTTPS build, source-bound runtime preparer and rootless container migration/login acceptance",
+          "exit_code": 0,
+          "application_source": "fc02e571df63ee3278680bff340f47a1e1d628e2",
+          "image_id": "sha256:e57cd80124e6bf18fed5398d5f4a874637a06fcdd172eb7e3cc2ebe02234d514",
+          "summary": "New actual HTTPS-origin local image passes packaged migration/replay and strict native login/anonymous checks. Registry publication, security disposition and actual preview/identity remain open; image ID is not a published manifest digest."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 0,
-      "progress": "Packaged local application journey is the candidate for preview admission. No shared environment or existing parked Cal workload is changed; image/public-origin, admission, real IdP and secret delivery still require realization.",
-      "progress_reference": "docs/community-enterprise/TEAM-JOURNEY-2026-10-12.md",
+      "progress": "Current combined source passes complete local web/API acceptance and extended administration paths. Existing dev/staging still serve legacy v6.2.0. Exact-source public-origin artifact is separate from admitted registry publication and live preview identities/configuration; no deployment occurred.",
+      "progress_reference": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
       "blockers": [
         "Live cal.mereka.dev is the restored legacy v6.2.0 image, not the enterprise candidate.",
         "Approved GHCR publication permissions and exact-image security disposition remain unresolved.",
-        "Native Authentik client/account/organization provisioning and anonymous guest routing need actual deployment acceptance."
+        "Native Authentik client/account/organization provisioning and anonymous guest routing need actual deployment acceptance.",
+        "Names-only current nonprod readback lacks the five native CAL_AUTHENTIK configuration keys; legacy callback-base and guest-routing cutover remain unadmitted."
       ],
       "execution_checkpoint": {
         "observed_at": "2026-10-15T18:01:47.159370+00:00",
@@ -787,7 +813,7 @@
       "parent": "CAL-05",
       "kind": "task",
       "title": "Small organization/team membership service using retained models",
-      "state": "in_progress",
+      "state": "source_proven",
       "requires": [
         "CAL-03.POLICY",
         "CAL-02.INSTALL"
@@ -836,14 +862,23 @@
           "exit_code": 0,
           "summary": "One explicit shared host assignment can be handed to an accepted successor and their own availability, then eligible planned offboarding can finish. Existing future appointments/provider bindings still require their actual handoff lifecycle.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
+        },
+        {
+          "file": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite custom-role-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "application_source": "167f457dfe1004d897144c2c6323c23df240a8c7",
+          "test_source": "fc02e571df63ee3278680bff340f47a1e1d628e2",
+          "summary": "Nine retained native journeys and four extended UI cases pass on one exact local build; current 570 source/53 role-DB cases pass. Operator-service admitted fresh member setup, keyboard org isolation and response-bound invitation consent are proven; optional providers skipped as allowed, never claimed connected."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 0,
-      "progress": "Reviewed operator admission and existing-account invitation/accept/decline/cancel now share retained models and current-state permission checks. Personal calendars and other memberships are preserved. New-account enrollment, accepted-member offboarding, custom-role editing and full directory lifecycle remain open.",
-      "progress_reference": "docs/community-enterprise/INVITATION-ACCEPTANCE-2026-10-14.md",
+      "progress": "Original retained-model source service contract accepted on current native application. Real shared-preview/IdP/provider/revocation/migration and broader API grants remain separate requirements.",
+      "progress_reference": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
       "progress_summary": "One explicit shared host assignment can be handed to an accepted successor and their own availability, then eligible planned offboarding can finish. Existing future appointments/provider bindings still require their actual handoff lifecycle."
     },
     {
@@ -851,7 +886,7 @@
       "parent": "CAL-05",
       "kind": "task",
       "title": "Routine team administration through the existing UI",
-      "state": "in_progress",
+      "state": "runtime_proven",
       "requires": [
         "CAL-05.CORE",
         "CAL-04.OIDC"
@@ -909,14 +944,23 @@
           "exit_code": 0,
           "summary": "Actual browser selects successor/schedule, previews precise effects, rejects changed review, commits handoff and separately removes eligible old access. No live product/deployment acceptance implied.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
+        },
+        {
+          "file": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite onboarding-journey --accepted-organization-member --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "application_source": "167f457dfe1004d897144c2c6323c23df240a8c7",
+          "test_source": "fc02e571df63ee3278680bff340f47a1e1d628e2",
+          "summary": "Nine retained native journeys and four extended UI cases pass on one exact local build; current 570 source/53 role-DB cases pass. Operator-service admitted fresh member setup, keyboard org isolation and response-bound invitation consent are proven; optional providers skipped as allowed, never claimed connected."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 1,
-      "progress": "First-run, first-organization and three-identity invitation consent flows pass on assembled local candidate alongside guest/team booking regressions. Pending, expiry/cancel and email-submission failure are explicit. Live identities/provider and broader member lifecycle acceptance remain open.",
-      "progress_reference": "docs/community-enterprise/INVITATION-ACCEPTANCE-2026-10-14.md",
+      "progress": "Original assembled routine administration UI contract accepted on current native application. Real shared-preview/IdP/provider/revocation/migration and broader API grants remain separate requirements.",
+      "progress_reference": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
       "progress_summary": "Actual browser selects successor/schedule, previews precise effects, rejects changed review, commits handoff and separately removes eligible old access. No live product/deployment acceptance implied."
     },
     {
@@ -1108,7 +1152,7 @@
           "level": "runtime",
           "command": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
-          "summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
+          "summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         },
         {
@@ -1126,7 +1170,7 @@
       "priority": 1,
       "progress": "Packaged native OIDC through a TLS fixture, Chromium team administration, directed/same-host/rerouted bookings and collective availability are locally proven with PostgreSQL and non-relaying SMTP. Not deployed Authentik, connected external calendars or shared preview admission.",
       "progress_reference": "docs/community-enterprise/MULTI-HOST-2026-10-12.md",
-      "progress_summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
+      "progress_summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
     },
     {
       "id": "CAL-07.AUDIT",
@@ -1482,7 +1526,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/GRAPH-BURNDOWN-2026-10-15.md",
+  "latest_evidence": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",

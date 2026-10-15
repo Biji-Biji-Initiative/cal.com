@@ -1,0 +1,363 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-15T21:43:18.238889+00:00",
+  "repository": "Biji-Biji-Initiative/cal.com",
+  "branch": "work/cal-diy-enterprise-20261010",
+  "applicationSource": "167f457dfe1004d897144c2c6323c23df240a8c7",
+  "verificationSource": "fc02e571df63ee3278680bff340f47a1e1d628e2",
+  "testOnlyDelta": {
+    "scripts/run-community-enterprise-postgres.py": "69c8e44816a561f6307c966b1c566750cc43ce1072fcdd63e63331d3e0613623",
+    "tests/community-enterprise/built-web.test.cjs": "8b8c159298b51cb8ce2a95c3d67737ab6ebacfc19f2ace33e9a44a2e5d7e4b93",
+    "tests/community-enterprise/invitation-browser-journey.cjs": "1768769c5bd2f8ad568ec15868ec854ee74a38b6e683355fb8d4409ef9853649",
+    "tests/community-enterprise/onboarding-browser-journey.cjs": "f6cd6e7642dc935d385c7b30ac589798727e764e05cfb71585dc84a46b18ecd6",
+    "tests/community-enterprise/onboarding-contract.test.cjs": "45f3b60feffd29892b7f97c8befde79710637d01f14ecec0349d145039e2ca73",
+    "tests/community-enterprise/organization-browser-journey.cjs": "cfcd40477d2c9ee80382386599c22a1a3e07dd902909486d678471dd1ca2ac38",
+    "tests/community-enterprise/task-graph.test.cjs": "54d1b14ca7523c7832b1bb666cc9a4ae77bfc5832e7e0e8622eda6fdf6b28991"
+  },
+  "dependencyLockSha256": "cf5d55e96d254c4a0483728a96c47493b974a530c9247cf1f2ac2b0e652c8258",
+  "web": {
+    "buildId": "lU8Gd2j2pm5ibfjHrcqdc",
+    "manifestSha256": "aceeac49539300f19ac4793c82c13b30d6acebc94bf439d1e13aeb3bd85d0aed",
+    "origin": "http://127.0.0.1:38917",
+    "retainedJourneys": {
+      "invitation-journey": {
+        "exit_code": 0,
+        "seconds": 42.3,
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "invitation-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ]
+      },
+      "custom-role-journey": {
+        "exit_code": 0,
+        "seconds": 23.0,
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "custom-role-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ]
+      },
+      "organization-journey": {
+        "exit_code": 0,
+        "seconds": 17.1,
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "organization-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ]
+      },
+      "onboarding-journey": {
+        "exit_code": 0,
+        "seconds": 22.0,
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "onboarding-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ]
+      },
+      "member-journey": {
+        "exit_code": 0,
+        "seconds": 24.4,
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "member-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ]
+      },
+      "handoff-journey": {
+        "exit_code": 0,
+        "seconds": 19.2,
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "handoff-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ]
+      },
+      "provider-journey": {
+        "exit_code": 0,
+        "seconds": 18.4,
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "provider-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ]
+      },
+      "tasker-runtime": {
+        "exit_code": 0,
+        "seconds": 12.4,
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "tasker-runtime",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ]
+      },
+      "team-journey": {
+        "exit_code": 0,
+        "seconds": 24.6,
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "team-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ]
+      }
+    },
+    "extendedChecks": {
+      "invitation-response-bound": {
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "invitation-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ],
+        "exit_code": 0,
+        "seconds": 44.6
+      },
+      "keyboard-organization": {
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "organization-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ],
+        "exit_code": 0,
+        "seconds": 33.2
+      },
+      "onboarding-standard": {
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "onboarding-journey",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ],
+        "exit_code": 0,
+        "seconds": 26.5
+      },
+      "onboarding-accepted-member": {
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "onboarding-journey",
+          "--accepted-organization-member",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ],
+        "exit_code": 0,
+        "seconds": 31.7
+      }
+    },
+    "scope": "native compiled web, private PostgreSQL, native sessions/TLS test issuer; optional onboarding connections skipped, external provider HTTP intercepted"
+  },
+  "api": {
+    "compiledMainSha256": "9fd306de7b8ddf7b14516609c25b1a26c7b806bb7dfe277c0376aa43b93f5df0",
+    "fullAppModuleRuntimeExit": 0,
+    "realPostgreSqlAndRedis": true,
+    "replacedApplicationServices": false,
+    "deployedApiImage": false
+  },
+  "sourceCases": {
+    "passed": 570,
+    "failed": 0,
+    "skipped": 0,
+    "command": "yarn test:community-enterprise"
+  },
+  "roleDatabaseCases": {
+    "passed": 53,
+    "failed": 0,
+    "skipped": 0,
+    "command": "python3 scripts/run-community-enterprise-postgres.py --suite custom-roles --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp"
+  },
+  "invitationControl": {
+    "originalAssertionExit": 1,
+    "renderAssertionTimeoutMilliseconds": 5000,
+    "actualInboxDelayMilliseconds": 6000,
+    "correctedResponseBoundExit": 0,
+    "applicationChanged": false,
+    "historicalDelayCauseProven": false
+  },
+  "image": {
+    "sourceSha": "fc02e571df63ee3278680bff340f47a1e1d628e2",
+    "publicOrigin": "https://cal.mereka.dev",
+    "buildId": "mWs-lMnuzoe4xV--OxtBj",
+    "imageId": "sha256:e57cd80124e6bf18fed5398d5f4a874637a06fcdd172eb7e3cc2ebe02234d514",
+    "localTag": "cal-enterprise-qualified-local:fc02e571df63",
+    "bytes": 374103905,
+    "registryPublished": false,
+    "dockerfileSha256": "96d448a040c1fc925d750c30d21745a0546bba7f1f9689cc7bab8ef281fbd618",
+    "entrypointSha256": "154865f25c2c794bbd68ab45d562a4a0c5732c098c976c3f0161c5f2116193ac"
+  },
+  "containerChecks": {
+    "imageId": "sha256:e57cd80124e6bf18fed5398d5f4a874637a06fcdd172eb7e3cc2ebe02234d514",
+    "sourceSha": "fc02e571df63ee3278680bff340f47a1e1d628e2",
+    "publicOrigin": "https://cal.mereka.dev",
+    "checks": [
+      {
+        "name": "explicit migration against an empty isolated database",
+        "exit_code": 0
+      },
+      {
+        "name": "migration replay has no pending changes",
+        "exit_code": 0
+      },
+      {
+        "name": "rootless read-only image serves correct native public callback",
+        "exit_code": 0
+      },
+      {
+        "name": "login renders from migrated database without test-origin or secret leakage",
+        "exit_code": 0
+      },
+      {
+        "name": "anonymous user remains unauthenticated",
+        "exit_code": 0
+      }
+    ],
+    "appliedMigrationCount": 596,
+    "expectedMigrationCount": 596,
+    "exit_code": 0,
+    "completedAt": "2026-10-15T21:36:05.398204+00:00"
+  },
+  "imageScan": {
+    "source": "fc02e571df63ee3278680bff340f47a1e1d628e2",
+    "imageId": "sha256:e57cd80124e6bf18fed5398d5f4a874637a06fcdd172eb7e3cc2ebe02234d514",
+    "scanner": "Version: 0.75.0",
+    "scanner_archive_sha256": "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f",
+    "command_exit": 0,
+    "observed_at": "2026-10-15T21:37:01.248180+00:00",
+    "vulnerabilityCounts": {
+      "LOW": 66,
+      "HIGH": 113,
+      "MEDIUM": 143,
+      "UNKNOWN": 3
+    },
+    "secretFindings": 0,
+    "secretRuleIds": [],
+    "criticalDetails": [],
+    "qualification_pass": true,
+    "release_approved": false,
+    "gate_scope": "critical-and-secret floor only; HIGH findings and deployment prerequisites remain open"
+  },
+  "artifactAudit": {
+    "source": "fc02e571df63ee3278680bff340f47a1e1d628e2",
+    "image_id": "sha256:e57cd80124e6bf18fed5398d5f4a874637a06fcdd172eb7e3cc2ebe02234d514",
+    "image_descriptor_media_type": "application/vnd.oci.image.index.v1+json",
+    "public_origin": "https://cal.mereka.dev",
+    "manifest_matches_actual_image": true,
+    "scanner_bound_to_same_image": true,
+    "scanner_categories": [
+      [
+        "os-pkgs",
+        "debian"
+      ],
+      [
+        "lang-pkgs",
+        "node-pkg"
+      ]
+    ],
+    "license_notices": 772,
+    "trace_warning_count": 3,
+    "cleanup": {
+      "container": "absent by exact created ID",
+      "network": "absent by exact created ID",
+      "database": "owned temp fixture removed after explicit server stop"
+    },
+    "registry_publication": false,
+    "verified_at": "2026-10-15T21:39:00.557997+00:00"
+  },
+  "taskClosures": [
+    {
+      "id": "CAL-05.CORE",
+      "state": "source_proven"
+    },
+    {
+      "id": "CAL-05.UI",
+      "state": "runtime_proven"
+    }
+  ],
+  "graph": {
+    "records": 39,
+    "executableTasks": 29,
+    "completed": 12,
+    "remaining": 17,
+    "releaseMilestonesCompleted": false
+  },
+  "rawReceiptSha256": {
+    "integration/receipt.json": "d291b77d9f4889352c28075efc139ac042f639f289647e53e17afdb1bf45f135",
+    "api/receipt.json": "b3e51b2c19ebf6959f246a582d4afd798c8c48b9d6c24906b466ff6fe1575f40",
+    "extended-ui/receipt.json": "7ce0805cbc392d0e28d4044b9b037172eaabfc76c73176cd4bf33b489b48ef0e",
+    "invitation-negative.json": "50e2afed755d99e9347826098d193e21d8e522a234b53b3d83e67ae37bac7e9a",
+    "validation/receipt.json": "02473612c192016b59bce284df34085910d77733caeac9065bc4811fd1d2742f",
+    "public-artifact/build-receipt.json": "164f28d68d192da68f716cbb2b7815333f80fdad70bf0ec5dcb455c6bd76b7de",
+    "public-artifact/image-receipt.json": "8111d7161f949f20be02a899a7a267f7f53dc1bdbb95f4630b29f0a2d0c0a961",
+    "public-artifact/container-test.json": "09d6eb00bcf848ebea7815cb54c9eb8ec4a40cf0640c6014488b88d25e00eccc",
+    "public-artifact/qualified-image-scan.json": "bcc10f646907832f57e6b7267e11abc175acdde99814f47cf4629a289d351bf0",
+    "public-artifact/final-audit.json": "2a1e0b6556bec1a226722c67a6de4df7310ffb88db1fee22185a3a4ad6985f5d"
+  },
+  "boundaries": [
+    "No registry publication",
+    "No real staff/IdP/provider or participant changes",
+    "No deployment, production data or namespace changes",
+    "HIGH image findings unresolved",
+    "Source and local runtime acceptance are not shared-preview acceptance"
+  ]
+}

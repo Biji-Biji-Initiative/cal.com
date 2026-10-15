@@ -1,6 +1,24 @@
 # Cal.diy-based enterprise service — implementation record
 
-## Latest: acceptance-driven burndown, not another parallel programme
+## Latest execution checkpoint — 16 October 2026
+
+[Integrated native acceptance](MEGA-WAVE-ACCEPTANCE-2026-10-16.md) records the
+fresh web/API builds, nine retained journeys, response-bound invitation checks,
+keyboard organization switching and real-service-admitted member onboarding.
+CAL-05.CORE is source_proven and CAL-05.UI is runtime_proven at their original
+bounded local contracts. Together with the prior identity-link and historical
+fork reconciliation closures, **12 of 29 executable tasks are complete and 17
+remain** at this checkpoint. All 39 original nodes and release milestones remain;
+this is not a product-readiness percentage or a deployed staff preview.
+
+The report separates loopback tests from the newly attempted HTTPS-origin image,
+its actual container/security result and unresolved publication/configuration.
+Existing dev/staging still serve the legacy application. Optional provider steps
+may be skipped under the product contract, but no skipped connection is reported
+as verified. Live IdP, actual provider/replica behavior, migration and release
+remain explicitly gated. Run the canonical `--status` command for current state.
+
+## Previous: acceptance-driven graph burndown (15 October)
 
 [The graph acceptance review](GRAPH-BURNDOWN-2026-10-15.md) closes CAL-02.API,
 CAL-04.SESSION and CAL-06.REUSE against their existing criteria. The **39 records
