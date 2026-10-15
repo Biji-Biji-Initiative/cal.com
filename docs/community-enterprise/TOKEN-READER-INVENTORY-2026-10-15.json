@@ -1,0 +1,268 @@
+{
+  "scope": "Tracked production apps/packages syntax; imported runtime token bindings and direct calls. Not indirect-call resolution, route reachability, all bearer handlers or runtime revocation proof.",
+  "filesInspected": 4398,
+  "entries": [
+    {
+      "file": "apps/api/v2/src/modules/auth/guards/permissions/permissions.guard.ts",
+      "bindings": [
+        {
+          "module": "next-auth/jwt",
+          "local": "getToken",
+          "imported": "getToken",
+          "type": "named",
+          "line": 10,
+          "calls": [
+            {
+              "operation": "getToken",
+              "line": 37
+            }
+          ]
+        }
+      ],
+      "source_sha256": "1f784b54cfa8b2b9f8156c97bfbb3401fcd2d935d6ac5c95d68cf3703fbc321d",
+      "review": "Separate bearer/permission guard. Reads a native token but does not independently refresh it here; complete guard ordering and resource authorization remain CAL-03.ROUTES/CAL-05.API, not certified by session-helper closure."
+    },
+    {
+      "file": "apps/api/v2/src/modules/auth/strategies/api-auth/api-auth.strategy.ts",
+      "bindings": [
+        {
+          "module": "next-auth/jwt",
+          "local": "getToken",
+          "imported": "getToken",
+          "type": "named",
+          "line": 7,
+          "calls": [
+            {
+              "operation": "getToken",
+              "line": 108
+            }
+          ]
+        }
+      ],
+      "source_sha256": "a3771c9b0f7c34e2ad5efc399321262e2b970dfdbe53a7d25472ae1f4686b3e4",
+      "review": "Native token branch delegates to current-primary session resolution; source and native API tests cover that branch. OAuth, API-key scopes and all endpoint guards have separate acceptance."
+    },
+    {
+      "file": "apps/api/v2/src/modules/auth/strategies/next-auth/next-auth.strategy.ts",
+      "bindings": [
+        {
+          "module": "next-auth/jwt",
+          "local": "getToken",
+          "imported": "getToken",
+          "type": "named",
+          "line": 5,
+          "calls": [
+            {
+              "operation": "getToken",
+              "line": 24
+            }
+          ]
+        }
+      ],
+      "source_sha256": "cd94f8af9eee8abca1796cea288cd62d2cf88e11c65ce981e3533969208d06db",
+      "review": "Native-only strategy delegates to current-primary session resolution; tested lock/unlink/rebind and profile boundaries, not real IdP lifecycle."
+    },
+    {
+      "file": "apps/api/v2/src/modules/jwt/jwt.module.ts",
+      "bindings": [
+        {
+          "module": "@nestjs/jwt",
+          "local": "NestJwtModule",
+          "imported": "JwtModule",
+          "type": "named",
+          "line": 4,
+          "calls": []
+        }
+      ],
+      "source_sha256": "b1425512b120e027ce95fd6b2016855be6ba8944d8e1960c4c4b87a3b7bb8850",
+      "review": "Dependency/module configuration, not itself a request authorizer."
+    },
+    {
+      "file": "apps/api/v2/src/modules/jwt/jwt.service.ts",
+      "bindings": [
+        {
+          "module": "@nestjs/jwt",
+          "local": "NestJwtService",
+          "imported": "JwtService",
+          "type": "named",
+          "line": 2,
+          "calls": []
+        }
+      ],
+      "source_sha256": "b7be3cad2705219ef1f70f85787f53ecd7a2775f8f9daa9626d8229294235714",
+      "review": "Injected Nest JWT wrapper signs and decodes tokens. Decoding alone is not authentication. Callers belong to the remaining bearer authorization audit."
+    },
+    {
+      "file": "apps/api/v2/src/modules/oauth-clients/oauth-client.module.ts",
+      "bindings": [
+        {
+          "module": "@nestjs/jwt",
+          "local": "JwtService",
+          "imported": "JwtService",
+          "type": "named",
+          "line": 30,
+          "calls": []
+        }
+      ],
+      "source_sha256": "f7054a2407950b3e3cb982eced650c8cdf254f2a7741d84465b38a9480112e65",
+      "review": "Injects native JWT implementation for OAuth services; route authority is not established by this import."
+    },
+    {
+      "file": "apps/api/v2/src/modules/tokens/tokens.service.ts",
+      "bindings": [
+        {
+          "module": "jsonwebtoken",
+          "local": "jwt",
+          "imported": "default",
+          "type": "namespace",
+          "line": 4,
+          "calls": [
+            {
+              "operation": "verify",
+              "line": 40
+            }
+          ]
+        }
+      ],
+      "source_sha256": "d992740ed00246436c830d48f24057a6ac47ecb6ba7ceafe678fc390b8593767",
+      "review": "Separate OAuth token verifier. Not covered as complete by native-session acceptance; bind to CAL-05.API/ROUTES."
+    },
+    {
+      "file": "apps/web/server/lib/auth/login/getServerSideProps.tsx",
+      "bindings": [
+        {
+          "module": "jose",
+          "local": "jwtVerify",
+          "imported": "jwtVerify",
+          "type": "named",
+          "line": 9,
+          "calls": [
+            {
+              "operation": "jwtVerify",
+              "line": 22
+            }
+          ]
+        }
+      ],
+      "source_sha256": "c3a36a1469d336cfaa899fbe16654f8725781dff5a4ca4fcdf0a5e5a8fde4c64",
+      "review": "Legacy TOTP token branch is gated off by strict Authentik-only policy; native login uses the refreshed getServerSession path. No real IdP/MFA acceptance claimed."
+    },
+    {
+      "file": "packages/features/auth/lib/getLocale.ts",
+      "bindings": [
+        {
+          "module": "next-auth/jwt",
+          "local": "getToken",
+          "imported": "getToken",
+          "type": "named",
+          "line": 4,
+          "calls": [
+            {
+              "operation": "getToken",
+              "line": 30
+            }
+          ]
+        }
+      ],
+      "source_sha256": "42449bc24f825d13b200777af991bfa8e825dd4515247dec77a7e635a5e159f8",
+      "review": "Uses native token locale for presentation, not membership or identity authority."
+    },
+    {
+      "file": "packages/features/auth/lib/getServerSession.ts",
+      "bindings": [
+        {
+          "module": "next-auth/jwt",
+          "local": "getToken",
+          "imported": "getToken",
+          "type": "named",
+          "line": 11,
+          "calls": [
+            {
+              "operation": "getToken",
+              "line": 49
+            }
+          ]
+        }
+      ],
+      "source_sha256": "fff05931a6e7ee0940d71061677a49d4b306d8852dca3a79c8e8026f79b12bd8",
+      "review": "Native marker branch refreshes authoritative account/profile state before returning a session. No pre-validation cached authorization return. This is part of CAL-04.SESSION source acceptance."
+    },
+    {
+      "file": "packages/features/auth/lib/next-auth-options.ts",
+      "bindings": [
+        {
+          "module": "next-auth/jwt",
+          "local": "encode",
+          "imported": "encode",
+          "type": "named",
+          "line": 54,
+          "calls": []
+        }
+      ],
+      "source_sha256": "bf32b630b076bcc7c3d3b6a004f1cd6e022a8b44e80e06a91ab5aac31e45c77e",
+      "review": "Native session encode and provider callbacks. Authentik callback/update tests reject client identity/role/impersonation changes; other provider policies are separate."
+    },
+    {
+      "file": "packages/features/auth/lib/oAuthAuthorization.ts",
+      "bindings": [
+        {
+          "module": "jsonwebtoken",
+          "local": "jwt",
+          "imported": "default",
+          "type": "namespace",
+          "line": 1,
+          "calls": [
+            {
+              "operation": "verify",
+              "line": 9
+            }
+          ]
+        }
+      ],
+      "source_sha256": "5bf55f7979d52fa545d54f63cf48d51de9c95e40851d723593d4bf666600b0cd",
+      "review": "Separate OAuth bearer authorization helper. No all-bearer or all-route completion is inferred from native-session tests."
+    },
+    {
+      "file": "packages/features/auth/lib/signJwt.ts",
+      "bindings": [
+        {
+          "module": "jose",
+          "local": "SignJWT",
+          "imported": "SignJWT",
+          "type": "named",
+          "line": 1,
+          "calls": []
+        }
+      ],
+      "source_sha256": "7c0b791696348701355a9e892c1a02e7a150307091b1b05bdecf0c02e04525ac",
+      "review": "JWT signing helper, not a direct reader/permission proof."
+    },
+    {
+      "file": "packages/features/oauth/services/OAuthService.ts",
+      "bindings": [
+        {
+          "module": "jsonwebtoken",
+          "local": "jwt",
+          "imported": "default",
+          "type": "namespace",
+          "line": 11,
+          "calls": [
+            {
+              "operation": "verify",
+              "line": 480
+            }
+          ]
+        }
+      ],
+      "source_sha256": "d38cd4227f7ed0b7a3f95cd054707fe650c6b4cd1d5644725023650fdd8c30ec",
+      "review": "OAuth refresh-token verification path, distinct from native browser-session binding and real IdP revocation."
+    }
+  ],
+  "schema_version": 1,
+  "source_revision": "fd04d517c60ed3cdbcc2cb1dc040d6f85e40b8b5",
+  "generator": "scripts/inventory-enterprise-token-readers.cjs",
+  "generator_sha256": "8be9a548647714740f799d4ddc781434af62bf27a0758483d07a23ee8ceca399",
+  "review_date": "2026-10-15",
+  "source_only": true,
+  "all_bearer_routes_certified": false
+}
