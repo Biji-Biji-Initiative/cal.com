@@ -1,11 +1,10 @@
 import { createHmac } from "node:crypto";
-import { compile } from "handlebars";
-
 import type { TGetTranscriptAccessLink } from "@calcom/app-store/dailyvideo/zod";
 import { getHumanReadableLocationValue } from "@calcom/app-store/locations";
-import type { WebhookSubscriber, PaymentData } from "@calcom/features/webhooks/lib/dto/types";
+import type { PaymentData, WebhookSubscriber } from "@calcom/features/webhooks/lib/dto/types";
 import { getUTCOffsetByTimezone } from "@calcom/lib/dayjs";
 import type { CalendarEvent, Person } from "@calcom/types/Calendar";
+import { compile } from "handlebars";
 
 // Minimal webhook shape for sending payloads (subset of WebhookSubscriber)
 type WebhookForPayload = Pick<WebhookSubscriber, "subscriberUrl" | "appId" | "payloadTemplate" | "version">;
@@ -103,10 +102,7 @@ export type EventPayloadType = Omit<CalendarEvent, "assignmentReason"> &
       | null;
   };
 
-export type WebhookPayloadType =
-  | EventPayloadType
-  | OOOEntryPayloadType
-  | BookingNoShowUpdatedPayload;
+export type WebhookPayloadType = EventPayloadType | OOOEntryPayloadType | BookingNoShowUpdatedPayload;
 
 type WebhookDataType = WebhookPayloadType & { triggerEvent: string; createdAt: string };
 
@@ -219,7 +215,8 @@ const sendPayload = async (
   triggerEvent: string,
   createdAt: string,
   webhook: WebhookForPayload,
-  data: WebhookPayloadType
+  data: WebhookPayloadType,
+  signal?: AbortSignal
 ) => {
   const { appId, payloadTemplate: template } = webhook;
 
@@ -238,10 +235,7 @@ const sendPayload = async (
   }
 
   if (body === undefined) {
-    if (
-      template &&
-      (isOOOEntryPayload(data) || isEventPayload(data) || isNoShowPayload(data))
-    ) {
+    if (template && (isOOOEntryPayload(data) || isEventPayload(data) || isNoShowPayload(data))) {
       body = applyTemplate(template, { ...data, triggerEvent, createdAt }, contentType);
     } else {
       body = JSON.stringify({
@@ -252,7 +246,7 @@ const sendPayload = async (
     }
   }
 
-  return _sendPayload(secretKey, webhook, body, contentType);
+  return _sendPayload(secretKey, webhook, body, contentType, signal);
 };
 
 export const sendGenericWebhookPayload = async ({
@@ -302,7 +296,8 @@ const _sendPayload = async (
   secretKey: string | null,
   webhook: WebhookForPayload,
   body: string,
-  contentType: "application/json" | "application/x-www-form-urlencoded"
+  contentType: "application/json" | "application/x-www-form-urlencoded",
+  signal?: AbortSignal
 ) => {
   const { subscriberUrl, version } = webhook;
   if (!subscriberUrl || !body) {
@@ -317,6 +312,7 @@ const _sendPayload = async (
       "X-Cal-Webhook-Version": version,
     },
     redirect: "manual",
+    signal,
     body,
   });
 

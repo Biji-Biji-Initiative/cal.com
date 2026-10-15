@@ -1,18 +1,17 @@
-import { v4 } from "uuid";
-
 import { DailyLocationType, getHumanReadableLocationValue } from "@calcom/app-store/locations";
 import { selectOOOEntries } from "@calcom/app-store/zapier/api/subscriptions/listOOOEntries";
 import dayjs from "@calcom/dayjs";
 import { getCalEventResponses } from "@calcom/features/bookings/lib/getCalEventResponses";
 import tasker from "@calcom/features/tasker";
+import { getTranslation } from "@calcom/i18n/server";
 import logger from "@calcom/lib/logger";
 import { safeStringify } from "@calcom/lib/safeStringify";
 import { withReporting } from "@calcom/lib/sentryWrapper";
-import { getTranslation } from "@calcom/i18n/server";
 import { prisma } from "@calcom/prisma";
-import type { Prisma, Webhook, Booking, ApiKey } from "@calcom/prisma/client";
+import type { ApiKey, Booking, Prisma, Webhook } from "@calcom/prisma/client";
 import { BookingStatus, WebhookTriggerEvents } from "@calcom/prisma/enums";
 import { bookingMetadataSchema } from "@calcom/prisma/zod-utils";
+import { v4 } from "uuid";
 import { DEFAULT_WEBHOOK_VERSION, type WebhookVersion } from "./interface/IWebhookRepository";
 
 const SCHEDULING_TRIGGER: WebhookTriggerEvents[] = [
@@ -611,26 +610,20 @@ export async function cancelNoShowTasksForBooking({
     } else if (triggerEvent === WebhookTriggerEvents.AFTER_GUESTS_CAL_VIDEO_NO_SHOW) {
       await tasker.cancelWithReference(bookingUid, "triggerGuestNoShowWebhook");
     } else {
-      await prisma.task.deleteMany({
-        where: {
-          referenceUid: bookingUid,
-        },
-      });
+      // Only no-show work belongs to this cancellation. Use the retained
+      // Tasker guard so active/unconfirmed effects and unrelated tasks survive.
+      await tasker.cancelWithReference(bookingUid, "triggerHostNoShowWebhook");
+      await tasker.cancelWithReference(bookingUid, "triggerGuestNoShowWebhook");
     }
   } else if (webhook) {
     const bookings = await fetchBookingsFromWebhook(webhook);
 
     if (bookings.length === 0) return;
 
-    const promises = bookings.map(async (booking) => {
-      return await prisma.task.deleteMany({
-        where: {
-          referenceUid: booking.uid,
-        },
-      });
-    });
-
-    await Promise.all(promises);
+    for (const booking of bookings) {
+      await tasker.cancelWithReference(booking.uid, "triggerHostNoShowWebhook");
+      await tasker.cancelWithReference(booking.uid, "triggerGuestNoShowWebhook");
+    }
   }
 }
 
