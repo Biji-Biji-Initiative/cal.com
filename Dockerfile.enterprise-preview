@@ -9,6 +9,10 @@ RUN apt-get update \
       libssl3t64=3.5.7-1~deb13u3 \
       ca-certificates=20250419 \
  && rm -rf /var/lib/apt/lists/*
+# Runtime and migration commands use the packaged Node/Prisma binaries directly.
+# Do not ship unused network-capable installers and their vulnerable dependency trees.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn-v1.22.22 \
+ && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 ARG SOURCE_SHA
 ARG BUILD_ID
 ARG DOCKERFILE_SHA256
