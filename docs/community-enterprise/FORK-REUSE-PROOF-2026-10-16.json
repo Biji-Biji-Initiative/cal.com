@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "observed_at": "2026-10-15T18:28:13.180959+00:00",
+  "snapshots": {
+    "legacy": {
+      "repository": "calcom/cal.diy",
+      "commit": "1c193cca8682b33b9866c792186033f7ef886682",
+      "tree": "1c193cca8682b33b9866c792186033f7ef886682",
+      "truncated": false,
+      "blob_count": 10341,
+      "tree_response_sha256": "469e4034dbad332fe4a15f909baca9bc33b22c6efdf0f448d1fee59c0059a7b4",
+      "url": "https://api.github.com/repos/calcom/cal.diy/git/trees/1c193cca8682b33b9866c792186033f7ef886682?recursive=1"
+    },
+    "fork": {
+      "repository": "Biji-Biji-Initiative/cal.com",
+      "commit": "e01d0d5f8cfec4dd910c2aae486b4857f6b8a256",
+      "tree": "e01d0d5f8cfec4dd910c2aae486b4857f6b8a256",
+      "truncated": false,
+      "blob_count": 10495,
+      "tree_response_sha256": "082d3a7c082a73c5921885ea89efb6adc1fd2e61f6c11c071498e2ae0b0a8035",
+      "url": "https://api.github.com/repos/Biji-Biji-Initiative/cal.com/git/trees/e01d0d5f8cfec4dd910c2aae486b4857f6b8a256?recursive=1"
+    },
+    "upstream": {
+      "repository": "calcom/cal.diy",
+      "commit": "54343aa685ae8f33159d2f485ec4a57bad5c574a",
+      "tree": "54343aa685ae8f33159d2f485ec4a57bad5c574a",
+      "truncated": false,
+      "blob_count": 7702,
+      "tree_response_sha256": "ac16d26f840f199b71e34712d694c2fa16bcc03daae1b8b1829cc7001449c0b5",
+      "url": "https://api.github.com/repos/calcom/cal.diy/git/trees/54343aa685ae8f33159d2f485ec4a57bad5c574a?recursive=1"
+    },
+    "candidate": {
+      "repository": "Biji-Biji-Initiative/cal.com",
+      "commit": "6a8e2858ebe948cd7d94678b082ad9f992cb17e7",
+      "tree": "6a8e2858ebe948cd7d94678b082ad9f992cb17e7",
+      "truncated": false,
+      "blob_count": 7865,
+      "tree_response_sha256": "01b68cf01050fd7593f4246af39644fe147f66bef5ba741f84a91bf73e382f54",
+      "url": "https://api.github.com/repos/Biji-Biji-Initiative/cal.com/git/trees/6a8e2858ebe948cd7d94678b082ad9f992cb17e7?recursive=1"
+    },
+    "fork_main": {
+      "repository": "Biji-Biji-Initiative/cal.com",
+      "commit": "7a6ce165fa4c0054acaeca1a6c3d6d6b3ce787a2",
+      "tree": "7a6ce165fa4c0054acaeca1a6c3d6d6b3ce787a2",
+      "truncated": false,
+      "blob_count": 10495,
+      "tree_response_sha256": "04bd90bee0e7f52ebe716492d312ae7f1de736ab58ed76d337b761de9bccaa5c",
+      "url": "https://api.github.com/repos/Biji-Biji-Initiative/cal.com/git/trees/7a6ce165fa4c0054acaeca1a6c3d6d6b3ce787a2?recursive=1"
+    },
+    "old_merged_upstream": {
+      "repository": "calcom/cal.diy",
+      "commit": "facc0745d3c4bc77f97f56a5458dbe06f2f5f173",
+      "tree": "facc0745d3c4bc77f97f56a5458dbe06f2f5f173",
+      "truncated": false,
+      "blob_count": 10463,
+      "tree_response_sha256": "dddb444f29fa7b8b18ccd8c43b4a32bb3ab9498f863e11fd898c327e52cedd6a",
+      "url": "https://api.github.com/repos/calcom/cal.diy/git/trees/facc0745d3c4bc77f97f56a5458dbe06f2f5f173?recursive=1"
+    },
+    "reconciled_candidate": {
+      "repository": "Biji-Biji-Initiative/cal.com",
+      "commit": "815e7fd739c71a0de4e2fe30c21845c05f69dbd8",
+      "tree": "815e7fd739c71a0de4e2fe30c21845c05f69dbd8",
+      "truncated": false,
+      "blob_count": 7868,
+      "tree_response_sha256": "08df945f31b97572aeacb3c35c05def481f72a8e6cc9078b39efbe26da1b580b",
+      "url": "https://api.github.com/repos/Biji-Biji-Initiative/cal.com/git/trees/815e7fd739c71a0de4e2fe30c21845c05f69dbd8?recursive=1"
+    }
+  },
+  "historical_merge": {
+    "commit": "296c209389cdea45be319fd91358b5b0c90893b6",
+    "parents": [
+      "76e76afb39a454f6e33ebd577627986e297327c4",
+      "facc0745d3c4bc77f97f56a5458dbe06f2f5f173"
+    ],
+    "url": "https://github.com/Biji-Biji-Initiative/cal.com/commit/296c209389cdea45be319fd91358b5b0c90893b6"
+  },
+  "historical_custom_changes": 59,
+  "naive_tag_comparison_changes": 658,
+  "nonfork_upstream_changes_in_naive_comparison": 599,
+  "dispositions": {
+    "unresolved": 28,
+    "obsolete": 7,
+    "replaced": 13,
+    "retained": 11
+  },
+  "current_downstream": {
+    "source": "815e7fd739c71a0de4e2fe30c21845c05f69dbd8",
+    "identical_files": 7596,
+    "changed": 106,
+    "added": 166,
+    "removed": 0,
+    "note": "File-level patch surface, not feature completion, runtime acceptance or blanket licensing clearance."
+  },
+  "license_snapshots": {
+    "historical_root": {
+      "git_blob": "6520d20afc0bc1844e6312aa44e5df998ec17509",
+      "sha256": "c9994f45ec2263f363fe66c457b5ce3bdcb139982a271dd102406ce279f6f676",
+      "heading": "Copyright (c) 2020-present Cal.com, Inc."
+    },
+    "historical_ee": {
+      "git_blob": "a8c6744758303a74c18b8e4decd6058f747acb53",
+      "sha256": "07e5244ee0e931046bee2de8f681c7626361f7a2efcc68de9ded3e25412bd988",
+      "heading": "The Cal.com Commercial License (the \u201cCommercial License\u201d)"
+    },
+    "current_mit_root": {
+      "git_blob": "98b51fbaac9145f1919fd2a79532acdb04a8f24b",
+      "sha256": "95f3d2c4bf316ccec41144d528fb9902de0bf91c635cc404bd94c7f7ebac321c",
+      "heading": "MIT License"
+    },
+    "current_mit_platform": {
+      "git_blob": "d3cfa3cd5af8ec9c76ba97ee06d1358e769b09ab",
+      "sha256": "67bf1d96b4c42b355a44eb24f1938dd771814c4cbd97c1943f5340ae6fe79aa2",
+      "heading": "MIT License"
+    }
+  },
+  "main_since_old_fork": {
+    "left": "fork",
+    "right": "fork_main",
+    "identical": 10492,
+    "changed": [
+      ".github/workflows/cache-clean.yml",
+      ".github/workflows/env-preflight.yml",
+      ".github/workflows/semantic-pull-requests.yml"
+    ],
+    "added": [],
+    "removed": []
+  },
+  "source_management_decision": "One existing public repository and accepted enterprise branch. No private research packet or commercial source was imported."
+}

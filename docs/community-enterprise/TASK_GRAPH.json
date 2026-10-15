@@ -215,7 +215,7 @@
       "parent": "CAL-01",
       "kind": "task",
       "title": "Reconcile MIT baseline and the actual BBI application/deployment delta",
-      "state": "in_progress",
+      "state": "source_proven",
       "requires": [],
       "lane": "integration",
       "owner_role": "commander",
@@ -227,11 +227,28 @@
         "Classify each carried change as retained, obsolete, replaced or unresolved with exact source/license provenance.",
         "Keep existing domains, database identities and encrypted credentials; no new tenant model or copied commercial modules."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/FORK-RECONCILIATION-2026-10-16.md",
+          "level": "source",
+          "command": "node scripts/inventory-enterprise-fork.cjs old-upstream.json old-fork.json docs/community-enterprise/FORK-REUSE-DECISIONS-2026-10-16.json",
+          "exit_code": 0,
+          "summary": "Complete tree responses at verified historical merge parent facc0745 and old BBI e01d0d5 produce exactly 59 covered changes; omitted/tampered decisions and incomplete tree responses fail. Runtime, asset, CI and migration followups remain on their named original tasks. Restoration code 815e7fd7 is distinct from later inventory/documentation source."
+        },
+        {
+          "file": "docs/community-enterprise/FORK-REUSE-PROOF-2026-10-16.json",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/fork-reuse.test.cjs",
+          "exit_code": 0,
+          "summary": "15 existing and added source contracts cover actual logo initializers, Git ignore behavior, removal of a shared example credential, exact tree comparison and complete per-path classification. Current upstream/downstream counts are not a product-completion ratio."
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 1
+      "priority": 1,
+      "progress": "All 59 actual historical fork customizations are pinned and classified: 11 retained historical references, 13 replaced contracts, 7 obsolete launch/distribution targets, 28 explicit unresolved CI/asset followups. Correct merged-upstream ancestry removes 599 intervening upstream paths from a naive 658-path tag comparison. Existing logo options and deployment credential-file protections restored on current MIT source; no live data/domain/identity or commercial-module import. This is source reconciliation, not complete feature or preview acceptance.",
+      "progress_reference": "docs/community-enterprise/FORK-RECONCILIATION-2026-10-16.md"
     },
     {
       "id": "CAL-01.TRACKER",

@@ -1,0 +1,1095 @@
+[
+  {
+    "path": ".github/CI_RUNNER_POLICY.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "8793f414b4207fd41089517817d16bac5dcadda6",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/all-checks.yml",
+    "change": "modified",
+    "before": {
+      "sha": "7fbcb4197c6d9c314f1f47971a81d9e59089439f",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "58e7c78cddae8f7e4afc5e7f6976b749fead1640",
+      "mode": "100644"
+    },
+    "current_blob": "6459fe9b31bd2794288e1f2dda6b7b94b5111934",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/api-v1-production-build.yml",
+    "change": "modified",
+    "before": {
+      "sha": "4b394599e9f6dad568d7cff47706f7dd97a0cd4a",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "8c66f7665582bb57ca890c2fe48301aeac0b0663",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "obsolete",
+    "tasks": [
+      "CAL-08.UPDATE",
+      "CAL-02.PREVIEW"
+    ],
+    "reason": "Retain this file in historical main only. Its old deployment, distribution or license-unlock target is not the MIT enterprise candidate. Do not run or reintroduce it as a current release mechanism; legacy runtime and consumer migration remain separately gated."
+  },
+  {
+    "path": ".github/workflows/api-v2-production-build.yml",
+    "change": "modified",
+    "before": {
+      "sha": "0611f100e862c10b0d443c9aae581b3b3cbcc49a",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "abf5d1f357fecef94d70e03731b66ca526697fc6",
+      "mode": "100644"
+    },
+    "current_blob": "e287800d3643056d7ce641944e98d82f48040133",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/api-v2-unit-tests.yml",
+    "change": "modified",
+    "before": {
+      "sha": "8eb08509caf126a13c0f5152bb42ded5d1f33b88",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "328f3e61c141315d6622ced30c2ef13f74b84f57",
+      "mode": "100644"
+    },
+    "current_blob": "d567973aa2967ba8274e7fd09c3b4b6920dc2184",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/auto-sync-upstream.yml",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "be65f62ff98900577bd2cde5d681881670bed6c1",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "obsolete",
+    "tasks": [
+      "CAL-08.UPDATE",
+      "CAL-02.PREVIEW"
+    ],
+    "reason": "Retain this file in historical main only. Its old deployment, distribution or license-unlock target is not the MIT enterprise candidate. Do not run or reintroduce it as a current release mechanism; legacy runtime and consumer migration remain separately gated."
+  },
+  {
+    "path": ".github/workflows/build-fork-image.yml",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "f4d526e2a4581f19054efb79594b95a9acca343c",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/cache-clean.yml",
+    "change": "modified",
+    "before": {
+      "sha": "121c5b935ea6d9ad3a625d9359cfc2991a20e4fa",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "e9b5450fc661c8f2a4f84e55b942ae895367df10",
+      "mode": "100644"
+    },
+    "current_blob": "f550ba484840c6f294b8aacf16284cc30d632865",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/check-api-v2-breaking-changes.yml",
+    "change": "modified",
+    "before": {
+      "sha": "739b6d413cbe9964de67db1d1334b6be58275964",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "8b482d32f9ee49d490447c8dd7cfce6946a3f1ca",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/check-prisma-migrations.yml",
+    "change": "modified",
+    "before": {
+      "sha": "bddb9fd84ee4b2932d0c29376e2a03b561cb68f2",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "6aea9a940adde4ea59df8fee052002f87661b3ca",
+      "mode": "100644"
+    },
+    "current_blob": "52e8dab2c773b0627cd177444c53a74da956d164",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/check-types.yml",
+    "change": "modified",
+    "before": {
+      "sha": "302884253714601b753e1589f8e92e8d9a76c7b2",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "c2a1e3f0bcc6fb775b045331a428bc8106ea3a24",
+      "mode": "100644"
+    },
+    "current_blob": "b10b5d71b2fbd9a37568146f807e31d38f8219ad",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/docs-build.yml",
+    "change": "modified",
+    "before": {
+      "sha": "3b573b7a8a5f7823d58f675a818541f3f81c651a",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "998c9f590b44b30579aa40b8848881fe814da4f6",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "obsolete",
+    "tasks": [
+      "CAL-08.UPDATE",
+      "CAL-02.PREVIEW"
+    ],
+    "reason": "Retain this file in historical main only. Its old deployment, distribution or license-unlock target is not the MIT enterprise candidate. Do not run or reintroduce it as a current release mechanism; legacy runtime and consumer migration remain separately gated."
+  },
+  {
+    "path": ".github/workflows/e2e-api-v2.yml",
+    "change": "modified",
+    "before": {
+      "sha": "cbee6ae91adf399cc79987b7f5faf46ebfd181b8",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "b0508674c5e054a354a22b92b9f30eeda5f618e7",
+      "mode": "100644"
+    },
+    "current_blob": "cfa810d7cd1ed686ba87d68d63a4223f5238f74a",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/e2e-app-store.yml",
+    "change": "modified",
+    "before": {
+      "sha": "a8422e68d0460a0abeef835fde066671a75355ac",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "e4db65a9f1407cd723931274d46674267b931249",
+      "mode": "100644"
+    },
+    "current_blob": "6caa7bc1b1a7298a45a86a7dc0329cede32b2dca",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/e2e-embed-react.yml",
+    "change": "modified",
+    "before": {
+      "sha": "d76a18aafd1ceb7ffd28b69ea131dc0d42234b37",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "071d2936ace912db80df81fd5d003e36225643b0",
+      "mode": "100644"
+    },
+    "current_blob": "a097116dd4941146968d85b25d404f0dc47e6ff4",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/e2e-embed.yml",
+    "change": "modified",
+    "before": {
+      "sha": "12682bc6144dbff70b7300b86b436bc192405480",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "5f6aee9e97bd6c955a057b204895bb7fb058e3a3",
+      "mode": "100644"
+    },
+    "current_blob": "2c9ca42ab63cd0162e1f2162f2c893f5627147a7",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/e2e.yml",
+    "change": "modified",
+    "before": {
+      "sha": "1dc4b10e2c00c87a3fc7b8833802455af774e031",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "a6ac482ac3187a21735429126f588ea4ac62408e",
+      "mode": "100644"
+    },
+    "current_blob": "1c19c446a399a904c05a83fadd56b42881acc823",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/env-preflight.yml",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "b3519e2caae49d1f7fdeea21b36b2ad3a111f537",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/integration-tests.yml",
+    "change": "modified",
+    "before": {
+      "sha": "a67e2e998492c872c9d7bcf116d092068e3b77c0",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "4899bc7458e6bbc42dcb468e5fcab15af4935854",
+      "mode": "100644"
+    },
+    "current_blob": "02b548529c0bf282618b5c316c035c76b7c259dc",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/lint.yml",
+    "change": "modified",
+    "before": {
+      "sha": "c709b17c7bcb2c70bd87e4603045ae02a6258dd5",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "e1641b42874f1b0edeb28bf1d8ef2caf43e64354",
+      "mode": "100644"
+    },
+    "current_blob": "5c9af507afc78b796949f1178d2c0d11436e1d83",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/nextjs-bundle-analysis-annotation.yml",
+    "change": "modified",
+    "before": {
+      "sha": "fa686e10c70f89a2586fe5293a0700e73330bcf6",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "dce257b2f83b26c8d066477d36c4e0504804ee3c",
+      "mode": "100644"
+    },
+    "current_blob": "cacdc2a1df1580dd110bb8039e3300219106e576",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/nextjs-bundle-analysis.yml",
+    "change": "modified",
+    "before": {
+      "sha": "d79c6bf2c2cceac18c254533085a3e4bd17aa949",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "82e7cc7d0ca7e1d03fff6ad07357c25dfa29e705",
+      "mode": "100644"
+    },
+    "current_blob": "c45fe54b93c86027a89d70a390a29e392587fd61",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/pr.yml",
+    "change": "modified",
+    "before": {
+      "sha": "3a109bf8fcb9be6c71cef0418da3d045f357c569",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "f7e5e1f7faaf3a97d6b005b3391a0b79617817e0",
+      "mode": "100644"
+    },
+    "current_blob": "a9c7ffe832538d0b845c8c5aba5735d84eb1885d",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/production-build-without-database.yml",
+    "change": "modified",
+    "before": {
+      "sha": "58f6575521b3d8b25a4880e8e2d726de7e1a9ff1",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "acaf3289f5187c1034f8a485b300136db420869e",
+      "mode": "100644"
+    },
+    "current_blob": "ece78b0b0a00d4b96be422a763e2d7d6a1b41b19",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/run-ci.yml",
+    "change": "modified",
+    "before": {
+      "sha": "00ba78b46bb567bea2a0a483c0dd0a5d184725f6",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "274743348ff5dc16a9fa280a32a784980e5f78bd",
+      "mode": "100644"
+    },
+    "current_blob": "30f1e3d2c30b7194fae9a9cadf0155a2c656c883",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/security-audit.yml",
+    "change": "modified",
+    "before": {
+      "sha": "c59d452a0741270a51dcdee9b0159f24ada518d5",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "3ca4f909a33b27e1575dfe4637c51425d1a3e53c",
+      "mode": "100644"
+    },
+    "current_blob": "0df84f682a2664770dfcaeb52d5cea3819fe02c1",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/setup-db.yml",
+    "change": "modified",
+    "before": {
+      "sha": "22d41cb5c144513691cfbc5e6e12ea9e8be722c6",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "e9a35a952fa9625a096bf996b62d8f0937d86857",
+      "mode": "100644"
+    },
+    "current_blob": "3148c3ddeade587cdd5f3beba8926c21de6ef5dd",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/smoke-check.yml",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "08b6f337e4eae0ef1d1c56d018aca7459e1f40ac",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/unit-tests.yml",
+    "change": "modified",
+    "before": {
+      "sha": "b1df3dc09edede70ca37f145880162235b997e16",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "6327efe28e55086200c009493531d614f76e602e",
+      "mode": "100644"
+    },
+    "current_blob": "4af892454ed09454cbefe4cc02f485d393074e98",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".github/workflows/upstream-drift.yml",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "a6ad839a668902be5a71319fb505fa24dec091f2",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.UPDATE"
+    ],
+    "reason": "The old runner/release policy is not admitted by retaining a differently configured upstream workflow. Reconcile current main runner changes, exact build inputs and registry capability through the existing publisher; do not restore historical labels, mutable latest tags or placeholder-origin builds blindly."
+  },
+  {
+    "path": ".gitignore",
+    "change": "modified",
+    "before": {
+      "sha": "7ff27b28b8f4f92387e86436427ca0724850dc23",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "72fef067d666168248be795d1e479aa4ed2a5999",
+      "mode": "100644"
+    },
+    "current_blob": "6d3f22faaa2cc5bbda1298699601cf2525ea7464",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-01.REUSE"
+    ],
+    "reason": "Restore protection for six actual legacy credential/log filename patterns and keep examples visible. Do not revive old template, ADR or tracker-ignore rules merely because they were once present. Git check-ignore and source contracts execute against the current file."
+  },
+  {
+    "path": "AGENTS.md",
+    "change": "modified",
+    "before": {
+      "sha": "5032e5b61725d90d955dba132c6ee08e67728020",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "3eca0a0dc3e2ffac6dc858e4b71da6d2b9573ca1",
+      "mode": "100644"
+    },
+    "current_blob": "064ffc3290b797854dd77ff621116fbcaf4f11a2",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-01.TRACKER"
+    ],
+    "reason": "Current upstream engineering guidance and the accepted single-repository decision supersede obsolete Cal.com auto-sync instructions. Existing repository/branch/graph remain canonical; no tracker reset or substitute checkout."
+  },
+  {
+    "path": "apps/web/public/mereka-logo.png",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "03bf6c65698597bcc9b07b3e267a8b0baa4e5028",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "unresolved",
+    "tasks": [
+      "CAL-05.UI",
+      "CAL-02.PREVIEW"
+    ],
+    "reason": "Historical asset remains at its immutable original blob but is not in the candidate public directory. Confirm owner-supplied asset rights and actually package an admitted image before configuring this filename. Restored URL overrides alone do not prevent a missing-asset response."
+  },
+  {
+    "path": "calcom-k8s.env.example",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "f283d6bc68751bdd65b86d19a9aa55340915d2e4",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-04.OIDC",
+      "CAL-08.BASELINE",
+      "CAL-08.MIGRATE"
+    ],
+    "reason": "Current .env.example and explicit native startup/identity admission define variable contracts. Old example values are not environment truth and must not be imported into a build. Existing DB identity, URL, session/encryption and provider ownership must be preserved through the actual deployment/data gates."
+  },
+  {
+    "path": "calcom.env.example",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "7bbfb7816d981e74afa51288cffa50045902d66a",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-04.OIDC",
+      "CAL-08.BASELINE",
+      "CAL-08.MIGRATE"
+    ],
+    "reason": "Current .env.example and explicit native startup/identity admission define variable contracts. Old example values are not environment truth and must not be imported into a build. Existing DB identity, URL, session/encryption and provider ownership must be preserved through the actual deployment/data gates."
+  },
+  {
+    "path": "cloudbuild.yaml",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "9bff1f33e9b6d923079994861fbcf0d7ce76f8db",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "obsolete",
+    "tasks": [
+      "CAL-08.UPDATE",
+      "CAL-02.PREVIEW"
+    ],
+    "reason": "Retain this file in historical main only. Its old deployment, distribution or license-unlock target is not the MIT enterprise candidate. Do not run or reintroduce it as a current release mechanism; legacy runtime and consumer migration remain separately gated."
+  },
+  {
+    "path": "deploy-api-v2.sh",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "daf266d7b88d183def154b692311cf52c5ef8205",
+      "mode": "100755"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "obsolete",
+    "tasks": [
+      "CAL-08.UPDATE",
+      "CAL-02.PREVIEW"
+    ],
+    "reason": "Retain this file in historical main only. Its old deployment, distribution or license-unlock target is not the MIT enterprise candidate. Do not run or reintroduce it as a current release mechanism; legacy runtime and consumer migration remain separately gated."
+  },
+  {
+    "path": "docs/mereka/README.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "c82ba13ff1cf4edf6993758ba774dd6ce9cd033e",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/mereka/api-key-setup.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "5ce4ffd4a8484f0d37aa98bf4120dcd61c125547",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/mereka/api-v2-setup.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "3009e3c2d887056895ed8752f579fefd8232b292",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/mereka/deployment-guide.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "a82a890ff0b74e23f4d9bfa3acad55d8916da712",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/mereka/env-reference.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "7726e5ab6a1c4d50f9513d444d99d92ac22d8652",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/mereka/integration-setup.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "3265ca87bc75f49d34cac9f07d7963344953f385",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/mereka/license-setup.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "9a234eb99e629b4c522950c25e928da3e0310da5",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "obsolete",
+    "tasks": [
+      "CAL-08.UPDATE",
+      "CAL-02.PREVIEW"
+    ],
+    "reason": "Retain this file in historical main only. Its old deployment, distribution or license-unlock target is not the MIT enterprise candidate. Do not run or reintroduce it as a current release mechanism; legacy runtime and consumer migration remain separately gated."
+  },
+  {
+    "path": "docs/mereka/working-config.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "d80265314dff9e1bed05ec7b6b9e2da5cebefd32",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/plans/fork-maintenance-plan.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "4d576015ec5fbea649626e448c19ceb7e88150ca",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/runbooks/upstream-sync-and-rollout.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "24cb8eae02f14f6741dfa1c96b7c58a039c70737",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/status/repo-baseline-2026-04-06.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "0dc89a35c428a9a39fb3145cf9056e325cc6fd6e",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "docs/status/runtime-issues-2026-04-06.md",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "e2a3dd08b127ed72e05e191aeaeaa96beafce97c",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "retained",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-08.BASELINE"
+    ],
+    "reason": "Retained as dated historical evidence in this same repository at the old pinned commit, not copied as a current deployment recipe. Native identity/key/tenant/runtime contracts supersede old operational instructions; actual historical database/credential values must be verified privately under preservation gates."
+  },
+  {
+    "path": "env-vars-api-v2.example.yaml",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "95e14a30aa510975d19c4a8bd6ecfa4de574dd9f",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-04.OIDC",
+      "CAL-08.BASELINE",
+      "CAL-08.MIGRATE"
+    ],
+    "reason": "Current .env.example and explicit native startup/identity admission define variable contracts. Old example values are not environment truth and must not be imported into a build. Existing DB identity, URL, session/encryption and provider ownership must be preserved through the actual deployment/data gates."
+  },
+  {
+    "path": "env-vars-production.example.yaml",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "0d058a1d5893ec766383bc5d5690e8b7ddbfe332",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-04.OIDC",
+      "CAL-08.BASELINE",
+      "CAL-08.MIGRATE"
+    ],
+    "reason": "Current .env.example and explicit native startup/identity admission define variable contracts. Old example values are not environment truth and must not be imported into a build. Existing DB identity, URL, session/encryption and provider ownership must be preserved through the actual deployment/data gates."
+  },
+  {
+    "path": "google-credentials.example.json",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "50fa6e45f16969f06a84e2377dcd4926b35dd2c2",
+      "mode": "100644"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-04.OIDC",
+      "CAL-08.BASELINE",
+      "CAL-08.MIGRATE"
+    ],
+    "reason": "Current .env.example and explicit native startup/identity admission define variable contracts. Old example values are not environment truth and must not be imported into a build. Existing DB identity, URL, session/encryption and provider ownership must be preserved through the actual deployment/data gates."
+  },
+  {
+    "path": "packages/lib/constants.ts",
+    "change": "modified",
+    "before": {
+      "sha": "beec49b7d20deae3d82c6b7abe0c580ec1bcd956",
+      "mode": "100644"
+    },
+    "after": {
+      "sha": "38bd160cec6c81ae325ac86920cb7b175f63cac1",
+      "mode": "100644"
+    },
+    "current_blob": "f7524cef7e50172d9e9b37167e92b86cd30b0faa",
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-01.REUSE",
+      "CAL-05.UI"
+    ],
+    "reason": "The only historical app-code patch consists of three public logo environment overrides. Those contracts are restored over current MIT constants at 815e7fd739c71a0de4e2fe30c21845c05f69dbd8; upstream bundled defaults and all current scheduling/identity constants remain. This does not package the old image asset or claim live branding."
+  },
+  {
+    "path": "scripts/check-rollout-readiness.sh",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "11323bc850122d115fe6c1e26ff2cf1c7489ce32",
+      "mode": "100755"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.MIGRATE",
+      "CAL-09.ACCEPT"
+    ],
+    "reason": "Retain the goal of environment, readiness and smoke verification through current source-bound runtime preparation, fail-closed startup/migration preflight and canonical graph acceptance. The historical script itself is not a qualified writer or proof that the new preview is deployed."
+  },
+  {
+    "path": "scripts/run-release-gate.sh",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "41d9cb80ef5b7ca38e18ada53907c1c0c1787b76",
+      "mode": "100755"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.MIGRATE",
+      "CAL-09.ACCEPT"
+    ],
+    "reason": "Retain the goal of environment, readiness and smoke verification through current source-bound runtime preparation, fail-closed startup/migration preflight and canonical graph acceptance. The historical script itself is not a qualified writer or proof that the new preview is deployed."
+  },
+  {
+    "path": "scripts/smoke-check-calcom.sh",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "ad512b681b0fb4cb92034e23f2f8fcf081a28d6b",
+      "mode": "100755"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.MIGRATE",
+      "CAL-09.ACCEPT"
+    ],
+    "reason": "Retain the goal of environment, readiness and smoke verification through current source-bound runtime preparation, fail-closed startup/migration preflight and canonical graph acceptance. The historical script itself is not a qualified writer or proof that the new preview is deployed."
+  },
+  {
+    "path": "scripts/test-verify-calcom-env.sh",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "92a32947f613d5c758de15060db4adba24184aba",
+      "mode": "100755"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.MIGRATE",
+      "CAL-09.ACCEPT"
+    ],
+    "reason": "Retain the goal of environment, readiness and smoke verification through current source-bound runtime preparation, fail-closed startup/migration preflight and canonical graph acceptance. The historical script itself is not a qualified writer or proof that the new preview is deployed."
+  },
+  {
+    "path": "scripts/verify-calcom-env.sh",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "bfa26c1b904b8d350071a155c2504cdd7253a4f8",
+      "mode": "100755"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "replaced",
+    "tasks": [
+      "CAL-02.PREVIEW",
+      "CAL-08.MIGRATE",
+      "CAL-09.ACCEPT"
+    ],
+    "reason": "Retain the goal of environment, readiness and smoke verification through current source-bound runtime preparation, fail-closed startup/migration preflight and canonical graph acceptance. The historical script itself is not a qualified writer or proof that the new preview is deployed."
+  },
+  {
+    "path": "setup-integrations.sh",
+    "change": "added",
+    "before": null,
+    "after": {
+      "sha": "91a159a63c1926da7da2ab83f235062fbb52b36a",
+      "mode": "100755"
+    },
+    "current_blob": null,
+    "historical_license": "Historical root LICENSE snapshot; not a blanket right to copy old commercial modules. No old implementation body is copied by this inventory.",
+    "disposition": "obsolete",
+    "tasks": [
+      "CAL-08.UPDATE",
+      "CAL-02.PREVIEW"
+    ],
+    "reason": "Retain this file in historical main only. Its old deployment, distribution or license-unlock target is not the MIT enterprise candidate. Do not run or reintroduce it as a current release mechanism; legacy runtime and consumer migration remain separately gated."
+  }
+]

@@ -103,3 +103,71 @@ test("example configuration does not ship a usable shared cron credential", () =
     ["CRON_API_KEY="]
   );
 });
+
+const {
+  compareTrees,
+  filesFromTree,
+  verifyDecisions,
+} = require("../../scripts/inventory-enterprise-fork.cjs");
+const tree = (entries) => ({ sha: "a".repeat(40), truncated: false, tree: entries });
+const blob = (name, sha = "b", mode = "100644") => ({ path: name, sha: sha.repeat(40), mode, type: "blob" });
+
+test("reuse comparison retains additions, deletions, content and executable-mode changes", () => {
+  const result = compareTrees(
+    tree([blob("kept"), blob("removed"), blob("mode"), blob("edited")]),
+    tree([blob("kept"), blob("added"), blob("mode", "b", "100755"), blob("edited", "c")])
+  );
+  assert.equal(result.identical, 1);
+  assert.deepEqual(
+    result.changes.map((row) => [row.path, row.change]),
+    [
+      ["added", "added"],
+      ["edited", "modified"],
+      ["mode", "modified"],
+      ["removed", "removed"],
+    ]
+  );
+});
+test("a truncated response cannot prove complete fork coverage", () => {
+  assert.throws(() => filesFromTree({ ...tree([blob("one")]), truncated: true }), /complete/);
+});
+test("duplicate and escaping tree names are refused", () => {
+  assert.throws(() => filesFromTree(tree([blob("one"), blob("one")])), /duplicate/);
+  assert.throws(() => filesFromTree(tree([blob("../secret")])), /escaping/);
+});
+test("submodules cannot silently masquerade as fully inspected source", () => {
+  assert.throws(
+    () => filesFromTree(tree([{ ...blob("external"), type: "commit", mode: "160000" }])),
+    /Submodule/
+  );
+});
+test("each decision must bind exactly one real source change", () => {
+  const delta = compareTrees(tree([blob("file")]), tree([blob("file", "c")]));
+  const decisions = [
+    {
+      ...delta.changes[0],
+      disposition: "unresolved",
+      reason: "Current publication must retain its own admitted runtime authority.",
+      tasks: ["CAL-02.PREVIEW"],
+    },
+  ];
+  assert.equal(verifyDecisions(delta, decisions), true);
+  assert.throws(() => verifyDecisions(delta, []), /Every changed path/);
+  assert.throws(() => verifyDecisions(delta, [{ ...decisions[0], path: "invented" }]), /source identity/);
+  assert.throws(
+    () => verifyDecisions(delta, [{ ...decisions[0], after: { sha: "d".repeat(40), mode: "100644" } }]),
+    /source identity/
+  );
+});
+test("classification cannot omit its reason, successor task or admissible disposition", () => {
+  const delta = compareTrees(tree([blob("file")]), tree([blob("file", "c")]));
+  const decision = {
+    ...delta.changes[0],
+    disposition: "replaced",
+    reason: "Retained exact-scope implementation replaces the historical behavior.",
+    tasks: ["CAL-01.REUSE"],
+  };
+  for (const invalid of [{ reason: "" }, { tasks: [] }, { disposition: "assumed-done" }]) {
+    assert.throws(() => verifyDecisions(delta, [{ ...decision, ...invalid }]), /disposition/);
+  }
+});
