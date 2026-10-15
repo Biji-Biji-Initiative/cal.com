@@ -15,6 +15,7 @@ const { seedHandoffFixture, runHandoffJourney } = require("./scheduling-handoff-
 const { seedProviderFixture, runProviderJourney } = require("./provider-booking-browser.cjs");
 const { startOidcTestProvider } = require("./oidc-test-provider.cjs");
 const { startSmtpTestSink } = require("./smtp-test-sink.cjs");
+const { seedTaskerFixture, runTaskerJourney } = require("./tasker-runtime-journey.cjs");
 const {
   seedInvitationBrowserFixture,
   runInvitationBrowserJourney,
@@ -95,6 +96,8 @@ test(
         process.env.CAL_HANDOFF_BROWSER_JOURNEY === "true" ? await seedHandoffFixture(pool) : null;
       const providerFixture =
         process.env.CAL_PROVIDER_BROWSER_JOURNEY === "true" ? await seedProviderFixture(pool) : null;
+      const taskerFixture =
+        process.env.CAL_TASKER_RUNTIME_JOURNEY === "true" ? await seedTaskerFixture(pool) : null;
       const identityFixture =
         providerFixture ||
         handoffFixture ||
@@ -146,7 +149,10 @@ test(
         environment.NODE_OPTIONS +=
           " --require=" + path.join(root, "tests/community-enterprise/provider-network-preload.cjs");
       }
+      if (taskerFixture) environment.CRON_SECRET = taskerFixture.secret;
       sensitiveValues = [
+        taskerFixture?.secret,
+        taskerFixture?.marker,
         ...(providerFixture?.redactions || []),
         environment.CAL_AUTHENTIK_CLIENT_SECRET,
         environment.NEXTAUTH_SECRET,
@@ -222,6 +228,7 @@ test(
       if (memberFixture) await runMemberLifecycleJourney({ pool, fixture: memberFixture, t });
       if (handoffFixture) await runHandoffJourney({ pool, fixture: handoffFixture, t });
       if (providerFixture) await runProviderJourney({ pool, fixture: providerFixture, t });
+      if (taskerFixture) await runTaskerJourney({ pool, fixture: taskerFixture, t });
       t.diagnostic(
         JSON.stringify({
           buildId,
