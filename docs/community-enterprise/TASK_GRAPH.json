@@ -36,13 +36,14 @@
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
       "CAL-05.CORE",
-      "CAL-05.UI",
-      "CAL-04.LINK",
-      "CAL-06.JOURNEY",
+      "CAL-03.ROUTES",
       "CAL-02.PREVIEW",
-      "CAL-06.REUSE"
+      "CAL-04.LINK",
+      "CAL-05.UI",
+      "CAL-06.JOURNEY"
     ],
-    "priority_rule": "Next-ready work prioritizes the complete staff/admin/guest journey. Infrastructure owners can resolve publication and admission in parallel; no dependency, privacy, security or production gate is waived."
+    "priority_rule": "Close acceptance-complete prerequisites; next product focus is custom roles/provenance and reachable API authorization. Resolve actual preview/publication in parallel with its owner. Do not reopen proven retained-engine work for unrelated future features or treat synthetic proof as live acceptance.",
+    "status_command": "node scripts/verify-community-enterprise-task-graph.cjs --status"
   },
   "milestones": [
     {
@@ -340,7 +341,7 @@
       "parent": "CAL-02",
       "kind": "task",
       "title": "Build and start API v2 with the same source/schema",
-      "state": "in_progress",
+      "state": "runtime_proven",
       "requires": [
         "CAL-02.INSTALL"
       ],
@@ -363,12 +364,26 @@
           "exit_code": 0,
           "summary": "Published 5da2ff77 repairs native API compilation; API container and full runtime startup remain open.",
           "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2"
+        },
+        {
+          "file": "docs/community-enterprise/GRAPH-BURNDOWN-2026-10-15.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite api-assembled --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp --api-node-image sha256:ff56a7906c945e128a8a978652b4ebcf6fc4531c66a1294f6c8cd1f4b3403f06 --api-redis-image sha256:298e5b3bc566bade82f46ad5511777a4a07a294097ce16ada2f6a42be5239df5",
+          "exit_code": 0,
+          "summary": "Native platform/API build and full compiled main/AppModule/bootstrap run against same current schema, real PostgreSQL and Redis. Actual profile, cookie/key, validation, rotation/audit and revocation behavior pass. No services substituted; packaging, optional worker modes and broad API scope acceptance remain separate.",
+          "source_revision": "fd04d517c60ed3cdbcc2cb1dc040d6f85e40b8b5"
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "Exact build/start commands and artifacts proven; never infer API acceptance from a web build.",
       "completion_evidence_level": "runtime",
-      "priority": 1
+      "priority": 1,
+      "closure": {
+        "reviewed_at": "2026-10-15",
+        "scope": "Each existing acceptance criterion at the record required evidence level; no live/deployment proof implied",
+        "acceptance_sha256": "c786b66bf65bd184c9c2b7e52fbd96685a091df9b6c693b705e587dd7199ee71",
+        "evidence": "docs/community-enterprise/GRAPH-BURNDOWN-2026-10-15.md"
+      }
     },
     {
       "id": "CAL-02.PREVIEW",
@@ -582,7 +597,7 @@
       "parent": "CAL-04",
       "kind": "task",
       "title": "Fresh local session identity and safe profile switching",
-      "state": "in_progress",
+      "state": "source_proven",
       "requires": [
         "CAL-04.OIDC"
       ],
@@ -604,12 +619,26 @@
           "command": "node --test tests/community-enterprise/authentik.test.cjs",
           "exit_code": 0,
           "summary": "Local token/binding/profile and linkage-service tests pass. Live identity enforcement, full direct-reader inventory and operator transaction integration remain open."
+        },
+        {
+          "file": "docs/community-enterprise/GRAPH-BURNDOWN-2026-10-15.md",
+          "level": "source",
+          "command": "node --test tests/community-enterprise/authentik.test.cjs tests/community-enterprise/token-reader-inventory.test.cjs",
+          "exit_code": 0,
+          "summary": "Current native marker/session callbacks, local lock/unlink/rebind, client-update and accepted-profile cases pass. Separate import-bound token-reader inventory records unresolved bearer/route boundaries; not IdP revocation or all direct JWT readers as certified authorizers.",
+          "source_revision": "fd04d517c60ed3cdbcc2cb1dc040d6f85e40b8b5"
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 1
+      "priority": 1,
+      "closure": {
+        "reviewed_at": "2026-10-15",
+        "scope": "Each existing acceptance criterion at the record required evidence level; no live/deployment proof implied",
+        "acceptance_sha256": "436fdb2deedd7a8043242e660d6f8ffabc1967bd5ccb5f4145595e6bb3ee5bdd",
+        "evidence": "docs/community-enterprise/GRAPH-BURNDOWN-2026-10-15.md"
+      }
     },
     {
       "id": "CAL-04.LINK",
@@ -895,7 +924,7 @@
       "parent": "CAL-06",
       "kind": "task",
       "title": "Prove retained round-robin/collective/managed scheduling before replacing it",
-      "state": "in_progress",
+      "state": "source_proven",
       "requires": [
         "CAL-03.POLICY",
         "CAL-02.INSTALL"
@@ -951,6 +980,14 @@
           "exit_code": 0,
           "summary": "Retained Tasker provides a claimed/fenced execution prerequisite before future-provider handoff. No provider-organizer transfer is implemented.",
           "application_source": "2a8e335a652ad4aa8fc2ca6469b14e1c15f43fab"
+        },
+        {
+          "file": "docs/community-enterprise/GRAPH-BURNDOWN-2026-10-15.md",
+          "level": "source",
+          "command": "yarn test:community-enterprise:host-db --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp && yarn test:community-enterprise:booking-concurrency --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "summary": "42 real PostgreSQL eligibility/commit cases plus actual built overlapping booking journey pass. Retained RR/collective/managed-child models, current-host intersection, rescheduling and cross-event concurrency are proven at the task source scope. Future-appointment provider transfer and live calendar acceptance are not this closure.",
+          "source_revision": "fd04d517c60ed3cdbcc2cb1dc040d6f85e40b8b5"
         }
       ],
       "required_for_team_release": true,
@@ -974,7 +1011,13 @@
         "Deterministic PostgreSQL tests cover overlapping cross-event bookings, shared collective hosts, reversed host order, competing reschedules and independent hosts using ordered row locks in the existing transaction.",
         "The regular write rechecks selected identities, current eligibility, local overlaps and buffers before committing or cancelling the original appointment."
       ],
-      "progress_summary": "Reuses retained qualified-host/booking engine and ordered host locks; actual two-order transaction races plus unchanged-link successor guest booking pass. Managed/automatic/provider/future-appointment reassignment remain open."
+      "progress_summary": "Reuses retained qualified-host/booking engine and ordered host locks; actual two-order transaction races plus unchanged-link successor guest booking pass. Managed/automatic/provider/future-appointment reassignment remain open.",
+      "closure": {
+        "reviewed_at": "2026-10-15",
+        "scope": "Each existing acceptance criterion at the record required evidence level; no live/deployment proof implied",
+        "acceptance_sha256": "e035746cdaa493ef518715cd9bc263f7e11b048e92be93ee103b8bcac5317702",
+        "evidence": "docs/community-enterprise/GRAPH-BURNDOWN-2026-10-15.md"
+      }
     },
     {
       "id": "CAL-06.JOURNEY",
@@ -1398,7 +1441,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/TASKER-RECOVERY-2026-10-15.md",
+  "latest_evidence": "docs/community-enterprise/GRAPH-BURNDOWN-2026-10-15.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
@@ -1598,6 +1641,47 @@
       "lock_wait_refusal_cases": 4,
       "real_database_cases": 45,
       "operator_reconciliation_interface_implemented": false
+    },
+    "burndown": {
+      "date": "2026-10-15",
+      "records": 39,
+      "epics": 10,
+      "executable_tasks": 29,
+      "completed_before": 5,
+      "completed_after": 8,
+      "newly_completed": [
+        "CAL-02.API",
+        "CAL-04.SESSION",
+        "CAL-06.REUSE"
+      ],
+      "remaining_tasks": 21,
+      "remaining_epics": 10,
+      "all_release_milestones_open": true,
+      "candidate_deployed": false,
+      "evidence": "docs/community-enterprise/GRAPH-BURNDOWN-2026-10-15.md",
+      "remaining_gaps": {
+        "CAL-01.REUSE": "Finish the exact historical fork/deployment/provenance reconciliation; private material is not silently published.",
+        "CAL-01.TRACKER": "Supported legacy Beads migration with backup/content/rollback proof; do not create a competing tracker.",
+        "CAL-02.PREVIEW": "Admit and identify the actual candidate on existing nonproduction infrastructure; live staff and anonymous guest routing; refresh stale deployment/registry blockers.",
+        "CAL-03.ROUTES": "Complete call-reachable route/permission audit, including the separately inventoried bearer guards and mutation races.",
+        "CAL-04.LINK": "Existing 24-case CLI/transaction proof is refreshed, but actual preview subject mappings/operator attribution remain unreviewed.",
+        "CAL-04.SCIM": "Implement/test scoped Authentik discovery, users/groups, paging, grant provenance and deprovisioning without destroying local grants.",
+        "CAL-04.REVOCATION": "Real IdP/application-access/role removal with unchanged credentials across replicas within 60 seconds, including delayed provisioning.",
+        "CAL-05.CORE": "Finish custom-role assignment/provenance and supported lifecycle paths; built-in roles/invitations/admission alone are not the full criterion.",
+        "CAL-05.UI": "Complete custom-permission/admin surfaces, keyboard/accessibility and denied-state acceptance without exposing unsupported actions.",
+        "CAL-05.API": "Full active-principal/scope/resource intersection and all relevant list/detail/export/mutation negatives; native startup is not this completion.",
+        "CAL-06.JOURNEY": "Real Authentik and connected test calendar on the admitted preview; begin with a genuinely unconfigured staff user.",
+        "CAL-07.AUDIT": "Complete domain mutation plus durable enqueue/outbox and redacted booking/administrative audit; worker claims alone are insufficient.",
+        "CAL-07.REMINDERS": "Stale reminder invalidation, reliable actual recipient delivery and explicit unknown-effect reconciliation across retained handlers.",
+        "CAL-08.BASELINE": "Current deployed identity/data inventory and authorized isolated restore with stable identifiers and encryption checks.",
+        "CAL-08.MIGRATE": "Full legacy-data preservation rehearsal and post-cutover-write recovery, not only empty-schema migration admission.",
+        "CAL-08.UPDATE": "Apply a real reviewed upstream revision change and rerun enterprise contracts; schema guard tests are not an upstream update.",
+        "CAL-09.ACCEPT": "All exact-artifact core product, identity, privacy, recovery and security requirements satisfied together.",
+        "CAL-09.PILOT": "Existing gated GitOps promotion and supervised live team journeys after acceptance, not source publication.",
+        "CAL-10.ROUTING": "Explainable programme/service/language routing and tested fallbacks on eligible retained teams.",
+        "CAL-10.REPORTS": "Scoped operational reports/exports reconciled to booking data, with privacy and delivery-failure attribution.",
+        "CAL-10.ROLLOUT": "Full routing/reporting plus operational handover and broader rollout; all upstream prerequisites remain."
+      }
     }
   }
 }

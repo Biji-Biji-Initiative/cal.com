@@ -1,6 +1,25 @@
 # Cal.diy-based enterprise service — implementation record
 
-## Latest: claimed task execution and truthful delivery outcomes
+## Latest: acceptance-driven burndown, not another parallel programme
+
+[The graph acceptance review](GRAPH-BURNDOWN-2026-10-15.md) closes CAL-02.API,
+CAL-04.SESSION and CAL-06.REUSE against their existing criteria. The **39 records
+are 10 parent epics and 29 executable tasks**: eight leaves are now complete and
+21 remain. All parents and release milestones remain unfinished. These are
+unweighted record counts, not a percentage of project time or product readiness.
+
+Run `node scripts/verify-community-enterprise-task-graph.cjs --status` for current
+completion, blocked prerequisite chains and downstream impact. The source-ready
+bottleneck is the existing organization/custom-role/provenance work; preview
+admission and actual identity/provider verification remain separate requirements.
+The completed native API fixture runs the real compiled main/AppModule against
+PostgreSQL and Redis, not replacement controllers or a deployed service. The
+[source token-reader inventory](TOKEN-READER-INVENTORY-2026-10-15.json) keeps
+remaining OAuth/bearer/permission audit boundaries visible rather than claiming
+native-session proof covers every route. No application runtime code was changed.
+
+
+## Previous: claimed task execution and truthful delivery outcomes
 
 [Tasker recovery evidence](TASKER-RECOVERY-2026-10-15.md) records actual claim,
 crash, unknown-effect and signed-local-delivery behavior in the retained worker.
