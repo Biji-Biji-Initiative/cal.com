@@ -76,6 +76,7 @@ async function runCustomRoleJourney({ pool, fixture, t }) {
   const target = subjects.find((person) => person.id === 7002);
   const scope = { organizationId: organization.organizationId, scopeId: teams[0] };
   const roles = clientFor(owner, "enterpriseRoles");
+  assert.deepEqual(await roles.query("capability", scope), { canManageRoles: true });
   await assert.rejects(
     clientFor(null, "enterpriseRoles").query("catalog", scope),
     (error) => error.data?.code === "UNAUTHORIZED"
@@ -122,7 +123,7 @@ async function runCustomRoleJourney({ pool, fixture, t }) {
       [id, uid, teamId, userId]
     );
     await pool.query(
-      'INSERT INTO "Booking" (id,uid,title,"userId","eventTypeId","startTime","endTime",status) VALUES ($1,$2,$2,$3,$1,\'2030-01-01T10:00:00Z\',\'2030-01-01T10:30:00Z\',\'ACCEPTED\')',
+      'INSERT INTO "Booking" (id,uid,title,"userId","eventTypeId","startTime","endTime",status) VALUES ($1,$2,$2,$3,$1,\'2030-01-01T10:00:00Z\',\'2030-01-01T10:30:00Z\',\'accepted\')',
       [id, uid, userId]
     );
   }
@@ -154,6 +155,7 @@ async function runCustomRoleJourney({ pool, fixture, t }) {
     await expect(page.getByTestId("custom-roles")).toBeVisible();
     await page.getByTestId("custom-role-scope").selectOption(String(teams[0]));
     const create = page.getByTestId("create-custom-role");
+    await expect(create).toBeVisible();
     await create.locator('input[name="name"]').fill("Shared booking observer");
     await create
       .locator('input[name="description"]')
@@ -193,7 +195,7 @@ async function runCustomRoleJourney({ pool, fixture, t }) {
     await expect(page.getByTestId("custom-role-review")).toContainText("Updated review subject");
     const output = path.resolve(__dirname, "../../test-results/community-enterprise");
     fs.mkdirSync(output, { recursive: true });
-    await page.screenshot({ path: path.join(output, "custom-role-review.png"), fullPage: true });
+    await page.getByTestId("custom-roles").screenshot({ path: path.join(output, "custom-role-review.png") });
     await page.getByTestId("confirm-custom-role").focus();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("role-notice")).toHaveText(
@@ -210,6 +212,34 @@ async function runCustomRoleJourney({ pool, fixture, t }) {
     const eventGroups = await clientFor(reader, "eventTypes").query("getUserEventGroups", {});
     assert.ok(eventGroups.eventTypeGroups.some((group) => group.teamId === teams[0]));
     assert.equal(eventGroups.teamPermissions[teams[0]].canCreateEventType, false);
+    const writesBefore = (
+      await pool.query(
+        'SELECT (SELECT count(*)::int FROM "EventType") AS events, (SELECT count(*)::int FROM "ApiKey") AS keys'
+      )
+    ).rows[0];
+    await assert.rejects(
+      clientFor(reader, "eventTypesHeavy").mutation("create", {
+        title: "Read delegation cannot create",
+        slug: "read-only-denied",
+        length: 30,
+        teamId: teams[0],
+        schedulingType: "ROUND_ROBIN",
+      }),
+      (error) => error.data?.code === "UNAUTHORIZED"
+    );
+    await assert.rejects(
+      clientFor(reader, "apiKeys").mutation("create", {
+        teamId: teams[0],
+        note: "Read delegation cannot issue a key",
+      }),
+      (error) => error.data?.code === "FORBIDDEN"
+    );
+    const writesAfter = (
+      await pool.query(
+        'SELECT (SELECT count(*)::int FROM "EventType") AS events, (SELECT count(*)::int FROM "ApiKey") AS keys'
+      )
+    ).rows[0];
+    assert.deepEqual(writesAfter, writesBefore);
 
     assert.deepEqual(uids(await list({ teamIds: [teams[1]] })), []);
     assert.deepEqual(uids(await list({ teamIds: [foreign.teamId] })), []);
@@ -280,6 +310,7 @@ async function runCustomRoleJourney({ pool, fixture, t }) {
         explicitScopeOnly: true,
         privateAndSiblingBookingsExcluded: true,
         unchangedSessionRevocation: true,
+        actualEventAndKeyMutationsDenied: true,
         ownerLossDenied: true,
         keyboardConfirmation: true,
         messagesSent: 0,
