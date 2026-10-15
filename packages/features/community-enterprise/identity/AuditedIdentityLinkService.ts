@@ -158,16 +158,16 @@ export class AuditedIdentityLinkService {
       try {
         return await this.db.$transaction(
           async (tx) => {
-            // Serialize duplicate operations, then user mutations in stable order.
-            // A concurrent account lock or role update must wait for these rows.
+            // Match organization/member writers: a linker waiting for the root
+            // must not already hold users needed by the root's current writer.
             await tx.$queryRaw`SELECT true AS acquired FROM pg_advisory_xact_lock(hashtext('cal.identity.link'), hashtext(${request.operationId}))`;
             const ids = Array.from(
               new Set([request.actorUserId, ...request.links.map((link) => link.userId)])
             ).sort((a, b) => a - b);
+            await tx.$queryRaw`SELECT id FROM "Team" WHERE id = ${request.organizationId} FOR SHARE`;
             await tx.$queryRaw(
               Prisma.sql`SELECT id FROM "users" WHERE id IN (${Prisma.join(ids)}) ORDER BY id FOR UPDATE`
             );
-            await tx.$queryRaw`SELECT id FROM "Team" WHERE id = ${request.organizationId} FOR SHARE`;
             await tx.$queryRaw(
               Prisma.sql`SELECT id FROM "Membership" WHERE "teamId" = ${request.organizationId} AND "userId" IN (${Prisma.join(ids)}) ORDER BY id FOR SHARE`
             );

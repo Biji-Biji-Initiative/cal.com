@@ -269,15 +269,19 @@ test("the actual operator CLI requires a reviewed plan and writes one audit reco
   const environment = Object.fromEntries(
     ["PATH", "HOME", "USER", "LANG"].filter((key) => process.env[key]).map((key) => [key, process.env[key]])
   );
+  const databaseUrl = `postgresql://cal_enterprise_test@localhost:55439/${database}?host=${encodeURIComponent(connection.host)}`;
   Object.assign(environment, {
-    DATABASE_URL: `postgresql://cal_enterprise_test@localhost:55439/${database}?host=${encodeURIComponent(connection.host)}`,
+    DATABASE_URL: databaseUrl,
     CAL_AUTHENTIK_ISSUER: target.issuer,
     NEXT_PUBLIC_WEBAPP_URL: target.webOrigin,
   });
   const invoke = (args: string[]) =>
     run(process.execPath, ["scripts/link-enterprise-identity.cjs", ...args], {
       cwd: root,
-      env: environment,
+      // The web app augments ProcessEnv with required server fields. This child
+      // intentionally receives only the CLI's explicit synthetic environment.
+      env: environment as NodeJS.ProcessEnv,
+      encoding: "utf8",
       timeout: 30000,
     });
   try {
@@ -311,7 +315,7 @@ test("the actual operator CLI requires a reviewed plan and writes one audit reco
     assert.equal(JSON.parse(replay.stdout).status, "replayed");
     assert.deepEqual(await counts(), { accounts: 2, audit: 1 });
     assert.ok(!applied.stdout.includes("subject-two"));
-    assert.ok(!applied.stdout.includes(environment.DATABASE_URL));
+    assert.ok(!applied.stdout.includes(databaseUrl));
   } finally {
     fs.rmSync(directory, { recursive: true });
   }
@@ -323,6 +327,7 @@ test("revocation committed while an apply waits for a locked user is rechecked",
   const blocker = await pool.connect();
   try {
     await blocker.query("BEGIN");
+    const { rows } = await blocker.query<{ pid: number }>("SELECT pg_backend_pid() AS pid");
     await blocker.query('UPDATE "users" SET locked=true WHERE id=2');
     let ended = false;
     const applying = service.apply(input, plan).then(
@@ -335,8 +340,7 @@ test("revocation committed while an apply waits for a locked user is rechecked",
         return "refused";
       }
     );
-    // The request's user lock must wait rather than use its reviewed stale state.
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await waitForLinkRowLock(rows[0].pid, "users");
     assert.equal(ended, false);
     await blocker.query("COMMIT");
     assert.equal(await applying, "refused");
@@ -372,4 +376,90 @@ test("concurrent different subjects for one user cannot both become sign-in iden
   assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
   assert.equal(results.filter((result) => result.status === "rejected").length, 1);
   assert.deepEqual(await counts(), { accounts: 1, audit: 1 });
+});
+
+async function waitForLinkRowLock(blockerPid: number, table: "Team" | "users") {
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    const result = await pool.query<{ waiting: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1 FROM pg_stat_activity
+         WHERE datname = current_database() AND pid <> pg_backend_pid()
+           AND wait_event_type = 'Lock' AND $1 = ANY(pg_blocking_pids(pid))
+           AND query LIKE $2
+       ) AS waiting`,
+      [blockerPid, `%FROM "${table}"%FOR %`]
+    );
+    if (result.rows[0].waiting) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  assert.fail(`The identity writer did not demonstrate a blocked ${table} row lock`);
+}
+
+for (const change of ["operator-role", "target-membership", "review-expiry"] as const) {
+  test(`current ${change} is checked after an observed organization lock wait`, async () => {
+    const input = request();
+    const plan = await service.plan(input);
+    const blocker = await pool.connect();
+    let applying: Promise<PromiseSettledResult<unknown>> | undefined;
+    try {
+      await blocker.query("BEGIN");
+      const { rows } = await blocker.query<{ pid: number }>("SELECT pg_backend_pid() AS pid");
+      await blocker.query('SELECT id FROM "Team" WHERE id=100 FOR UPDATE');
+      applying = service.apply(input, plan).then(
+        (value) => ({ status: "fulfilled" as const, value }),
+        (reason: unknown) => ({ status: "rejected" as const, reason })
+      );
+      await waitForLinkRowLock(rows[0].pid, "Team");
+      if (change === "operator-role") {
+        // Member/role writers lock organization, then users. A waiting identity
+        // operation must not hold users in the reverse order.
+        await blocker.query('SELECT id FROM "users" WHERE id=1 FOR UPDATE NOWAIT');
+        await blocker.query("UPDATE \"users\" SET role='USER' WHERE id=1");
+      } else if (change === "target-membership") {
+        await blocker.query('DELETE FROM "Membership" WHERE "teamId"=100 AND "userId"=2');
+      } else {
+        clock = plan.expiresAt;
+      }
+      await blocker.query("COMMIT");
+      const result = await applying;
+      assert.equal(result.status, "rejected");
+      if (result.status === "rejected") {
+        assert.ok(result.reason instanceof Error);
+        assert.match(result.reason.message, change === "review-expiry" ? /expired/ : /reviewed active/);
+      }
+      assert.deepEqual(await counts(), { accounts: 0, audit: 0 });
+    } finally {
+      await blocker.query("ROLLBACK");
+      blocker.release();
+      if (applying) await applying;
+    }
+  });
+}
+
+test("linking preserves retained calendar credentials and appointment identifiers", async () => {
+  await prisma.credential.create({
+    data: { id: 41, userId: 2, type: "google_calendar", key: { fixture: "no-live-token" } },
+  });
+  await prisma.booking.create({
+    data: {
+      id: 42,
+      uid: "retained-calendar-appointment",
+      userId: 2,
+      title: "Synthetic retained appointment",
+      startTime: new Date("2030-01-01T10:00:00Z"),
+      endTime: new Date("2030-01-01T10:30:00Z"),
+    },
+  });
+  const before = {
+    credentials: await prisma.credential.findMany(),
+    bookings: await prisma.booking.findMany(),
+  };
+  const input = request();
+  await service.apply(input, await service.plan(input));
+  assert.deepEqual(
+    { credentials: await prisma.credential.findMany(), bookings: await prisma.booking.findMany() },
+    before
+  );
+  assert.deepEqual(await counts(), { accounts: 2, audit: 1 });
 });
