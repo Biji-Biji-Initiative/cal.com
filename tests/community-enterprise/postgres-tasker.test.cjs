@@ -658,3 +658,18 @@ test("lost acknowledgement after a committed success never reclassifies that rec
   );
   assert.equal(effects, 1);
 });
+
+test("default-created work is due in the actual database timezone", async (t) => {
+  const id = await repository.create("sendWebhook", "synthetic-default-time");
+  const [clock] = await db.$queryRaw`SELECT current_setting('TimeZone') AS zone,
+    EXTRACT(EPOCH FROM ("scheduledAt" - (clock_timestamp() AT TIME ZONE 'UTC')))::double precision AS "offsetSeconds"
+    FROM "Task" WHERE id=${id}`;
+  t.diagnostic(
+    JSON.stringify({ databaseTimezone: clock.zone, defaultTaskOffsetSeconds: clock.offsetSeconds })
+  );
+  assert.ok(
+    Math.abs(clock.offsetSeconds) < 10,
+    "Default task creation must use the same instant convention as claim eligibility"
+  );
+  assert.equal((await repository.claimNext(10000))?.id, id);
+});

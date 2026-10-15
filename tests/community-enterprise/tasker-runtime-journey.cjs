@@ -18,18 +18,22 @@ async function seedTaskerFixture(pool) {
     [3, "sendSms", 0, false, null],
   ]) {
     await pool.query(
-      'INSERT INTO "Task" (id,type,payload,attempts,"maxAttempts","scheduledAt","lastError","updatedAt") VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())',
-      [
-        ids[index],
-        type,
-        marker,
-        attempts,
-        index === 0 ? 1 : 3,
-        new Date(Date.now() + (due ? -60000 : 3600000)),
-        state,
-      ]
+      `INSERT INTO "Task" (id,type,payload,attempts,"maxAttempts","scheduledAt","lastError","updatedAt") VALUES ($1,$2,$3,$4,$5,(clock_timestamp() AT TIME ZONE 'UTC') + ($6::double precision * interval '1 millisecond'),$7,NOW())`,
+      [ids[index], type, marker, attempts, index === 0 ? 1 : 3, due ? -60000 : 3600000, state]
     );
   }
+  const times = (
+    await pool.query(
+      `SELECT current_setting('TimeZone') AS zone, EXTRACT(EPOCH FROM ("scheduledAt" - (clock_timestamp() AT TIME ZONE 'UTC')))::double precision AS "offsetSeconds" FROM "Task" ORDER BY id`
+    )
+  ).rows;
+  assert.equal(
+    times.filter((row) => row.offsetSeconds < 0).length,
+    3,
+    "The fixture must store three due UTC instants, independent of the database/local timezone"
+  );
+  assert.equal(times.filter((row) => row.offsetSeconds > 3500).length, 1);
+
   return { secret, marker, ids };
 }
 async function runTaskerJourney({ pool, fixture, t }) {
