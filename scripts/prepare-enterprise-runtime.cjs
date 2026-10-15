@@ -7,6 +7,19 @@ const { nodeFileTrace } = require("next/dist/compiled/@vercel/nft");
 const { retainNotices } = require("./retain-enterprise-notices.cjs");
 const root = path.resolve(__dirname, "..");
 
+function validateSource(directory, expectedRevision) {
+  if (typeof expectedRevision !== "string" || !/^[a-f0-9]{40}$/.test(expectedRevision))
+    throw new Error("Invalid source revision");
+  const options = { cwd: directory, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] };
+  const revision = execFileSync("git", ["rev-parse", "HEAD"], options).trim();
+  if (revision !== expectedRevision) throw new Error("Wrong source revision");
+  const changes = execFileSync("git", ["status", "--porcelain=v1", "--untracked-files=all", "-z"], options);
+  // A commit ID does not identify uncommitted files included by tracing or
+  // copying. Do not label their bytes as the reviewed revision.
+  if (changes.length) throw new Error("Uncommitted source changes; refuse runtime packaging");
+  return revision;
+}
+
 async function prepare(outputPath, receiptPath) {
   if (!path.isAbsolute(outputPath) || !path.isAbsolute(receiptPath))
     throw new Error("Absolute output and verified build-receipt paths required");
@@ -14,8 +27,7 @@ async function prepare(outputPath, receiptPath) {
   if (output === root || output.startsWith(`${root}${path.sep}`))
     throw new Error("Build context must be outside the checkout");
   const receipt = JSON.parse(await fs.readFile(receiptPath, "utf8"));
-  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
-  if (head !== receipt.source || !/^[a-f0-9]{40}$/.test(head)) throw new Error("Wrong source revision");
+  const head = validateSource(root, receipt.source);
   if (
     !["install", "generate", "app-registry", "trpc", "assets", "web-build"].every(
       (name) => receipt.results?.[name]?.exit_code === 0
@@ -115,10 +127,12 @@ async function prepare(outputPath, receiptPath) {
     copiedLicenseNotices: noticeCount,
     traceWarnings: Array.from(traced.warnings, (warning) => warning.message),
   };
+  await validateTree(output);
+  // Do not write a completion manifest for an invalid or changed preparation.
+  validateSource(root, head);
   await fs.writeFile(path.join(output, "enterprise-build.json"), JSON.stringify(manifest, null, 2) + "\n", {
     flag: "wx",
   });
-  await validateTree(output);
   console.log(
     JSON.stringify({
       output,
@@ -183,4 +197,4 @@ if (require.main === module)
     console.error(error.message);
     process.exitCode = 1;
   });
-module.exports = { validateTree };
+module.exports = { prepare, validateSource, validateTree };
