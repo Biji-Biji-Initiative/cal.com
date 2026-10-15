@@ -9,6 +9,7 @@ import { type FormEvent, useRef, useState } from "react";
 import OrganizationInvitations from "./organization-invitations";
 import OrganizationMembers from "./organization-members";
 import OrganizationProvisioning from "./organization-provisioning";
+import ScopedRoles from "./scoped-roles";
 
 function useOperationKey() {
   const last = useRef<{ signature: string; requestId: string } | null>(null);
@@ -134,6 +135,16 @@ export default function EnterpriseTeamsView() {
               <OrganizationInvitations
                 key={current.organization.id}
                 organizationId={current.organization.id}
+              />
+            )}
+            {current.canInvite && (
+              <ScopedRoles
+                key={`roles-${current.organization.id}`}
+                organizationId={current.organization.id}
+                scopes={[
+                  { id: current.organization.id, name: current.organization.name },
+                  ...current.teams.map((team) => ({ id: team.id, name: team.name })),
+                ]}
               />
             )}
             {current.canManage && (
