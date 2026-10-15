@@ -21,6 +21,7 @@ def main() -> int:
     parser.add_argument("--prisma-cli", type=Path, help="Explicit installed Prisma CLI; its version must match the repo pin")
     parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "hosts", "team-journey", "identity-link", "api-keys", "api-auth", "api-key-http", "calendar-boundary", "migration-preflight", "onboarding-journey", "organizations", "organization-journey", "invitations", "invitation-journey", "member-lifecycle", "member-journey", "scheduling-handoff", "handoff-journey", "provider-lifecycle", "provider-journey", "tasker", "tasker-runtime", "api-assembled", "custom-roles", "custom-role-journey"), default="bookings")
     parser.add_argument("--concurrency", action="store_true", help="Run the additional deterministic booking-conflict acceptance probe")
+    parser.add_argument("--accepted-organization-member", action="store_true", help="Run onboarding for a member admitted through the native organization service")
     parser.add_argument("--api-node-image", help="Existing local Node runtime image ID; no pull or publication")
     parser.add_argument("--api-redis-image", help="Existing local Redis runtime image ID; no pull or publication")
     args = parser.parse_args()
@@ -30,6 +31,9 @@ def main() -> int:
                 parser.error("api-assembled requires explicit local sha256 image IDs via --api-node-image and --api-redis-image")
     elif args.api_node_image or args.api_redis_image:
         parser.error("API fixture image inputs require --suite api-assembled")
+
+    if args.accepted_organization_member and args.suite != "onboarding-journey":
+        parser.error("--accepted-organization-member requires --suite onboarding-journey")
 
     if args.concurrency and args.suite != "team-journey":
         parser.error("--concurrency requires --suite team-journey")
@@ -69,6 +73,8 @@ def main() -> int:
         environment["CAL_TEAM_BROWSER_JOURNEY"] = "true"
     if args.suite == "onboarding-journey":
         environment["CAL_ONBOARDING_BROWSER_JOURNEY"] = "true"
+        if args.accepted_organization_member:
+            environment["CAL_ONBOARDING_ACCEPTED_MEMBER"] = "true"
     if args.suite == "organization-journey":
         environment["CAL_ORGANIZATION_BROWSER_JOURNEY"] = "true"
     if args.suite == "invitation-journey":

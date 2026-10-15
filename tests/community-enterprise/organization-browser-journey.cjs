@@ -238,6 +238,38 @@ async function runOrganizationBrowserJourney({ pool, fixture, t }) {
     ).rows[0];
     assert.deepEqual(originalUser, { role: "USER", organizationId: null, movedToProfileId: null });
     await page.screenshot({ path: path.join(output, "organization-created.png"), fullPage: true });
+    // A second real service-created organization exercises the actual switch,
+    // without deriving membership from a brand, plan or a test-only SQL write.
+    const secondReview = await client.mutation("reviewOrganization", {
+      name: "Second Reviewed Community",
+      slug: "second-reviewed",
+      timeZone: "UTC",
+      ownerEmail: "smoke@example.test",
+      memberEmails: [],
+    });
+    const second = await client.mutation("provisionOrganization", secondReview.input);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    const switcher = page.getByRole("combobox", { name: "Organization", exact: true });
+    await expect(switcher).toHaveAccessibleName("Organization");
+    await expect(switcher.locator("option")).toHaveCount(2);
+    const options = await switcher
+      .locator("option")
+      .evaluateAll((elements) => elements.map((element) => element.value));
+    const chooseWithKeyboard = async (id) => {
+      const index = options.indexOf(String(id));
+      assert.ok(index >= 0);
+      await switcher.focus();
+      await page.keyboard.press("Home");
+      for (let step = 0; step < index; step++) await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("Enter");
+      await expect(switcher).toHaveValue(String(id));
+    };
+    await chooseWithKeyboard(second.organizationId);
+    await expect(page.getByRole("heading", { name: "Mentoring team", exact: true })).toHaveCount(0);
+    await expect(page.getByTestId(`team-member-form-${team.id}`)).toHaveCount(0);
+    await chooseWithKeyboard(org.id);
+    await expect(page.getByRole("heading", { name: "Mentoring team", exact: true })).toBeVisible();
+    await expect(page.getByTestId(`team-member-form-${team.id}`)).toBeVisible();
     // Same authenticated cookie, committed local role downgrade. Organization
     // ownership does not substitute for instance-wide provisioning authority.
     await pool.query("UPDATE users SET role='USER' WHERE id=7001");
@@ -257,13 +289,15 @@ async function runOrganizationBrowserJourney({ pool, fixture, t }) {
     await expect(page.getByTestId("create-team")).toBeVisible();
     assert.equal(
       (await pool.query('SELECT count(*)::int AS count FROM "Team" WHERE "isOrganization"')).rows[0].count,
-      1
+      2
     );
     assert.equal(fixture.smtp.count(), 0, "Explicit admission is not an external invitation send");
     t.diagnostic(
       JSON.stringify({
         nativeOidcExchanges: fixture.oidc.exchanges(),
-        createdOrganizations: 1,
+        createdOrganizations: 2,
+        keyboardOrganizationSwitch: true,
+        otherOrganizationTeamControlsExcluded: true,
         initialMemberships: 2,
         childTeams: 1,
         childMembershipAdded: true,

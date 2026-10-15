@@ -140,7 +140,8 @@ test(
             roleFixture?.identities ||
             handoffFixture?.identities ||
             memberFixture?.identities ||
-            invitationFixture?.identities,
+            invitationFixture?.identities ||
+            onboardingFixture?.identities,
         });
         identityFixture.oidc = oidcProvider;
         Object.assign(environment, oidcProvider.environment);

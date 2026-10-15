@@ -4,6 +4,7 @@ const { chromium, expect } = require("@playwright/test");
 const path = require("node:path");
 const fs = require("node:fs");
 const origin = "http://127.0.0.1:38917";
+const { sessionFor } = require("./invitation-browser-journey.cjs");
 
 async function seedOnboardingBrowserFixture(pool) {
   await pool.query(
@@ -13,10 +14,44 @@ async function seedOnboardingBrowserFixture(pool) {
   await pool.query(
     "INSERT INTO \"Feature\" (slug,enabled,type,description,\"createdAt\",\"updatedAt\") VALUES ('onboarding-v3',true,'OPERATIONAL','Synthetic stale flag',NOW(),NOW()) ON CONFLICT (slug) DO UPDATE SET enabled=true"
   );
+  if (process.env.CAL_ONBOARDING_ACCEPTED_MEMBER === "true") {
+    await pool.query(
+      `INSERT INTO users (id,uuid,email,name,username,role,"completedOnboarding","emailVerified","timeZone") VALUES (7002,$1,'onboarding-operator@example.test','Synthetic Admission Operator','onboarding-operator','ADMIN',true,NOW(),'UTC')`,
+      [require("node:crypto").randomUUID()]
+    );
+    return {
+      acceptedOrganizationMember: true,
+      identities: [
+        { userId: 7001, email: "smoke@example.test", subject: "synthetic-staff-subject" },
+        { userId: 7002, email: "onboarding-operator@example.test", subject: "synthetic-onboarding-operator" },
+      ],
+    };
+  }
   return {};
 }
 
 async function runOnboardingBrowserJourney({ pool, fixture, t }) {
+  let admittedOrganizationId = null;
+  if (fixture.acceptedOrganizationMember) {
+    const operator = await sessionFor(fixture, 7002);
+    const review = await operator.client.mutation("reviewOrganization", {
+      name: "Existing Staff Organization",
+      slug: "existing-staff",
+      timeZone: "UTC",
+      ownerEmail: "onboarding-operator@example.test",
+      memberEmails: ["smoke@example.test"],
+    });
+    const admitted = await operator.client.mutation("provisionOrganization", review.input);
+    admittedOrganizationId = admitted.organizationId;
+    assert.deepEqual(
+      (
+        await pool.query('SELECT role,accepted FROM "Membership" WHERE "userId"=7001 AND "teamId"=$1', [
+          admittedOrganizationId,
+        ])
+      ).rows,
+      [{ role: "MEMBER", accepted: true }]
+    );
+  }
   const jar = new Map();
   const request = async (route, options = {}) => {
     const response = await fetch(`${origin}${route}`, {
@@ -50,7 +85,7 @@ async function runOnboardingBrowserJourney({ pool, fixture, t }) {
   const callback = new URL(await fixture.oidc.authorize(authorization));
   assert.equal(callback.origin, origin);
   assert.ok((await request(callback.pathname + callback.search)).status < 400);
-  assert.equal(fixture.oidc.exchanges(), 1);
+  assert.equal(fixture.oidc.exchanges(), fixture.acceptedOrganizationMember ? 2 : 1);
   assert.equal((await (await request("/api/auth/session")).json()).user?.id, 7001);
   const browser = await chromium.launch({ headless: true });
   try {
@@ -159,8 +194,35 @@ async function runOnboardingBrowserJourney({ pool, fixture, t }) {
     );
     assert.equal(
       (await pool.query('SELECT count(*)::int AS count FROM "Membership" WHERE "userId"=7001')).rows[0].count,
-      0
+      fixture.acceptedOrganizationMember ? 1 : 0
     );
+    if (fixture.acceptedOrganizationMember) {
+      assert.deepEqual(
+        (
+          await pool.query('SELECT role,accepted FROM "Membership" WHERE "userId"=7001 AND "teamId"=$1', [
+            admittedOrganizationId,
+          ])
+        ).rows,
+        [{ role: "MEMBER", accepted: true }]
+      );
+      assert.equal(
+        (
+          await pool.query(
+            'SELECT count(*)::int AS count FROM "Profile" WHERE "userId"=7001 AND "organizationId"=$1',
+            [admittedOrganizationId]
+          )
+        ).rows[0].count,
+        1
+      );
+      assert.equal(
+        (
+          await pool.query(
+            'SELECT count(*)::int AS count FROM "EventType" WHERE "userId"=7001 AND "teamId" IS NOT NULL'
+          )
+        ).rows[0].count,
+        0
+      );
+    }
     assert.deepEqual(checkoutAttempts, []);
     for (const alias of ["/onboarding/teams/details", "/onboarding/organization/details?bp=a"]) {
       await page.goto(origin + alias, { waitUntil: "domcontentloaded" });
@@ -174,7 +236,9 @@ async function runOnboardingBrowserJourney({ pool, fixture, t }) {
     await guest.close();
     t.diagnostic(
       JSON.stringify({
-        nativeOidcExchanges: 1,
+        nativeOidcExchanges: fixture.oidc.exchanges(),
+        acceptedOrganizationMember: !!fixture.acceptedOrganizationMember,
+        admissionUsesActualService: !!fixture.acceptedOrganizationMember,
         setupSteps: 5,
         hostedCheckoutRequests: 0,
         membershipChanges: 0,

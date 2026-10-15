@@ -302,3 +302,23 @@ test("existing event types are preserved and local invitation destinations still
     ["navigate", f.destination]
   );
 });
+
+for (const suite of ["bookings", "custom-role-journey"]) {
+  test(`accepted-member fixture flag cannot silently alter ${suite}`, () => {
+    const { spawnSync } = require("node:child_process");
+    const result = spawnSync(
+      "python3",
+      ["scripts/run-community-enterprise-postgres.py", "--suite", suite, "--accepted-organization-member"],
+      {
+        cwd: root,
+        encoding: "utf8",
+        timeout: 10000,
+        env: Object.fromEntries(["PATH", "HOME", "LANG"].map((name) => [name, process.env[name]])),
+      }
+    );
+    assert.ifError(result.error);
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /--accepted-organization-member requires --suite onboarding-journey/);
+    assert.equal(result.stdout, "", "Reject before resolving or starting a database fixture");
+  });
+}

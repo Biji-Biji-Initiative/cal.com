@@ -128,18 +128,58 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
       assert.equal(response.status(), 200);
       return page;
     };
+    const inboxTimings = [];
+    const responseData = async (response) => {
+      assert.equal(response.status(), 200, "The actual invitation operation must succeed");
+      const body = await response.json();
+      return (Array.isArray(body) ? body : [body])
+        .filter((item) => item.result?.data)
+        .map((item) => superjson.deserialize(item.result.data));
+    };
+    const isOperation = (response, operation, method) => {
+      const url = new URL(response.url());
+      return (
+        url.origin === origin &&
+        url.pathname.startsWith("/api/trpc/enterpriseTeams/") &&
+        response.request().method() === method &&
+        url.pathname.split("/").at(-1).split(",").includes(operation)
+      );
+    };
+    const reloadInbox = async (page, invitationId) => {
+      const started = performance.now();
+      const completed = page.waitForResponse((response) => isOperation(response, "invitations", "GET"));
+      await page.reload({ waitUntil: "domcontentloaded" });
+      const data = await responseData(await completed);
+      assert.ok(
+        data.some(
+          (result) => Array.isArray(result.items) && result.items.some((item) => item.id === invitationId)
+        ),
+        "The real inbox response must contain the exact committed invitation"
+      );
+      inboxTimings.push(Math.round(performance.now() - started));
+      // Keep the original five-second render assertion after the data response.
+      await expect(page.getByTestId(`invitation-${invitationId}`)).toBeVisible();
+    };
     const ownerPage = await pageFor(owner);
     const memberPage = await pageFor(member);
     const colleaguePage = await pageFor(colleague);
     const form = ownerPage.getByTestId("invite-organization-member");
     const invite = async (email) => {
       await form.locator('input[name="email"]').fill(email);
+      const completed = ownerPage.waitForResponse((response) =>
+        isOperation(response, "inviteMember", "POST")
+      );
       await form.getByRole("button", { name: "Send invitation", exact: true }).click();
+      const data = await responseData(await completed);
+      const committed = data.find((result) => Number.isInteger(result.invitationId));
+      assert.ok(committed, "The invitation identifier must come from the actual completed UI mutation");
       const pending = ownerPage.getByTestId("organization-invitations");
       await expect(pending.getByText(email, { exact: true })).toBeVisible({ timeout: 30000 });
       const rows = await owner.client.query("invitations", { organizationId: org.organizationId });
-      const item = rows.items.find((row) => row.recipient.email === email);
-      assert.ok(item);
+      const item = rows.items.find(
+        (row) => row.id === committed.invitationId && row.recipient.email === email
+      );
+      assert.ok(item, "Read back the exact UI mutation, not an older row with the same email");
       return item;
     };
     const first = await invite("invitee@example.test");
@@ -192,7 +232,7 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
       false
     );
     await pool.query('UPDATE users SET "emailVerified"=NOW() WHERE id=7002');
-    await memberPage.reload({ waitUntil: "domcontentloaded" });
+    await reloadInbox(memberPage, first.id);
     const invitation = memberPage.getByTestId(`invitation-${first.id}`);
     await expect(invitation).toBeVisible();
     await expect(invitation.getByText("Synthetic Invitation Workspace", { exact: true })).toBeVisible();
@@ -232,7 +272,7 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
     );
     await ownerPage.reload({ waitUntil: "domcontentloaded" });
     const declined = await invite("colleague@example.test");
-    await colleaguePage.reload({ waitUntil: "domcontentloaded" });
+    await reloadInbox(colleaguePage, declined.id);
     await colleaguePage
       .getByTestId(`invitation-${declined.id}`)
       .getByRole("button", { name: "Decline invitation", exact: true })
@@ -249,7 +289,23 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
     );
     await ownerPage.reload({ waitUntil: "domcontentloaded" });
     const revoked = await invite("colleague@example.test");
-    await colleaguePage.reload({ waitUntil: "domcontentloaded" });
+    // A DOM load is not completion of the native inbox query. This controlled
+    // slow read exceeds the default assertion timeout but stays within the
+    // already-declared 45-second browser operation budget.
+    let delayedInboxRead = false;
+    const inboxRoute = origin + "/api/trpc/enterpriseTeams/**";
+    const delayedRead = async (route) => {
+      const operations = new URL(route.request().url()).pathname.split("/").at(-1).split(",");
+      if (!delayedInboxRead && route.request().method() === "GET" && operations.includes("invitations")) {
+        delayedInboxRead = true;
+        await new Promise((resolve) => setTimeout(resolve, 6000));
+      }
+      await route.continue();
+    };
+    await colleaguePage.route(inboxRoute, delayedRead);
+    await reloadInbox(colleaguePage, revoked.id);
+    assert.equal(delayedInboxRead, true, "The delayed native read must actually execute");
+    await colleaguePage.unroute(inboxRoute, delayedRead);
     await expect(colleaguePage.getByTestId(`invitation-${revoked.id}`)).toBeVisible();
     await ownerPage
       .getByTestId(`invitation-${revoked.id}`)
@@ -287,7 +343,7 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
       ])
     ).rows[0];
     assert.equal(pending.accepted, false);
-    await colleaguePage.reload({ waitUntil: "domcontentloaded" });
+    await reloadInbox(colleaguePage, mailFailed.id);
     await expect(colleaguePage.getByTestId(`invitation-${mailFailed.id}`)).toBeVisible();
     await colleaguePage
       .getByTestId(`invitation-${mailFailed.id}`)
@@ -300,6 +356,9 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
     t.diagnostic(
       JSON.stringify({
         nativeIdentities: 3,
+        actualMutationAndInboxReadback: true,
+        inboxResponseMilliseconds: inboxTimings,
+        controlledInboxDelayMilliseconds: 6000,
         verifiedEmailRequiredAtIssueAndAccept: true,
         accepted: 1,
         declined: 2,

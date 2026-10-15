@@ -127,6 +127,7 @@ test("source-only evidence cannot satisfy a runtime prerequisite", () => {
 test("runnable work includes the retained engine without waiting for full administration", () => {
   const graph = read();
   graph.tasks.find((task) => task.id === "CAL-06.REUSE").state = "open";
+  graph.tasks.find((task) => task.id === "CAL-05.CORE").state = "in_progress";
   const ready = readyTasks(graph).map((task) => task.id);
   assert.equal(ready[0], "CAL-05.CORE");
   assert.ok(ready.includes("CAL-06.REUSE"));
@@ -150,8 +151,18 @@ test("ready CLI produces machine-readable JSON without extra diagnostics", () =>
     { encoding: "utf8" }
   );
   const ready = JSON.parse(text);
-  assert.equal(ready[0].id, "CAL-05.CORE");
-  assert.equal(ready[0].priority, 0);
+  assert.deepEqual(
+    ready,
+    readyTasks(read()).map(({ id, title, state, lane, owner_role, priority }) => ({
+      id,
+      title,
+      state,
+      lane,
+      owner_role,
+      priority,
+    }))
+  );
+  assert.ok(ready.every((row) => !isComplete(row)));
 });
 
 test("an accepted epic can combine completed source and runtime prerequisites", () => {
@@ -216,6 +227,9 @@ test("burndown counts executable work separately from parent containers", () => 
 });
 test("downstream impact counts waiting tasks and does not invent task records", () => {
   const graph = read();
+  // Fixed scenario, not an assertion that real product work must stay unfinished.
+  graph.tasks.find((task) => task.id === "CAL-05.CORE").state = "in_progress";
+  graph.tasks.find((task) => task.id === "CAL-04.SCIM").state = "open";
   const status = taskStatus(graph);
   const core = status.ready.find((task) => task.id === "CAL-05.CORE");
   assert.ok(core.pendingDescendants > 0);
@@ -240,4 +254,45 @@ test("status command is machine-readable and does not mutate the graph", () => {
   );
   assert.deepEqual(report, taskStatus(read()));
   assert.deepEqual(fs.readFileSync(graphFile), before);
+});
+
+test("accepting core unlocks its existing children without completing the release", () => {
+  const graph = read();
+  const core = graph.tasks.find((task) => task.id === "CAL-05.CORE");
+  const ui = graph.tasks.find((task) => task.id === "CAL-05.UI");
+  const scim = graph.tasks.find((task) => task.id === "CAL-04.SCIM");
+  core.state = "in_progress";
+  ui.state = "in_progress";
+  scim.state = "open";
+  const before = taskStatus(graph);
+  assert.ok(!before.ready.some((task) => task.id === ui.id || task.id === scim.id));
+  core.state = "source_proven";
+  const after = taskStatus(graph);
+  assert.equal(after.completed.length, before.completed.length + 1);
+  assert.equal(after.remaining, before.remaining - 1);
+  assert.ok(after.ready.some((task) => task.id === ui.id));
+  assert.ok(after.ready.some((task) => task.id === scim.id));
+  assert.ok(!after.ready.some((task) => task.id === core.id));
+  assert.ok(after.milestones.every((milestone) => !milestone.complete));
+});
+test("UI source proof alone never unlocks its runtime release requirement", () => {
+  const graph = read();
+  const core = graph.tasks.find((task) => task.id === "CAL-05.CORE");
+  const ui = graph.tasks.find((task) => task.id === "CAL-05.UI");
+  core.state = "source_proven";
+  ui.state = "source_proven";
+  assert.equal(isComplete(ui), false);
+  assert.ok(
+    taskStatus(graph)
+      .milestones.find((milestone) => milestone.id === "M2")
+      .pendingTasks.includes(ui.id)
+  );
+  ui.state = "runtime_proven";
+  assert.equal(isComplete(ui), true);
+  const status = taskStatus(graph);
+  assert.ok(!status.milestones.find((milestone) => milestone.id === "M2").pendingTasks.includes(ui.id));
+  assert.ok(
+    status.milestones.find((milestone) => milestone.id === "M2").pendingTasks.includes("CAL-02.PREVIEW")
+  );
+  assert.ok(status.milestones.every((milestone) => !milestone.complete));
 });
