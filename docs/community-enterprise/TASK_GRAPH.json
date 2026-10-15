@@ -413,6 +413,14 @@
           "exit_code": 0,
           "summary": "Existing dev/staging legacy workloads reach their Authentik redirect. Enterprise candidate is local only; registry identity lacks package scope.",
           "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2"
+        },
+        {
+          "file": "docs/community-enterprise/DELIVERY-2026-10-14.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/runtime-package.test.cjs tests/community-enterprise/migration-entrypoint.test.cjs",
+          "exit_code": 0,
+          "summary": "Existing runtime preparer rejects uncommitted source before copying and observed source changes during preparation; completion manifest follows context/source validation. 29 bounded packaging/entrypoint cases pass; real Git/filesystem/tar with explicit trace/notice fixture boundaries. Not a fresh application build, image publication or deployed preview.",
+          "code_revision": "9380134e36b50247d0cb16a9d08f7ff04a902e98"
         }
       ],
       "required_for_team_release": true,
@@ -425,7 +433,15 @@
         "Live cal.mereka.dev is the restored legacy v6.2.0 image, not the enterprise candidate.",
         "Approved GHCR publication permissions and exact-image security disposition remain unresolved.",
         "Native Authentik client/account/organization provisioning and anonymous guest routing need actual deployment acceptance."
-      ]
+      ],
+      "execution_checkpoint": {
+        "observed_at": "2026-10-15T18:01:47.159370+00:00",
+        "code_revision": "9380134e36b50247d0cb16a9d08f7ff04a902e98",
+        "publisher_request": "https://github.com/Biji-Biji-Initiative/team-skills/issues/960#issuecomment-6198759136",
+        "publisher_state": "configured person route refused package read with HTTP403; approved producer outcome requested, not executed",
+        "candidate_deployed": false,
+        "next": "One clean accepted role/identity application build for exact HTTPS origin; qualified registry publication; existing isolated preview admission and serving/identity/guest proof."
+      }
     },
     {
       "id": "CAL-03.POLICY",
