@@ -357,6 +357,18 @@ export const getBusyCalendarTimes = async (
   return { success: true, data: results.reduce((acc, availability) => acc.concat(availability), []) };
 };
 
+// A resolved request is not enough to mint a BookingReference. Adapters must
+// return a usable resource identity; an empty object/array is not confirmation.
+const hasCalendarResource = (value: unknown): value is NewCalendarEventType => {
+  if (!value || typeof value !== "object" || Array.isArray(value) || !("id" in value)) return false;
+  return (
+    (typeof value.id === "string" && value.id.trim().length > 0) ||
+    (typeof value.id === "number" && Number.isFinite(value.id) && value.id > 0)
+  );
+};
+const hasCalendarUpdate = (value: unknown): boolean =>
+  Array.isArray(value) ? value.length > 0 && value.every(hasCalendarResource) : hasCalendarResource(value);
+
 export const createEvent = async (
   credential: CredentialForCalendarService,
   originalEvent: CalendarEvent,
@@ -366,7 +378,7 @@ export const createEvent = async (
   const formattedEvent = formatCalEvent(originalEvent);
   const uid: string = getUid(formattedEvent.uid);
   const calendar = await getCalendar(credential, "booking");
-  let success = true;
+  let success = false;
   let calError: string | undefined;
 
   log.debug(
@@ -392,36 +404,22 @@ export const createEvent = async (
         // Ideally we should pass externalId always, but let's start with DelegationCredential case first as in that case, CalendarService need to handle a special case for DelegationCredential to determine the selectedCalendar.
         // Such logic shouldn't exist in CalendarService as it would be same for all calendar apps.
         .createEvent(calEvent, credential.id, externalCalendarIdWhenDelegationCredentialIsChosen)
-        .catch(async (error: { code: number; calError: string }) => {
-          success = false;
-          /**
-           * There is a time when selectedCalendar externalId doesn't match witch certain credential
-           * so google returns 404.
-           * */
-          if (error?.code === 404) {
-            return undefined;
-          }
-          if (error?.calError) {
-            calError = error.calError;
-          }
-          log.error(
-            "createEvent failed",
-            safeStringify(error),
-            safeStringify({ calEvent: getPiiFreeCalendarEvent(calEvent) })
-          );
-          // @TODO: This code will be off till we can investigate an error with it
-          //https://github.com/calcom/cal.diy/issues/3949
-          // await sendBrokenIntegrationEmail(calEvent, "calendar");
+        .catch(() => {
+          // Provider exceptions can contain OAuth headers and request bodies.
+          // Keep those out of integration status and routine application logs.
+          calError = "Calendar provider did not confirm event creation";
+          log.warn(calError, { credentialId: credential.id, type: credential.type });
           return undefined;
         })
     : undefined;
-  if (!creationResult) {
+  success = hasCalendarResource(creationResult);
+  if (!success) {
+    calError ??= "Calendar provider did not confirm event creation";
     logger.error(
       "createEvent failed",
       safeStringify({
         success,
         uid,
-        creationResult,
         originalEvent: getPiiFreeCalendarEvent(calEvent),
         calError,
       })
@@ -431,7 +429,7 @@ export const createEvent = async (
     "Created calendar event",
     safeStringify({
       calEvent: getPiiFreeCalendarEvent(calEvent),
-      creationResult,
+      confirmed: success,
     })
   );
   return {
@@ -487,25 +485,19 @@ export const updateEvent = async (
       ? await calendar
           .updateEvent(bookingRefUid, calEvent, externalCalendarId)
           .then((event: NewCalendarEventType | NewCalendarEventType[]) => {
-            success = true;
+            success = hasCalendarUpdate(event);
             return event;
           })
-          .catch(async (e: { calError: string }) => {
-            // @TODO: This code will be off till we can investigate an error with it
-            // @see https://github.com/calcom/cal.diy/issues/3949
-            // await sendBrokenIntegrationEmail(calEvent, "calendar");
-            log.error(
-              "updateEvent failed",
-              safeStringify({ e, calEvent: getPiiFreeCalendarEvent(calEvent) })
-            );
-            if (e?.calError) {
-              calError = e.calError;
-            }
+          .catch(() => {
+            calError = "Calendar provider did not confirm event update";
+            log.warn(calError, { credentialId: credential.id, type: credential.type });
             return undefined;
           })
       : undefined;
 
-  if (!updatedResult) {
+  if (!hasCalendarUpdate(updatedResult)) {
+    success = false;
+    calError ??= "Calendar provider did not confirm event update";
     logger.error(
       "updateEvent failed",
       safeStringify({
@@ -530,6 +522,9 @@ export const updateEvent = async (
     success,
     uid,
     updatedEvent: updatedResult,
+    credentialId: credential.id > 0 ? credential.id : undefined,
+    delegatedToId: credential.delegatedToId ?? undefined,
+    externalId: externalCalendarId,
     originalEvent: calEvent,
     calError,
     calWarnings,
@@ -547,7 +542,7 @@ export const deleteEvent = async ({
   event: CalendarEvent;
   externalCalendarId?: string | null;
 }): Promise<unknown> => {
-  if (!bookingRefUid) {
+  if (!bookingRefUid?.trim()) {
     log.error(
       "deleteEvent failed - bookingRefUid is empty, skipping calendar deletion to prevent malformed API request",
       safeStringify({
@@ -555,7 +550,7 @@ export const deleteEvent = async ({
         event: getPiiFreeCalendarEvent(event),
       })
     );
-    return Promise.resolve({});
+    throw new Error("Calendar event reference is missing");
   }
   const calendar = await getCalendar(credential, "booking");
   log.debug(
@@ -577,5 +572,5 @@ export const deleteEvent = async ({
     );
   }
 
-  return Promise.resolve({});
+  throw new Error("Calendar adapter is unavailable");
 };

@@ -580,9 +580,7 @@ describe("CalendarManager tests", () => {
       vi.clearAllMocks();
     });
 
-    it("should return early when bookingRefUid is empty string", async () => {
-      vi.mocked(getCalendar).mockResolvedValue({ deleteEvent: vi.fn() } as any);
-
+    it("should reject a missing reference without attempting provider deletion", async () => {
       const credential = {
         id: 1,
         type: "google_calendar",
@@ -597,14 +595,15 @@ describe("CalendarManager tests", () => {
         delegatedTo: null,
       };
 
-      const result = await deleteEvent({
-        credential,
-        bookingRefUid: "",
-        event: buildCalendarEvent(),
-        externalCalendarId: "calendar-id",
-      });
-
-      expect(result).toEqual({});
+      await expect(
+        deleteEvent({
+          credential,
+          bookingRefUid: "",
+          event: buildCalendarEvent(),
+          externalCalendarId: "calendar-id",
+        })
+      ).rejects.toThrow("Calendar event reference is missing");
+      expect(getCalendar).not.toHaveBeenCalled();
     });
   });
 });
