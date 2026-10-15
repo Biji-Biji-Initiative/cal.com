@@ -20,9 +20,7 @@ import type {
 } from "@calcom/types/Calendar";
 import type { CredentialForCalendarServiceWithEmail } from "@calcom/types/Credential";
 import type { calendar_v3 } from "@googleapis/calendar";
-import type { GaxiosResponse } from "googleapis-common";
 import { RRule } from "rrule";
-
 import { AxiosLikeResponseToFetchResponse } from "../../_utils/oauth/AxiosLikeResponseToFetchResponse";
 import { CalendarAuth } from "./CalendarAuth";
 
@@ -68,10 +66,6 @@ export interface GoogleCalendar extends Calendar {
 interface GoogleCalError extends Error {
   code?: number;
 }
-
-const isGaxiosResponse = (error: unknown): error is GaxiosResponse<calendar_v3.Schema$Event> =>
-  // biome-ignore lint/suspicious/noPrototypeBuiltins: Object.hasOwn not available in all build targets
-  typeof error === "object" && !!error && Object.prototype.hasOwnProperty.call(error, "config");
 
 class GoogleCalendarService implements Calendar {
   private integrationName = "";
@@ -332,15 +326,7 @@ class GoogleCalendarService implements Calendar {
         iCalUID: event?.iCalUID,
       };
     } catch (error) {
-      if (isGaxiosResponse(error)) {
-        // Prevent clogging up the logs with the body of the request
-        // Plus, we already have this data in error.data.summary
-        delete error.config.body;
-      }
-      this.log.error(
-        "There was an error creating event in google calendar: ",
-        safeStringify({ error, selectedCalendar, credentialId })
-      );
+      this.log.warn("Google calendar creation was not confirmed", { credentialId });
       throw error;
     }
   }
@@ -362,6 +348,7 @@ class GoogleCalendarService implements Calendar {
   }
 
   async updateEvent(uid: string, event: CalendarServiceEvent, externalCalendarId: string): Promise<any> {
+    if (!uid?.trim()) throw new Error("Calendar event reference is missing");
     // Fetch custom reminder duration for this credential's destination calendar
     const customReminderMinutes = await this.getReminderDuration(this.credential.id);
 
@@ -396,10 +383,9 @@ class GoogleCalendarService implements Calendar {
 
     const calendar = await this.authedCalendar();
 
-    const selectedCalendar =
-      (externalCalendarId
-        ? event.destinationCalendar?.find((cal) => cal.externalId === externalCalendarId)?.externalId
-        : undefined) || "primary";
+    // An existing event remains in the calendar recorded on its reference even
+    // after the user's destination for NEW bookings changes.
+    const selectedCalendar = externalCalendarId || "primary";
 
     try {
       const evt = await calendar.events.update({
@@ -452,15 +438,13 @@ class GoogleCalendarService implements Calendar {
       }
       return evt?.data;
     } catch (error) {
-      this.log.error(
-        "There was an error updating event in google calendar: ",
-        safeStringify({ error, event, uid })
-      );
+      this.log.warn("Google calendar update was not confirmed", { credentialId: this.credential.id });
       throw error;
     }
   }
 
   async deleteEvent(uid: string, event: CalendarEvent, externalCalendarId?: string | null): Promise<void> {
+    if (!uid?.trim()) throw new Error("Calendar event reference is missing");
     const calendar = await this.authedCalendar();
 
     const selectedCalendar = externalCalendarId || "primary";
@@ -474,18 +458,12 @@ class GoogleCalendarService implements Calendar {
       });
       return event?.data;
     } catch (error) {
-      this.log.error(
-        "There was an error deleting event from google calendar: ",
-        safeStringify({ error, event, externalCalendarId })
-      );
       const err = error as GoogleCalError;
-      /**
-       *  410 is when an event is already deleted on the Google cal before on cal.com
-       *  404 is when the event is on a different calendar
-       */
+      // A 404 can also hide a calendar the caller cannot access. It is not
+      // evidence that the old appointment disappeared. Retain Google's explicit
+      // already-deleted (410) idempotency without masking other failures.
       if (err.code === 410) return;
-      console.error("There was an error contacting google calendar service: ", err);
-      if (err.code === 404) return;
+      this.log.warn("Google calendar deletion was not confirmed", { code: err.code });
       throw err;
     }
   }

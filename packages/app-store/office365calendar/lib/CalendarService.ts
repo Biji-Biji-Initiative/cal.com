@@ -11,6 +11,7 @@ import logger from "@calcom/lib/logger";
 import type { BufferedBusyTime } from "@calcom/types/BufferedBusyTime";
 import type {
   Calendar,
+  CalendarEvent,
   CalendarServiceEvent,
   EventBusyDate,
   GetAvailabilityParams,
@@ -312,25 +313,47 @@ class Office365CalendarService implements Calendar {
 
       return { ...responseJson, iCalUID: responseJson.iCalUId };
     } catch (error) {
-      this.log.error(error);
+      this.log.warn("Microsoft calendar create was not confirmed");
 
       throw error;
     }
   }
 
-  async updateEvent(uid: string, event: CalendarServiceEvent): Promise<NewCalendarEventType> {
+  private async eventEndpoint(uid: string, externalCalendarId?: string | null): Promise<string> {
+    if (!uid?.trim() || uid === "." || uid === "..") throw new Error("Calendar event reference is missing");
+    if (
+      externalCalendarId === "." ||
+      externalCalendarId === ".." ||
+      (externalCalendarId != null && externalCalendarId !== "" && !externalCalendarId.trim())
+    ) {
+      throw new Error("Calendar reference is invalid");
+    }
+    const owner = await this.getUserEndpoint();
+    // Resource identifiers are opaque data, not path/query fragments. With no
+    // retained calendar ID, /events resolves across the user's calendars.
+    const events = externalCalendarId
+      ? `${owner}/calendars/${encodeURIComponent(externalCalendarId)}/events`
+      : `${owner}/events`;
+    return `${events}/${encodeURIComponent(uid)}`;
+  }
+
+  async updateEvent(
+    uid: string,
+    event: CalendarServiceEvent,
+    externalCalendarId?: string | null
+  ): Promise<NewCalendarEventType> {
     try {
       let rescheduledEvent: Event | undefined;
       if (event.location === MSTeamsLocationType) {
         // Extract the existing body content to preserve the meeting blob, otherwise it breaks and converts it into non-onlineMeeting
-        const response = await this.fetcher(`${await this.getUserEndpoint()}/calendar/events/${uid}`, {
+        const response = await this.fetcher(await this.eventEndpoint(uid, externalCalendarId), {
           method: "GET",
         });
 
         rescheduledEvent = await handleErrorsJson<Event>(response);
       }
 
-      const response = await this.fetcher(`${await this.getUserEndpoint()}/calendar/events/${uid}`, {
+      const response = await this.fetcher(await this.eventEndpoint(uid, externalCalendarId), {
         method: "PATCH",
         body: JSON.stringify(this.translateEvent(event, rescheduledEvent)),
       });
@@ -345,21 +368,21 @@ class Office365CalendarService implements Calendar {
 
       return { ...responseJson, iCalUID: responseJson.iCalUId };
     } catch (error) {
-      this.log.error(error);
+      this.log.warn("Microsoft calendar update was not confirmed");
 
       throw error;
     }
   }
 
-  async deleteEvent(uid: string): Promise<void> {
+  async deleteEvent(uid: string, _event?: CalendarEvent, externalCalendarId?: string | null): Promise<void> {
     try {
-      const response = await this.fetcher(`${await this.getUserEndpoint()}/calendar/events/${uid}`, {
+      const response = await this.fetcher(await this.eventEndpoint(uid, externalCalendarId), {
         method: "DELETE",
       });
 
-      handleErrorsRaw(response);
+      await handleErrorsRaw(response);
     } catch (error) {
-      this.log.error(error);
+      this.log.warn("Microsoft calendar delete was not confirmed");
 
       throw error;
     }

@@ -245,8 +245,10 @@ describe("Date Optimization Benchmarks", () => {
       if (diff <= 90) continue;
 
       // OLD WAY (dayjs-based chunking)
-      const originalStartDate = dayjs(testCase.dateFrom);
-      const originalEndDate = dayjs(testCase.dateTo);
+      // These inputs and the native millisecond implementation describe UTC
+      // windows. A host-local DST transition is a different comparison domain.
+      const originalStartDate = dayjs(testCase.dateFrom).utc();
+      const originalEndDate = dayjs(testCase.dateTo).utc();
       const loopsNumber = Math.ceil(diff / 90);
       let startDate = originalStartDate;
       let endDate = originalStartDate.add(90, "days");
