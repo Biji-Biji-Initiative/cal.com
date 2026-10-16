@@ -1,97 +1,123 @@
-import { isApiKey } from "@/lib/api-key";
-import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
-import { OAuthClientRepository } from "@/modules/oauth-clients/oauth-client.repository";
-import { OAuthClientsOutputService } from "@/modules/oauth-clients/services/oauth-clients/oauth-clients-output.service";
-import { TokensRepository } from "@/modules/tokens/tokens.repository";
-import { TokensService } from "@/modules/tokens/tokens.service";
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { Reflector } from "@nestjs/core";
-import { getToken } from "next-auth/jwt";
-
-import { X_CAL_CLIENT_ID } from "@calcom/platform-constants";
+import { X_CAL_CLIENT_ID, X_CAL_SECRET_KEY } from "@calcom/platform-constants";
 import { hasPermissions } from "@calcom/platform-utils";
 import type { PlatformOAuthClient } from "@calcom/prisma/client";
+import type { CanActivate, ExecutionContext } from "@nestjs/common";
+import { ForbiddenException, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { AuthMethods } from "@/lib/enums/auth-methods";
+import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
+import { clientSecretsMatch } from "@/modules/auth/services/client-secret";
+import { parseBearerHeader } from "@/modules/auth/services/credential-policy";
+import type { ApiAuthGuardRequest } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
+import { OAuthClientRepository } from "@/modules/oauth-clients/oauth-client.repository";
+import { TokensRepository } from "@/modules/tokens/tokens.repository";
+
+const unavailable = () => new ForbiddenException("OAuth permission authority is unavailable");
+type ClientPermissions = Pick<PlatformOAuthClient, "id" | "permissions">;
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
-    private reflector: Reflector,
-    private tokensRepository: TokensRepository,
-    private tokensService: TokensService,
-    private readonly config: ConfigService,
-    private readonly oAuthClientRepository: OAuthClientRepository,
-    private readonly oAuthClientsOutputService: OAuthClientsOutputService
+    private readonly reflector: Reflector,
+    private readonly tokensRepository: TokensRepository,
+    private readonly oAuthClientRepository: OAuthClientRepository
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPermissions = this.reflector.get(Permissions, context.getHandler());
+    const requiredPermissions = this.reflector.getAllAndOverride(Permissions, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!requiredPermissions?.length) return true;
 
-    if (!requiredPermissions?.length || !Object.keys(requiredPermissions)?.length) {
+    const request = context.switchToHttp().getRequest<ApiAuthGuardRequest>();
+    const userId = request.user?.id;
+    if (!Number.isSafeInteger(userId) || userId <= 0 || request.user?.locked !== false) {
+      throw unavailable();
+    }
+
+    // Passport has already chosen and verified one method. Reinterpreting an
+    // ambient cookie or secondary header here would change that authority.
+    if (
+      [AuthMethods.NEXT_AUTH, AuthMethods.API_KEY, AuthMethods.THIRD_PARTY_ACCESS_TOKEN].includes(
+        request.authMethod
+      )
+    ) {
+      // These established user credentials do not use platform-client bits.
+      // Their existing resource/membership and third-party scope checks remain.
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const bearerToken = request.get("Authorization")?.replace("Bearer ", "");
-    const nextAuthSecret = this.config.get("next.authSecret", { infer: true });
-    const nextAuthToken = await getToken({ req: request, secret: nextAuthSecret });
-    const oAuthClientId = request.params?.clientId || request.get(X_CAL_CLIENT_ID);
-    const apiKey = bearerToken && isApiKey(bearerToken, this.config.get("api.apiKeyPrefix") ?? "cal_");
-    const isThirdPartyBearerToken = bearerToken && this.getDecodedThirdPartyAccessToken(bearerToken);
-
-    // only check permissions for accessTokens attached to platform oAuth Client or platform oAuth credentials, not for next token or api key or third party oauth client
-    if (nextAuthToken || apiKey || isThirdPartyBearerToken) {
-      return true;
+    let client: ClientPermissions;
+    if (request.authMethod === AuthMethods.ACCESS_TOKEN) {
+      let token: string | undefined;
+      try {
+        token = parseBearerHeader(request.get("Authorization"));
+      } catch {
+        throw unavailable();
+      }
+      if (!token) throw unavailable();
+      client = await this.getOAuthClientByAccessToken(token, userId);
+    } else if (request.authMethod === AuthMethods.OAUTH_CLIENT) {
+      const id = request.params?.clientId || request.get(X_CAL_CLIENT_ID);
+      const suppliedSecret = request.get(X_CAL_SECRET_KEY);
+      if (
+        !id ||
+        !suppliedSecret ||
+        !Number.isSafeInteger(request.organizationId) ||
+        !request.organizationId
+      ) {
+        throw unavailable();
+      }
+      client = await this.getOAuthClientById(id, userId, request.organizationId, suppliedSecret);
+    } else {
+      // A direct guard call, wrong ordering or new unreviewed credential type
+      // cannot convert a permission decorator into unconditional acceptance.
+      throw unavailable();
     }
 
-    if (!bearerToken && !oAuthClientId) {
-      throw new ForbiddenException(
-        "PermissionsGuard - no authentication provided. Provide either authorization bearer token containing managed user access token or oAuth client id in 'x-cal-client-id' header."
-      );
+    if (
+      !Number.isSafeInteger(client.permissions) ||
+      client.permissions < 0 ||
+      !hasPermissions(client.permissions, [...requiredPermissions])
+    ) {
+      throw new ForbiddenException("OAuth client does not have the required permissions");
     }
-
-    const oAuthClient = bearerToken
-      ? await this.getOAuthClientByAccessToken(bearerToken)
-      : await this.getOAuthClientById(oAuthClientId);
-
-    const hasRequiredPermissions = hasPermissions(oAuthClient.permissions, [...requiredPermissions]);
-
-    if (!hasRequiredPermissions) {
-      throw new ForbiddenException(
-        `PermissionsGuard - oAuth client with id=${
-          oAuthClient.id
-        } does not have the required permissions=${requiredPermissions
-          .map((permission) => this.oAuthClientsOutputService.transformOAuthClientPermission(permission))
-          .join(
-            ", "
-          )}. Go to platform dashboard settings and add the required permissions to the oAuth client.`
-      );
-    }
-
     return true;
   }
 
-  async getOAuthClientByAccessToken(
-    accessToken: string
-  ): Promise<Pick<PlatformOAuthClient, "id" | "permissions">> {
-    const oAuthClient = await this.tokensRepository.getAccessTokenClient(accessToken);
-    if (!oAuthClient) {
-      throw new ForbiddenException(
-        `PermissionsGuard - no oAuth client found for access token=${accessToken}`
-      );
+  async getOAuthClientByAccessToken(accessToken: string, userId: number): Promise<ClientPermissions> {
+    if (!accessToken || !Number.isSafeInteger(userId) || userId <= 0) throw unavailable();
+    const authority = await this.tokensRepository.getAccessTokenPermissionState(accessToken, userId);
+    if (
+      !authority ||
+      !(authority.expiresAt instanceof Date) ||
+      !Number.isFinite(authority.expiresAt.getTime()) ||
+      authority.expiresAt.getTime() <= Date.now()
+    ) {
+      throw unavailable();
     }
-    return oAuthClient;
+    return authority.client;
   }
 
-  async getOAuthClientById(id: string): Promise<Pick<PlatformOAuthClient, "id" | "permissions">> {
-    const oAuthClient = await this.oAuthClientRepository.getOAuthClient(id);
-    if (!oAuthClient) {
-      throw new ForbiddenException(`PermissionsGuard - no oAuth client found for client id=${id}`);
-    }
-    return oAuthClient;
-  }
-
-  getDecodedThirdPartyAccessToken(bearerToken: string) {
-    return this.tokensService.getDecodedThirdPartyAccessToken(bearerToken);
+  async getOAuthClientById(
+    id: string,
+    userId: number,
+    organizationId: number,
+    suppliedSecret: string
+  ): Promise<ClientPermissions> {
+    if (
+      !id ||
+      !Number.isSafeInteger(userId) ||
+      userId <= 0 ||
+      !Number.isSafeInteger(organizationId) ||
+      organizationId <= 0 ||
+      !suppliedSecret
+    )
+      throw unavailable();
+    const client = await this.oAuthClientRepository.getOAuthClientPermissionState(id, userId, organizationId);
+    if (!client || !clientSecretsMatch(client.secret, suppliedSecret)) throw unavailable();
+    // The current secret is needed only for a rotation check, never returned.
+    return { id: client.id, permissions: client.permissions };
   }
 }

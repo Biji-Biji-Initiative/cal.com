@@ -1,35 +1,33 @@
-import { API_KEY_OR_ACCESS_TOKEN_HEADER } from "@/lib/docs/headers";
-import { GetUser } from "@/modules/auth/decorators/get-user/get-user.decorator";
-import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
-import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
-import { PermissionsGuard } from "@/modules/auth/guards/permissions/permissions.guard";
-import { EventTypeOwnershipGuard } from "@/modules/event-types/guards/event-type-ownership.guard";
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
-import { ApiHeader, ApiOperation, ApiTags as DocsTags } from "@nestjs/swagger";
-
 import { EVENT_TYPE_READ, EVENT_TYPE_WRITE, SUCCESS_STATUS } from "@calcom/platform-constants";
 import {
   CreatePrivateLinkInput,
   CreatePrivateLinkOutput,
   DeletePrivateLinkOutput,
   GetPrivateLinksOutput,
-  UpdatePrivateLinkOutput,
   UpdatePrivateLinkBody,
+  UpdatePrivateLinkOutput,
 } from "@calcom/platform-types";
-
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
+import { ApiHeader, ApiOperation, ApiTags as DocsTags } from "@nestjs/swagger";
 import { PrivateLinksService } from "../services/private-links.service";
+import { API_KEY_OR_ACCESS_TOKEN_HEADER } from "@/lib/docs/headers";
+import { GetUser } from "@/modules/auth/decorators/get-user/get-user.decorator";
+import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
+import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
+import { PermissionsGuard } from "@/modules/auth/guards/permissions/permissions.guard";
+import { EventTypeOwnershipGuard } from "@/modules/event-types/guards/event-type-ownership.guard";
 
 @Controller({
   path: "/v2/event-types/:eventTypeId/private-links",
 })
-@UseGuards(PermissionsGuard)
+
 @DocsTags("Event Types Private Links")
 export class EventTypesPrivateLinksController {
   constructor(private readonly privateLinksService: PrivateLinksService) {}
 
   @Post("/")
   @Permissions([EVENT_TYPE_WRITE])
-  @UseGuards(ApiAuthGuard, EventTypeOwnershipGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard, EventTypeOwnershipGuard)
   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
   @ApiOperation({ summary: "Create a private link for an event type" })
   async createPrivateLink(
@@ -47,7 +45,7 @@ export class EventTypesPrivateLinksController {
 
   @Get("/")
   @Permissions([EVENT_TYPE_READ])
-  @UseGuards(ApiAuthGuard, EventTypeOwnershipGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard, EventTypeOwnershipGuard)
   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
   @ApiOperation({ summary: "Get all private links for an event type" })
   async getPrivateLinks(
@@ -63,7 +61,7 @@ export class EventTypesPrivateLinksController {
 
   @Patch("/:linkId")
   @Permissions([EVENT_TYPE_WRITE])
-  @UseGuards(ApiAuthGuard, EventTypeOwnershipGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard, EventTypeOwnershipGuard)
   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
   @ApiOperation({ summary: "Update a private link for an event type" })
   async updatePrivateLink(
@@ -82,7 +80,7 @@ export class EventTypesPrivateLinksController {
 
   @Delete("/:linkId")
   @Permissions([EVENT_TYPE_WRITE])
-  @UseGuards(ApiAuthGuard, EventTypeOwnershipGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard, EventTypeOwnershipGuard)
   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
   @ApiOperation({ summary: "Delete a private link for an event type" })
   async deletePrivateLink(

@@ -13,6 +13,14 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiHeader, ApiOperation, ApiTags as DocsTags } from "@nestjs/swagger";
+import { VERSION_2024_08_13, VERSION_2024_08_13_VALUE } from "@/lib/api-versions";
+import { API_KEY_OR_ACCESS_TOKEN_HEADER } from "@/lib/docs/headers";
+import { Throttle } from "@/lib/endpoint-throttler-decorator";
+import { GetUser } from "@/modules/auth/decorators/get-user/get-user.decorator";
+import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
+import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
+import { PermissionsGuard } from "@/modules/auth/guards/permissions/permissions.guard";
+import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
 import { BookingPbacGuard } from "@/platform/bookings/2024-08-13/guards/booking-pbac.guard";
 import { BookingUidGuard } from "@/platform/bookings/2024-08-13/guards/booking-uid.guard";
 import { AddAttendeeOutput_2024_08_13 } from "@/platform/bookings/2024-08-13/outputs/add-attendee.output";
@@ -22,20 +30,12 @@ import {
 } from "@/platform/bookings/2024-08-13/outputs/get-booking-attendees.output";
 import { RemoveAttendeeOutput_2024_08_13 } from "@/platform/bookings/2024-08-13/outputs/remove-attendee.output";
 import { BookingAttendeesService_2024_08_13 } from "@/platform/bookings/2024-08-13/services/booking-attendees.service";
-import { VERSION_2024_08_13, VERSION_2024_08_13_VALUE } from "@/lib/api-versions";
-import { API_KEY_OR_ACCESS_TOKEN_HEADER } from "@/lib/docs/headers";
-import { Throttle } from "@/lib/endpoint-throttler-decorator";
-import { GetUser } from "@/modules/auth/decorators/get-user/get-user.decorator";
-import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
-import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
-import { PermissionsGuard } from "@/modules/auth/guards/permissions/permissions.guard";
-import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
 
 @Controller({
   path: "/v2/bookings/:bookingUid/attendees",
   version: VERSION_2024_08_13_VALUE,
 })
-@UseGuards(PermissionsGuard)
+
 @DocsTags("Bookings / Attendees")
 @ApiHeader({
   name: "cal-api-version",
@@ -48,7 +48,7 @@ export class BookingAttendeesController_2024_08_13 {
 
   @Get("/")
   @Permissions([BOOKING_READ])
-  @UseGuards(ApiAuthGuard, BookingUidGuard, BookingPbacGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard, BookingUidGuard, BookingPbacGuard)
   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
   @ApiOperation({
     summary: "Get all attendees for a booking",
@@ -71,7 +71,7 @@ export class BookingAttendeesController_2024_08_13 {
 
   @Get("/:attendeeId")
   @Permissions([BOOKING_READ])
-  @UseGuards(ApiAuthGuard, BookingUidGuard, BookingPbacGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard, BookingUidGuard, BookingPbacGuard)
   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
   @ApiOperation({
     summary: "Get a specific attendee for a booking",
@@ -95,7 +95,7 @@ export class BookingAttendeesController_2024_08_13 {
   @Post("/")
   @HttpCode(HttpStatus.CREATED)
   @Permissions([BOOKING_WRITE])
-  @UseGuards(ApiAuthGuard, BookingUidGuard, BookingPbacGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard, BookingUidGuard, BookingPbacGuard)
   @Throttle({
     limit: 5,
     ttl: 60000,
@@ -134,7 +134,7 @@ export class BookingAttendeesController_2024_08_13 {
   @Delete("/:attendeeId")
   @HttpCode(HttpStatus.OK)
   @Permissions([BOOKING_WRITE])
-  @UseGuards(ApiAuthGuard, BookingUidGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard, BookingUidGuard)
   @Throttle({
     limit: 5,
     ttl: 60000,

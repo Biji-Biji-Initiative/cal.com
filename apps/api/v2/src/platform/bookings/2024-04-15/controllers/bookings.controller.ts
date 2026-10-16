@@ -46,13 +46,6 @@ import { ApiQuery, ApiExcludeController as DocsExcludeController } from "@nestjs
 import { Request } from "express";
 import { NextApiRequest } from "next/types";
 import { v4 as uuidv4 } from "uuid";
-import { CreateBookingInput_2024_04_15 } from "@/platform/bookings/2024-04-15/inputs/create-booking.input";
-import { CreateRecurringBookingInput_2024_04_15 } from "@/platform/bookings/2024-04-15/inputs/create-recurring-booking.input";
-import { MarkNoShowInput_2024_04_15 } from "@/platform/bookings/2024-04-15/inputs/mark-no-show.input";
-import { GetBookingOutput_2024_04_15 } from "@/platform/bookings/2024-04-15/outputs/get-booking.output";
-import { GetBookingsOutput_2024_04_15 } from "@/platform/bookings/2024-04-15/outputs/get-bookings.output";
-import { MarkNoShowOutput_2024_04_15 } from "@/platform/bookings/2024-04-15/outputs/mark-no-show.output";
-import { PlatformBookingsService } from "@/platform/bookings/shared/platform-bookings.service";
 import { isApiKey, sha256Hash, stripApiKey } from "@/lib/api-key";
 import { VERSION_2024_04_15, VERSION_2024_06_11, VERSION_2024_06_14 } from "@/lib/api-versions";
 import { PrismaEventTypeRepository } from "@/lib/repositories/prisma-event-type.repository";
@@ -76,6 +69,13 @@ import { OAuthFlowService } from "@/modules/oauth-clients/services/oauth-flow.se
 import { PrismaReadService } from "@/modules/prisma/prisma-read.service";
 import { UsersService } from "@/modules/users/services/users.service";
 import { UsersRepository, UserWithProfile } from "@/modules/users/users.repository";
+import { CreateBookingInput_2024_04_15 } from "@/platform/bookings/2024-04-15/inputs/create-booking.input";
+import { CreateRecurringBookingInput_2024_04_15 } from "@/platform/bookings/2024-04-15/inputs/create-recurring-booking.input";
+import { MarkNoShowInput_2024_04_15 } from "@/platform/bookings/2024-04-15/inputs/mark-no-show.input";
+import { GetBookingOutput_2024_04_15 } from "@/platform/bookings/2024-04-15/outputs/get-booking.output";
+import { GetBookingsOutput_2024_04_15 } from "@/platform/bookings/2024-04-15/outputs/get-bookings.output";
+import { MarkNoShowOutput_2024_04_15 } from "@/platform/bookings/2024-04-15/outputs/mark-no-show.output";
+import { PlatformBookingsService } from "@/platform/bookings/shared/platform-bookings.service";
 
 type BookingRequest = Request & {
   userId?: number;
@@ -105,7 +105,7 @@ const DEFAULT_PLATFORM_PARAMS = {
   path: "/v2/bookings",
   version: [VERSION_2024_04_15, VERSION_2024_06_11, VERSION_2024_06_14],
 })
-@UseGuards(PermissionsGuard)
+
 @DocsExcludeController(true)
 export class BookingsController_2024_04_15 {
   private readonly logger = new Logger("BookingsController_2024_04_15");
@@ -127,7 +127,7 @@ export class BookingsController_2024_04_15 {
   ) {}
 
   @Get("/")
-  @UseGuards(ApiAuthGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard)
   @Permissions([BOOKING_READ])
   @ApiQuery({ name: "filters[status]", enum: Status_2024_04_15, required: true })
   @ApiQuery({ name: "limit", type: "number", required: false })
@@ -289,7 +289,7 @@ export class BookingsController_2024_04_15 {
 
   @Post("/:bookingUid/mark-no-show")
   @Permissions([BOOKING_WRITE])
-  @UseGuards(ApiAuthGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard)
   async markNoShow(
     @GetUser() user: UserWithProfile,
     @Body() body: MarkNoShowInput_2024_04_15,
