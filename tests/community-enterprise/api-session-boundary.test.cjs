@@ -658,3 +658,84 @@ test("production OAuth branch rejects the wrong secret before selecting any owne
   assert.equal((await f.api.oAuthClientStrategy("fixture-client", "synthetic-secret", f.request())).id, 7);
   assert.equal(ownerLookups, 1);
 });
+
+function permissionGuardInventory() {
+  const walk = (directory) =>
+    fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+      const name = path.join(directory, entry.name);
+      return entry.isDirectory() ? walk(name) : [name];
+    });
+  const rows = [];
+  for (const file of walk(path.join(root, "apps/api/v2/src")).filter((name) =>
+    name.endsWith(".controller.ts")
+  )) {
+    const source = ts.createSourceFile(file, fs.readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
+    const decorators = (node, name) =>
+      (ts.getDecorators(node) || [])
+        .map((d) => d.expression)
+        .filter((e) => ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === name);
+    const guards = (node) => {
+      const entries = decorators(node, "UseGuards");
+      assert.ok(
+        entries.length <= 1,
+        `${file}: multiple guard decorators require an explicit ordering review`
+      );
+      return entries.flatMap((d) => d.arguments.map((a) => a.getText(source)));
+    };
+    for (const klass of source.statements.filter(ts.isClassDeclaration)) {
+      if (!decorators(klass, "Controller").length) continue;
+      for (const method of klass.members.filter(ts.isMethodDeclaration)) {
+        const methodPermissions = decorators(method, "Permissions");
+        const permissions = methodPermissions.length ? methodPermissions : decorators(klass, "Permissions");
+        if (!permissions.length) continue;
+        assert.equal(permissions.length, 1);
+        assert.ok(
+          ts.isArrayLiteralExpression(permissions[0].arguments[0]),
+          `${file}: dynamic permissions need explicit review`
+        );
+        if (!permissions[0].arguments[0].elements.length) continue;
+        rows.push({
+          file: path.relative(root, file),
+          method: method.name.getText(source),
+          guards: [...guards(klass), ...guards(method)],
+        });
+      }
+    }
+  }
+  return rows;
+}
+function assertPermissionGuardOrder(row) {
+  const auth = row.guards.indexOf("ApiAuthGuard"),
+    permission = row.guards.indexOf("PermissionsGuard");
+  assert.ok(
+    auth >= 0 && permission > auth,
+    `${row.file}:${row.method} must authenticate before checking selected-client permissions`
+  );
+}
+test("all directly decorated API controllers authenticate before the managed permission guard", () => {
+  const inventory = permissionGuardInventory();
+  assert.ok(inventory.length >= 40, "Missing source must not appear to be a complete route inventory");
+  for (const row of inventory) assertPermissionGuardOrder(row);
+});
+test("controller-level permission checking ahead of method authentication is detected", () => {
+  assert.throws(
+    () =>
+      assertPermissionGuardOrder({
+        file: "fixture",
+        method: "write",
+        guards: ["PermissionsGuard", "ApiAuthGuard"],
+      }),
+    /authenticate before/
+  );
+  assert.throws(
+    () => assertPermissionGuardOrder({ file: "fixture", method: "write", guards: ["ApiAuthGuard"] }),
+    /authenticate before/
+  );
+  assert.doesNotThrow(() =>
+    assertPermissionGuardOrder({
+      file: "fixture",
+      method: "write",
+      guards: ["ApiAuthGuard", "PermissionsGuard", "BookingPbacGuard"],
+    })
+  );
+});
