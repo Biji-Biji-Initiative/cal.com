@@ -1,5 +1,16 @@
 # Cal.diy-based enterprise service — implementation record
 
+## Latest security checkpoint — 16 October 2026
+
+[Matched runtime security acceptance](RUNTIME-SECURITY-2026-10-16.md) records
+existing-line dependency repairs, a real concurrent-request-context regression,
+and removal of unused installers from the final runtime filesystem. The new
+exact-source web/API and HTTPS image pass their native fixture checks. Matched
+image HIGH occurrences move **113 to 56** with zero CRITICAL/secrets;
+remaining findings are not waived. The graph stays 12/29 complete, 17 remaining.
+The image is local, not an admitted registry publication or shared preview.
+
+
 ## Latest execution checkpoint — 16 October 2026
 
 [Integrated native acceptance](MEGA-WAVE-ACCEPTANCE-2026-10-16.md) records the

@@ -1,0 +1,1038 @@
+{
+  "schemaVersion": 1,
+  "source": "e3a79afbffc3d81973d6f299a59e154f154d7cf8",
+  "imageId": "sha256:0b3f92174bcb45eb7b7cdda0a23b98dc3262f13d342efc22103d36dd1dd4d4aa",
+  "scannerDatabaseSha256": "32c6ed2327c56930f4814c2f243bcdbf54fe4b6b42d85533e53d0a02ebe36e4d",
+  "scope": "Remaining HIGH package/advisory occurrences in this exact local runtime image; no reachability waiver, production acceptance or claim that count equals unique exploitable defects.",
+  "entries": [
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-76642",
+      "package": "bsdutils",
+      "installedVersion": "1:2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78408",
+      "package": "bsdutils",
+      "installedVersion": "1:2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78409",
+      "package": "bsdutils",
+      "installedVersion": "1:2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78410",
+      "package": "bsdutils",
+      "installedVersion": "1:2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-54369",
+      "package": "libacl1",
+      "installedVersion": "2.3.2-2+b1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-76642",
+      "package": "libblkid1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78408",
+      "package": "libblkid1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78409",
+      "package": "libblkid1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78410",
+      "package": "libblkid1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-76642",
+      "package": "liblastlog2-2",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78408",
+      "package": "liblastlog2-2",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78409",
+      "package": "liblastlog2-2",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78410",
+      "package": "liblastlog2-2",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-76642",
+      "package": "libmount1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78408",
+      "package": "libmount1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78409",
+      "package": "libmount1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78410",
+      "package": "libmount1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-76642",
+      "package": "libsmartcols1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78408",
+      "package": "libsmartcols1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78409",
+      "package": "libsmartcols1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78410",
+      "package": "libsmartcols1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-16742",
+      "package": "libsystemd0",
+      "installedVersion": "257.13-1~deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2025-69720",
+      "package": "libtinfo6",
+      "installedVersion": "6.5+20250216-2",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-16742",
+      "package": "libudev1",
+      "installedVersion": "257.13-1~deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-76642",
+      "package": "libuuid1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78408",
+      "package": "libuuid1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78409",
+      "package": "libuuid1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78410",
+      "package": "libuuid1",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-76642",
+      "package": "login",
+      "installedVersion": "1:4.16.0-2+really2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78408",
+      "package": "login",
+      "installedVersion": "1:4.16.0-2+really2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78409",
+      "package": "login",
+      "installedVersion": "1:4.16.0-2+really2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78410",
+      "package": "login",
+      "installedVersion": "1:4.16.0-2+really2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-76642",
+      "package": "mount",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78408",
+      "package": "mount",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78409",
+      "package": "mount",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78410",
+      "package": "mount",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2025-69720",
+      "package": "ncurses-base",
+      "installedVersion": "6.5+20250216-2",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2025-69720",
+      "package": "ncurses-bin",
+      "installedVersion": "6.5+20250216-2",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-9538",
+      "package": "perl-base",
+      "installedVersion": "5.40.1-6+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "fix_deferred",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-76642",
+      "package": "util-linux",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78408",
+      "package": "util-linux",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78409",
+      "package": "util-linux",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "base-os",
+      "advisory": "CVE-2026-78410",
+      "package": "util-linux",
+      "installedVersion": "2.41.5-0+deb13u1",
+      "fixedVersion": "",
+      "path": "",
+      "status": "affected",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Review distribution remediation and actual exposure; no available patched package is recorded by this scan."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "CVE-2026-73654",
+      "package": "@trigger.dev/core",
+      "installedVersion": "4.3.2",
+      "fixedVersion": "4.5.6",
+      "path": "calcom/node_modules/@trigger.dev/core/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Upgrade the owning Trigger SDK/build/schema/CLI version set coherently; run native Tasker and notification/admission negatives before accepting changed external-job metadata behavior.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "@trigger.dev/core",
+          "parentSelector": "@trigger.dev/build@npm:4.3.2",
+          "parentVersion": "4.3.2",
+          "requested": "npm:4.3.2"
+        },
+        {
+          "dependency": "@trigger.dev/core",
+          "parentSelector": "@trigger.dev/schema-to-json@npm:4.3.2",
+          "parentVersion": "4.3.2",
+          "requested": "npm:4.3.2"
+        },
+        {
+          "dependency": "@trigger.dev/core",
+          "parentSelector": "@trigger.dev/sdk@npm:4.3.2",
+          "parentVersion": "4.3.2",
+          "requested": "npm:4.3.2"
+        },
+        {
+          "dependency": "@trigger.dev/core",
+          "parentSelector": "trigger.dev@npm:4.3.2",
+          "parentVersion": "4.3.2",
+          "requested": "npm:4.3.2"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "CVE-2026-40345",
+      "package": "deepmerge-ts",
+      "installedVersion": "7.1.5",
+      "fixedVersion": "8.0.0",
+      "path": "calcom/node_modules/deepmerge-ts/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Qualify the Prisma configuration merge contract and direct migration CLI against the proposed fix; do not substitute an untested major deepmerge resolution solely to remove the finding.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "deepmerge-ts",
+          "parentSelector": "@prisma/config@npm:6.15.0",
+          "parentVersion": "6.15.0",
+          "requested": "npm:7.1.5"
+        },
+        {
+          "dependency": "deepmerge-ts",
+          "parentSelector": "@prisma/config@npm:6.16.1",
+          "parentVersion": "6.16.1",
+          "requested": "npm:7.1.5"
+        },
+        {
+          "dependency": "deepmerge-ts",
+          "parentSelector": "@prisma/config@npm:6.16.2",
+          "parentVersion": "6.16.2",
+          "requested": "npm:7.1.5"
+        },
+        {
+          "dependency": "deepmerge-ts",
+          "parentSelector": "@prisma/config@npm:^6.10.0",
+          "parentVersion": "6.19.1",
+          "requested": "npm:7.1.5"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "CVE-2026-40345",
+      "package": "deepmerge-ts",
+      "installedVersion": "7.1.5",
+      "fixedVersion": "8.0.0",
+      "path": "calcom/ops/node_modules/deepmerge-ts/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Qualify the Prisma configuration merge contract and direct migration CLI against the proposed fix; do not substitute an untested major deepmerge resolution solely to remove the finding.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "deepmerge-ts",
+          "parentSelector": "@prisma/config@npm:6.15.0",
+          "parentVersion": "6.15.0",
+          "requested": "npm:7.1.5"
+        },
+        {
+          "dependency": "deepmerge-ts",
+          "parentSelector": "@prisma/config@npm:6.16.1",
+          "parentVersion": "6.16.1",
+          "requested": "npm:7.1.5"
+        },
+        {
+          "dependency": "deepmerge-ts",
+          "parentSelector": "@prisma/config@npm:6.16.2",
+          "parentVersion": "6.16.2",
+          "requested": "npm:7.1.5"
+        },
+        {
+          "dependency": "deepmerge-ts",
+          "parentSelector": "@prisma/config@npm:^6.10.0",
+          "parentVersion": "6.19.1",
+          "requested": "npm:7.1.5"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "CVE-2026-67213",
+      "package": "nanoid",
+      "installedVersion": "4.0.2",
+      "fixedVersion": "3.3.18, 5.1.6",
+      "path": "calcom/node_modules/@todesktop/client-util/node_modules/nanoid/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "For the remaining v4 copy, update its declared desktop-client parent or qualify its import/identifier contract on a supported fixed line. The repaired v3 line does not establish v4 compatibility.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@ai-sdk/provider-utils@npm:2.2.3",
+          "parentVersion": "2.2.3",
+          "requested": "npm:^3.3.8"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@ai-sdk/provider-utils@npm:2.2.8, @ai-sdk/provider-utils@npm:^2.0.0",
+          "parentVersion": "2.2.8",
+          "requested": "npm:^3.3.8"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@todesktop/client-util@npm:^1.4.0",
+          "parentVersion": "1.4.0",
+          "requested": "npm:^4.0.2"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@trigger.dev/core@npm:4.3.2",
+          "parentVersion": "4.3.2",
+          "requested": "npm:3.3.8"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "ics@npm:2.37.0",
+          "parentVersion": "2.37.0",
+          "requested": "npm:^3.1.23"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "postcss@npm:8.5.23",
+          "parentVersion": "8.5.23",
+          "requested": "npm:^3.3.16"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "CVE-2026-67214",
+      "package": "nanoid",
+      "installedVersion": "4.0.2",
+      "fixedVersion": "3.3.16, 5.1.16",
+      "path": "calcom/node_modules/@todesktop/client-util/node_modules/nanoid/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "For the remaining v4 copy, update its declared desktop-client parent or qualify its import/identifier contract on a supported fixed line. The repaired v3 line does not establish v4 compatibility.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@ai-sdk/provider-utils@npm:2.2.3",
+          "parentVersion": "2.2.3",
+          "requested": "npm:^3.3.8"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@ai-sdk/provider-utils@npm:2.2.8, @ai-sdk/provider-utils@npm:^2.0.0",
+          "parentVersion": "2.2.8",
+          "requested": "npm:^3.3.8"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@todesktop/client-util@npm:^1.4.0",
+          "parentVersion": "1.4.0",
+          "requested": "npm:^4.0.2"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@trigger.dev/core@npm:4.3.2",
+          "parentVersion": "4.3.2",
+          "requested": "npm:3.3.8"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "ics@npm:2.37.0",
+          "parentVersion": "2.37.0",
+          "requested": "npm:^3.1.23"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "postcss@npm:8.5.23",
+          "parentVersion": "8.5.23",
+          "requested": "npm:^3.3.16"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "CVE-2026-73086",
+      "package": "nanoid",
+      "installedVersion": "4.0.2",
+      "fixedVersion": "3.3.12, 5.1.11",
+      "path": "calcom/node_modules/@todesktop/client-util/node_modules/nanoid/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "For the remaining v4 copy, update its declared desktop-client parent or qualify its import/identifier contract on a supported fixed line. The repaired v3 line does not establish v4 compatibility.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@ai-sdk/provider-utils@npm:2.2.3",
+          "parentVersion": "2.2.3",
+          "requested": "npm:^3.3.8"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@ai-sdk/provider-utils@npm:2.2.8, @ai-sdk/provider-utils@npm:^2.0.0",
+          "parentVersion": "2.2.8",
+          "requested": "npm:^3.3.8"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@todesktop/client-util@npm:^1.4.0",
+          "parentVersion": "1.4.0",
+          "requested": "npm:^4.0.2"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "@trigger.dev/core@npm:4.3.2",
+          "parentVersion": "4.3.2",
+          "requested": "npm:3.3.8"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "ics@npm:2.37.0",
+          "parentVersion": "2.37.0",
+          "requested": "npm:^3.1.23"
+        },
+        {
+          "dependency": "nanoid",
+          "parentSelector": "postcss@npm:8.5.23",
+          "parentVersion": "8.5.23",
+          "requested": "npm:^3.3.16"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "CVE-2026-82659",
+      "package": "nodemailer",
+      "installedVersion": "7.0.12",
+      "fixedVersion": "9.0.1",
+      "path": "calcom/node_modules/nodemailer/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Qualify the supported fixed major across the auth/mail consumer, SMTP/TLS verification, address parsing and attachment/file/URL restrictions; rerun invitation, provider, cancellation and worker delivery-negative journeys.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "nodemailer",
+          "parentSelector": "@calcom/feature-auth@workspace:packages/features/auth",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:7.0.12"
+        },
+        {
+          "dependency": "nodemailer",
+          "parentSelector": "@calcom/web@workspace:apps/web",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:7.0.12"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "CVE-2026-82662",
+      "package": "nodemailer",
+      "installedVersion": "7.0.12",
+      "fixedVersion": "8.0.8",
+      "path": "calcom/node_modules/nodemailer/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Qualify the supported fixed major across the auth/mail consumer, SMTP/TLS verification, address parsing and attachment/file/URL restrictions; rerun invitation, provider, cancellation and worker delivery-negative journeys.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "nodemailer",
+          "parentSelector": "@calcom/feature-auth@workspace:packages/features/auth",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:7.0.12"
+        },
+        {
+          "dependency": "nodemailer",
+          "parentSelector": "@calcom/web@workspace:apps/web",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:7.0.12"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "GHSA-2x7j-588g-ccc2",
+      "package": "nodemailer",
+      "installedVersion": "7.0.12",
+      "fixedVersion": "9.1.0",
+      "path": "calcom/node_modules/nodemailer/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Qualify the supported fixed major across the auth/mail consumer, SMTP/TLS verification, address parsing and attachment/file/URL restrictions; rerun invitation, provider, cancellation and worker delivery-negative journeys.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "nodemailer",
+          "parentSelector": "@calcom/feature-auth@workspace:packages/features/auth",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:7.0.12"
+        },
+        {
+          "dependency": "nodemailer",
+          "parentSelector": "@calcom/web@workspace:apps/web",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:7.0.12"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "GHSA-v53p-9fqp-m79j",
+      "package": "nodemailer",
+      "installedVersion": "7.0.12",
+      "fixedVersion": "10.0.6",
+      "path": "calcom/node_modules/nodemailer/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Qualify the supported fixed major across the auth/mail consumer, SMTP/TLS verification, address parsing and attachment/file/URL restrictions; rerun invitation, provider, cancellation and worker delivery-negative journeys.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "nodemailer",
+          "parentSelector": "@calcom/feature-auth@workspace:packages/features/auth",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:7.0.12"
+        },
+        {
+          "dependency": "nodemailer",
+          "parentSelector": "@calcom/web@workspace:apps/web",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:7.0.12"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "GHSA-f88m-g3jw-g9cj",
+      "package": "sharp",
+      "installedVersion": "0.33.5",
+      "fixedVersion": "0.35.0",
+      "path": "calcom/node_modules/sharp/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Update the direct image utility and required native binary/libvips line together; test actual decode/resize/encode, malformed and bounded image inputs plus the Next image route on the supported Node/container target.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "sharp",
+          "parentSelector": "@calcom/lib@npm:*, @calcom/lib@workspace:*, @calcom/lib@workspace:packages/lib",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:0.33.5"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "@calcom/web@workspace:apps/web",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:0.33.5"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "next@npm:15.5.15, next@npm:^15.1.0",
+          "parentVersion": "15.5.15",
+          "requested": "npm:^0.34.3"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "next@npm:16.2.3",
+          "parentVersion": "16.2.3",
+          "requested": "npm:^0.34.5"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "next@npm:16.3.8",
+          "parentVersion": "16.3.8",
+          "requested": "npm:^0.35.4"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "GHSA-rgj7-g3m4-5g8c",
+      "package": "sharp",
+      "installedVersion": "0.33.5",
+      "fixedVersion": "0.35.4",
+      "path": "calcom/node_modules/sharp/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Update the direct image utility and required native binary/libvips line together; test actual decode/resize/encode, malformed and bounded image inputs plus the Next image route on the supported Node/container target.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "sharp",
+          "parentSelector": "@calcom/lib@npm:*, @calcom/lib@workspace:*, @calcom/lib@workspace:packages/lib",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:0.33.5"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "@calcom/web@workspace:apps/web",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:0.33.5"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "next@npm:15.5.15, next@npm:^15.1.0",
+          "parentVersion": "15.5.15",
+          "requested": "npm:^0.34.3"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "next@npm:16.2.3",
+          "parentVersion": "16.2.3",
+          "requested": "npm:^0.34.5"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "next@npm:16.3.8",
+          "parentVersion": "16.3.8",
+          "requested": "npm:^0.35.4"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    },
+    {
+      "surface": "application-or-migration",
+      "advisory": "GHSA-wq5f-xc86-pv6w",
+      "package": "sharp",
+      "installedVersion": "0.33.5",
+      "fixedVersion": "0.35.5",
+      "path": "calcom/node_modules/sharp/package.json",
+      "status": "fixed",
+      "task": "CAL-02.PREVIEW",
+      "disposition": "unresolved; not waived",
+      "next": "Update the direct image utility and required native binary/libvips line together; test actual decode/resize/encode, malformed and bounded image inputs plus the Next image route on the supported Node/container target.",
+      "declaredDependencyOwners": [
+        {
+          "dependency": "sharp",
+          "parentSelector": "@calcom/lib@npm:*, @calcom/lib@workspace:*, @calcom/lib@workspace:packages/lib",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:0.33.5"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "@calcom/web@workspace:apps/web",
+          "parentVersion": "0.0.0-use.local",
+          "requested": "npm:0.33.5"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "next@npm:15.5.15, next@npm:^15.1.0",
+          "parentVersion": "15.5.15",
+          "requested": "npm:^0.34.3"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "next@npm:16.2.3",
+          "parentVersion": "16.2.3",
+          "requested": "npm:^0.34.5"
+        },
+        {
+          "dependency": "sharp",
+          "parentSelector": "next@npm:16.3.8",
+          "parentVersion": "16.3.8",
+          "requested": "npm:^0.35.4"
+        }
+      ],
+      "ownerEvidenceScope": "Exact immutable lock dependency declarations, not proof of an attacker-reachable application path."
+    }
+  ]
+}

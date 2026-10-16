@@ -4,7 +4,7 @@
   "programme": "Mereka hosted enterprise calendar",
   "decision_date": "2026-10-13",
   "goal": "One operator-hosted scheduling platform on the existing Cal.diy enterprise branch; retain historical value, Authentik, teams/organizations/roles, scoped APIs and community updates. No repository or deployment migration.",
-  "production_status": "Unchanged by this wave; complete current local web/API and bounded administration acceptance; no registry publication, shared preview admission or production authorization.",
+  "production_status": "Unchanged by this wave. Exact dependency and local image/runtime security repairs verified; no registry publication, native-client cutover or shared-preview deployment.",
   "tracking": {
     "canonical_source": "docs/community-enterprise/TASK_GRAPH.json",
     "handover_issue": 78,
@@ -32,7 +32,7 @@
     ],
     "rule": "One build/integration owner; other work is disjoint. Do not claim workers are dispatched without actual registration and evidence.",
     "ready_command": "node scripts/verify-community-enterprise-task-graph.cjs --ready",
-    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task’s own required level.",
+    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task\u2019s own required level.",
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
       "CAL-05.CORE",
@@ -354,6 +354,15 @@
           "exit_code": 0,
           "application_source": "167f457dfe1004d897144c2c6323c23df240a8c7",
           "summary": "Fresh current immutable native build and same-source runtime acceptance; no deployed image or live external provider acceptance inferred."
+        },
+        {
+          "file": "docs/community-enterprise/RUNTIME-SECURITY-2026-10-16.md",
+          "level": "runtime",
+          "command": "Native immutable generation, complete web/tRPC types/build and ten existing browser invocations; exact commands/hashes in RUNTIME-SECURITY-RECEIPT-2026-10-16.json",
+          "exit_code": 0,
+          "application_source": "e3a79afbffc3d81973d6f299a59e154f154d7cf8",
+          "image_id": null,
+          "summary": "Current dependency repairs and runtime tool removal accepted within the recorded native/fixture scope. HIGH occurrences 113 -> 56; remaining findings, approved publisher, real native identity/data/guest cutover and shared preview remain open."
         }
       ],
       "required_for_team_release": true,
@@ -405,6 +414,15 @@
           "exit_code": 0,
           "application_source": "167f457dfe1004d897144c2c6323c23df240a8c7",
           "summary": "Fresh current immutable native build and same-source runtime acceptance; no deployed image or live external provider acceptance inferred."
+        },
+        {
+          "file": "docs/community-enterprise/RUNTIME-SECURITY-2026-10-16.md",
+          "level": "runtime",
+          "command": "Native platform/API build and actual compiled AppModule startup with PostgreSQL/Redis; exact commands/hashes in RUNTIME-SECURITY-RECEIPT-2026-10-16.json",
+          "exit_code": 0,
+          "application_source": "e3a79afbffc3d81973d6f299a59e154f154d7cf8",
+          "image_id": null,
+          "summary": "Current dependency repairs and runtime tool removal accepted within the recorded native/fixture scope. HIGH occurrences 113 -> 56; remaining findings, approved publisher, real native identity/data/guest cutover and shared preview remain open."
         }
       ],
       "required_for_team_release": true,
@@ -463,27 +481,40 @@
           "application_source": "fc02e571df63ee3278680bff340f47a1e1d628e2",
           "image_id": "sha256:e57cd80124e6bf18fed5398d5f4a874637a06fcdd172eb7e3cc2ebe02234d514",
           "summary": "New actual HTTPS-origin local image passes packaged migration/replay and strict native login/anonymous checks. Registry publication, security disposition and actual preview/identity remain open; image ID is not a published manifest digest."
+        },
+        {
+          "file": "docs/community-enterprise/RUNTIME-SECURITY-2026-10-16.md",
+          "level": "runtime",
+          "command": "Exact HTTPS-origin rootless image, direct migration replay, filesystem readback and matched completed scanner runs; exact commands/hashes in RUNTIME-SECURITY-RECEIPT-2026-10-16.json",
+          "exit_code": 0,
+          "application_source": "e3a79afbffc3d81973d6f299a59e154f154d7cf8",
+          "image_id": "sha256:0b3f92174bcb45eb7b7cdda0a23b98dc3262f13d342efc22103d36dd1dd4d4aa",
+          "summary": "Current dependency repairs and runtime tool removal accepted within the recorded native/fixture scope. HIGH occurrences 113 -> 56; remaining findings, approved publisher, real native identity/data/guest cutover and shared preview remain open."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 0,
-      "progress": "Current combined source passes complete local web/API acceptance and extended administration paths. Existing dev/staging still serve legacy v6.2.0. Exact-source public-origin artifact is separate from admitted registry publication and live preview identities/configuration; no deployment occurred.",
-      "progress_reference": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
+      "progress": "Current source e3a79afbffc3d81973d6f299a59e154f154d7cf8 passes exact local native web/API and HTTPS-image acceptance. Matched scanner HIGH occurrences 113 -> 56, zero CRITICAL/secrets; residual findings not waived. No published digest or native shared-preview deployment. Existing runner policy does not admit this public repository; approved publisher and native initial-account/client/cutover remain explicit.",
+      "progress_reference": "docs/community-enterprise/RUNTIME-SECURITY-2026-10-16.md",
       "blockers": [
         "Live cal.mereka.dev is the restored legacy v6.2.0 image, not the enterprise candidate.",
         "Approved GHCR publication permissions and exact-image security disposition remain unresolved.",
         "Native Authentik client/account/organization provisioning and anonymous guest routing need actual deployment acceptance.",
-        "Names-only current nonprod readback lacks the five native CAL_AUTHENTIK configuration keys; legacy callback-base and guest-routing cutover remain unadmitted."
+        "Names-only current nonprod readback lacks the five native CAL_AUTHENTIK configuration keys; legacy callback-base and guest-routing cutover remain unadmitted.",
+        "Current provider readback: no public-repository-admitting runner group and no repository-level runner. An enabled packages:write workflow alone is not an executable publisher.",
+        "Current dev GitOps retains exec yarn start for the legacy image. Native image entrypoint/database admission must replace that legacy launch contract before any image rollout; no drop-in compatibility claimed.",
+        "Exact candidate image retains 56 HIGH scanner occurrences; compatibility/distribution review remains open, with no blanket waiver."
       ],
       "execution_checkpoint": {
-        "observed_at": "2026-10-15T18:01:47.159370+00:00",
-        "code_revision": "9380134e36b50247d0cb16a9d08f7ff04a902e98",
-        "publisher_request": "https://github.com/Biji-Biji-Initiative/team-skills/issues/960#issuecomment-6198759136",
-        "publisher_state": "configured person route refused package read with HTTP403; approved producer outcome requested, not executed",
+        "observed_at": "2026-10-16T00:09:37.496492+00:00",
+        "code_revision": "e3a79afbffc3d81973d6f299a59e154f154d7cf8",
+        "local_image": "sha256:0b3f92174bcb45eb7b7cdda0a23b98dc3262f13d342efc22103d36dd1dd4d4aa",
+        "publisher_request": "https://github.com/Biji-Biji-Initiative/team-skills/issues/960#issuecomment-6203663583",
+        "publisher_state": "Actual runner admission blocks inherited public workflow; own-box publisher/credential-owner action requested, not executed",
         "candidate_deployed": false,
-        "next": "One clean accepted role/identity application build for exact HTTPS origin; qualified registry publication; existing isolated preview admission and serving/identity/guest proof."
+        "next": "Resolve remaining security findings and approved publisher; native client/test-account/isolated-data admission and serving staff/guest proof."
       }
     },
     {
@@ -1152,7 +1183,7 @@
           "level": "runtime",
           "command": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
-          "summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
+          "summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         },
         {
@@ -1170,7 +1201,7 @@
       "priority": 1,
       "progress": "Packaged native OIDC through a TLS fixture, Chromium team administration, directed/same-host/rerouted bookings and collective availability are locally proven with PostgreSQL and non-relaying SMTP. Not deployed Authentik, connected external calendars or shared preview admission.",
       "progress_reference": "docs/community-enterprise/MULTI-HOST-2026-10-12.md",
-      "progress_summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
+      "progress_summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
     },
     {
       "id": "CAL-07.AUDIT",
@@ -1526,7 +1557,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
+  "latest_evidence": "docs/community-enterprise/RUNTIME-SECURITY-2026-10-16.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
