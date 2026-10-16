@@ -63,3 +63,46 @@ test("file inputs reject symbolic links, oversized files and invalid JSON", () =
     fs.rmSync(directory, { recursive: true });
   }
 });
+
+test("preview bootstrap uses explicit plan/apply modes with no force or implicit database", () => {
+  for (const mode of ["bootstrap-plan", "bootstrap-apply"]) {
+    const fileFlag = mode.endsWith("plan") ? "--out" : "--plan";
+    const args = [
+      mode,
+      "--request",
+      "input.json",
+      fileFlag,
+      "review.json",
+      "--database",
+      "cal_enterprise_preview",
+    ];
+    assert.equal(parseArguments(args).mode, mode);
+    assert.throws(() => parseArguments([...args, "--force", "true"]));
+    assert.throws(() => parseArguments(args.slice(0, -2)));
+  }
+});
+test("preview mode refuses unsafe configuration before reading input or connecting to a database", async () => {
+  const { main } = require("../../scripts/link-enterprise-identity.cjs");
+  const args = [
+    "bootstrap-plan",
+    "--request",
+    "/nonexistent-cal-bootstrap.json",
+    "--out",
+    "/nonexistent-cal-plan.json",
+    "--database",
+    "cal_enterprise_preview",
+  ];
+  const base = {
+    CAL_AUTHENTIK_ENABLED: "true",
+    CAL_AUTHENTIK_ONLY: "true",
+    NEXT_PUBLIC_WEBAPP_URL: "https://cal.mereka.dev",
+  };
+  for (const changed of [
+    { CAL_AUTHENTIK_ONLY: "false" },
+    { CAL_AUTHENTIK_ENABLED: "false" },
+    { NEXT_PUBLIC_WEBAPP_URL: "https://cal.mereka.io" },
+    { NEXT_PUBLIC_WEBAPP_URL: "http://cal.mereka.dev" },
+  ])
+    await assert.rejects(main(args, { ...base, ...changed }), /native-only configuration/);
+  await assert.rejects(main([...args.slice(0, -1), "calcom"], base), /separate preview database/);
+});

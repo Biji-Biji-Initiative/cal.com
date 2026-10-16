@@ -6,11 +6,12 @@ const { Pool } = require("pg");
 
 function parseArguments(args) {
   const [mode, ...flags] = args;
-  if (!["plan", "apply"].includes(mode) || flags.length % 2)
+  if (!["plan", "apply", "bootstrap-plan", "bootstrap-apply"].includes(mode) || flags.length % 2)
     throw new Error("Use plan or apply with explicit named paths and database");
   const result = { mode };
-  const allowed =
-    mode === "plan" ? ["--request", "--out", "--database"] : ["--request", "--plan", "--database"];
+  const allowed = mode.endsWith("plan")
+    ? ["--request", "--out", "--database"]
+    : ["--request", "--plan", "--database"];
   for (let i = 0; i < flags.length; i += 2) {
     const key = flags[i];
     if (!allowed.includes(key) || result[key] || !flags[i + 1] || flags[i + 1].startsWith("--"))
@@ -51,8 +52,18 @@ function databaseFingerprint(url, identity) {
 
 async function main(args = process.argv.slice(2), env = process.env) {
   const options = parseArguments(args);
+  const bootstrap = options.mode.startsWith("bootstrap-");
+  const planning = options.mode.endsWith("plan");
+  if (
+    bootstrap &&
+    (env.CAL_AUTHENTIK_ENABLED !== "true" ||
+      env.CAL_AUTHENTIK_ONLY !== "true" ||
+      env.NEXT_PUBLIC_WEBAPP_URL !== "https://cal.mereka.dev" ||
+      !/^cal_enterprise_preview(?:_[a-z0-9]+)*$/.test(options["--database"]))
+  )
+    throw new Error("Preview bootstrap requires native-only configuration and a separate preview database");
   const input = readJson(options["--request"]);
-  const reviewed = options.mode === "apply" ? readJson(options["--plan"]) : null;
+  const reviewed = planning ? null : readJson(options["--plan"]);
   if (!env.DATABASE_URL || !env.CAL_AUTHENTIK_ISSUER || !env.NEXT_PUBLIC_WEBAPP_URL)
     throw new Error("Explicit database, issuer and application origin environment is required");
   // Use the repository's installed compiler/runtime; no .env loader, shell
@@ -87,12 +98,18 @@ async function main(args = process.argv.slice(2), env = process.env) {
     ).rows[0];
     if (identity.database !== options["--database"])
       throw new Error("Connected database does not match the operator's expected database");
-    const service = new AuditedIdentityLinkService(prisma, {
+    const target = {
       issuer: env.CAL_AUTHENTIK_ISSUER,
       webOrigin: env.NEXT_PUBLIC_WEBAPP_URL,
       databaseFingerprint: databaseFingerprint(env.DATABASE_URL, identity),
-    });
-    if (options.mode === "plan") {
+    };
+    const service = bootstrap
+      ? new (require("../packages/features/community-enterprise/identity/PreviewOperatorBootstrap").PreviewOperatorBootstrap)(
+          prisma,
+          { ...target, databaseName: identity.database, nativeOnly: true }
+        )
+      : new AuditedIdentityLinkService(prisma, target);
+    if (planning) {
       const plan = await service.plan(input);
       fs.writeFileSync(path.resolve(options["--out"]), JSON.stringify(plan, null, 2) + "\n", {
         flag: "wx",
