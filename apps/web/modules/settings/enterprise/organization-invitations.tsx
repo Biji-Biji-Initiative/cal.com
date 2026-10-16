@@ -41,9 +41,11 @@ export default function OrganizationInvitations({ organizationId }: { organizati
           ? t(
               result.email === "submitted"
                 ? "enterprise_invite_mail_submitted"
-                : result.email === "already_attempted"
-                  ? "enterprise_invite_mail_unknown"
-                  : "enterprise_invite_mail_failed"
+                : result.email === "queued"
+                  ? "enterprise_invite_mail_queued"
+                  : result.email === "already_attempted" || result.email === "unconfirmed"
+                    ? "enterprise_invite_mail_unknown"
+                    : "enterprise_invite_mail_failed"
             )
           : t("enterprise_invite_response_saved")
       );

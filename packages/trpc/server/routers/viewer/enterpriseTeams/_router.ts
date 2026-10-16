@@ -95,18 +95,13 @@ export const enterpriseTeamsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const actor = { id: ctx.user.id, uuid: ctx.user.uuid };
       const service = new OrganizationInvitationService(ctx.prisma);
-      const result = await service.invite(actor, input);
-      if (result.replayed) return { ...result, email: "unconfirmed" as const };
-      // The pending invitation is committed before email. Failure here must not
-      // pretend the membership is accepted or create another invite on retry.
+      const { notificationTaskId, ...result } = await service.invite(actor, input);
+      if (!notificationTaskId) return { ...result, email: "unconfirmed" as const };
+      // The notice intent commits with the invitation. An interrupted request
+      // leaves the same task for cron, rather than creating a second sender.
       try {
-        const notification = await service.notify(
-          actor,
-          {
-            organizationId: input.organizationId,
-            invitationId: result.invitationId,
-            requestId: randomUUID(),
-          },
+        const notification = await service.deliverQueuedNotice(
+          notificationTaskId,
           sendOrganizationInvitationNotice
         );
         return { ...result, ...notification };
