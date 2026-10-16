@@ -165,8 +165,10 @@ test(
           " --require=" + path.join(root, "tests/community-enterprise/provider-network-preload.cjs");
       }
       if (taskerFixture) environment.CRON_SECRET = taskerFixture.secret;
+      if (invitationFixture) environment.CRON_SECRET = invitationFixture.noticeSecret;
       sensitiveValues = [
         taskerFixture?.secret,
+        invitationFixture?.noticeSecret,
         taskerFixture?.marker,
         ...(providerFixture?.redactions || []),
         environment.CAL_AUTHENTIK_CLIENT_SECRET,

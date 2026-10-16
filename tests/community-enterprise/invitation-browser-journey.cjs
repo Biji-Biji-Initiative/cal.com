@@ -2,7 +2,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { randomUUID } = require("node:crypto");
+const { randomBytes, randomUUID } = require("node:crypto");
 const { chromium, expect } = require("@playwright/test");
 const { createTRPCUntypedClient, httpBatchLink } = require("@trpc/client");
 const superjson = require("superjson").default;
@@ -22,6 +22,7 @@ async function seedInvitationBrowserFixture(pool) {
     );
   }
   return {
+    noticeSecret: randomBytes(32).toString("hex"),
     identities: [
       { userId: 7001, email: "smoke@example.test", subject: "synthetic-staff-subject" },
       { userId: 7002, email: "invitee@example.test", subject: "synthetic-recipient-subject" },
@@ -173,6 +174,11 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
       const data = await responseData(await completed);
       const committed = data.find((result) => Number.isInteger(result.invitationId));
       assert.ok(committed, "The invitation identifier must come from the actual completed UI mutation");
+      assert.equal(
+        Object.hasOwn(committed, "notificationTaskId"),
+        false,
+        "The task ID is not a public send capability"
+      );
       const pending = ownerPage.getByTestId("organization-invitations");
       await expect(pending.getByText(email, { exact: true })).toBeVisible({ timeout: 30000 });
       const rows = await owner.client.query("invitations", { organizationId: org.organizationId });
@@ -352,6 +358,81 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
     await expect(colleaguePage.getByTestId(`invitation-${mailFailed.id}`)).toHaveCount(0);
     await ownerPage.screenshot({ path: path.join(output, "invitation-mail-failure.png"), fullPage: true });
     fixture.smtp.setRejecting(false);
+    const reserveFixtureCapacity = async () => {
+      const ids = Array.from({ length: 4 }, () => randomUUID());
+      for (const id of ids)
+        await pool.query(
+          `INSERT INTO "Task" (id,type,payload,attempts,"maxAttempts","scheduledAt","lastError","updatedAt")
+         VALUES ($1,'sendSms','synthetic-capacity',1,3,(clock_timestamp() AT TIME ZONE 'UTC')+interval '5 minutes',$2,NOW())`,
+          [id, "tasker:v1:running:" + randomUUID()]
+        );
+      return ids;
+    };
+    const cron = async () => {
+      const response = await fetch(origin + "/api/tasks/cron", {
+        headers: { Authorization: `Bearer ${fixture.noticeSecret}` },
+        signal: AbortSignal.timeout(30000),
+      });
+      assert.equal(response.status, 200);
+      return response.json();
+    };
+    const outboxFor = async (invitationId) => {
+      const result = await pool.query(
+        `SELECT id,attempts,"succeededAt",payload FROM "Task"
+        WHERE type='organizationInvitation' AND (payload::jsonb->>'invitationId')::int=$1`,
+        [invitationId]
+      );
+      assert.equal(result.rowCount, 1);
+      return result.rows[0];
+    };
+    for (const suppressBeforeSend of [false, true]) {
+      const reserved = await reserveFixtureCapacity();
+      let queued;
+      try {
+        await ownerPage.reload({ waitUntil: "domcontentloaded" });
+        queued = await invite("colleague@example.test");
+        await expect(
+          ownerPage.getByRole("status").filter({ hasText: "notification is queued" })
+        ).toBeVisible();
+        assert.equal(fixture.smtp.count(), suppressBeforeSend ? 4 : 3);
+        assert.equal((await outboxFor(queued.id)).attempts, 0);
+        assert.equal((await fetch(origin + "/api/tasks/cron")).status, 401);
+        assert.equal((await outboxFor(queued.id)).attempts, 0);
+        if (suppressBeforeSend)
+          await owner.client.mutation("cancelInvitation", {
+            organizationId: org.organizationId,
+            invitationId: queued.id,
+            requestId: randomUUID(),
+          });
+      } finally {
+        // Only the four synthetic capacity rows in this private database are removed.
+        await pool.query('DELETE FROM "Task" WHERE id=ANY($1::text[])', [reserved]);
+      }
+      const processing = await cron();
+      assert.equal(processing.processing.claimed, 1);
+      assert.equal(processing.processing.succeeded, 1);
+      const task = await outboxFor(queued.id);
+      assert.ok(task.succeededAt);
+      assert.ok(!task.payload.includes("@example.test"));
+      const outcome = (
+        await pool.query('SELECT action FROM "EnterpriseAuditEvent" WHERE "operationId"=$1', [
+          `organization-invitation:${task.id}:outcome`,
+        ])
+      ).rows[0];
+      assert.equal(
+        outcome.action,
+        "organization.invitation.notification-" + (suppressBeforeSend ? "suppressed" : "submitted")
+      );
+      await expect.poll(() => fixture.smtp.count()).toBe(4);
+      assert.equal((await cron()).processing.claimed, 0);
+      assert.equal(fixture.smtp.count(), 4);
+      if (!suppressBeforeSend)
+        await owner.client.mutation("cancelInvitation", {
+          organizationId: org.organizationId,
+          invitationId: queued.id,
+          requestId: randomUUID(),
+        });
+    }
     assert.equal(fixture.oidc.exchanges(), 3);
     t.diagnostic(
       JSON.stringify({
@@ -362,9 +443,14 @@ async function runInvitationBrowserJourney({ pool, fixture, t }) {
         verifiedEmailRequiredAtIssueAndAccept: true,
         accepted: 1,
         declined: 2,
-        cancelled: 1,
+        cancelled: 3,
         staleAcceptDenied: true,
-        deliveredToLocalSmtp: 3,
+        deliveredToLocalSmtp: 4,
+        initialOutboxSurvivesUndispatchedRequest: true,
+        actualCronUsesRegisteredNoticeHandler: true,
+        queuedUiAndGlobalCapacity: true,
+        cancelledQueueSuppressedBeforeSmtp: true,
+        duplicateCronResends: 0,
         smtpFailurePreservesPending: true,
         personalIdentityUnmoved: true,
         scope:
