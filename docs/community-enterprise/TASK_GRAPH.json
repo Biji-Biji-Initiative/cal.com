@@ -651,6 +651,21 @@
           "exit_code": 0,
           "summary": "Native cron/cleanup configuration and authorization tests reject missing/incorrect secret without queue effects; no broad route audit closure.",
           "application_source": "2a8e335a652ad4aa8fc2ca6469b14e1c15f43fab"
+        },
+        {
+          "file": "docs/community-enterprise/API-PERMISSION-BINDING-2026-10-17.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite api-auth --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "application_source": "e499ebf6e902c8c5729fd1b0e10989477d46e6d2",
+          "summary": "75 native Nest/Passport/real-PostgreSQL cases pass, including actual Atoms/private-link controller dispatch; upstream stale-cache admission and named domain boundaries are explicit. Original guard produced 23 discriminating failures; old-controller controls fail as expected. Real IdP, complete resource/atomic-write scopes and serving-image acceptance remain open."
+        },
+        {
+          "file": "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/api-session-boundary.test.cjs tests/community-enterprise/api-key-lifecycle.test.cjs tests/community-enterprise/api-runtime-admission.test.cjs",
+          "exit_code": 0,
+          "summary": "154 focused source cases; complete direct-decorator guard-order inventory54 methods/14 controllers. AST proves nine changed controller bodies and non-guard signatures/decorators unchanged. Native complete-API no-emit typing and actual guard Jest27 also pass."
         }
       ],
       "required_for_team_release": true,
@@ -659,10 +674,12 @@
       "priority": 1,
       "progress_references": [
         "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
-        "docs/community-enterprise/API-KEY-CONTROLLER-2026-10-13.md"
+        "docs/community-enterprise/API-KEY-CONTROLLER-2026-10-13.md",
+        "docs/community-enterprise/API-PERMISSION-BINDING-2026-10-17.md",
+        "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json"
       ],
-      "progress": "Calendar event reference read/update now carries authenticated owner ID and uses current primary selection. Focused native32 and existing unit47 tests verified; earlier key-controller receipt is separately linked, not rerun. Complete resource/API acceptance remains open.",
-      "progress_reference": "docs/community-enterprise/ORGANIZATION-ADMISSION-2026-10-14.md",
+      "progress": "Managed client permissions now follow Passport\u2019s selected method and current primary token/client authority. Nine controller guard placements repaired; 54 direct permission-decorated methods in 14 controllers have correct order. Real HTTP/PostgreSQL75, key-controller36, native Jest27 and focused source154 pass. Full resource/transaction scopes, dynamic route reachability and deployed proof remain unfinished; no old image is relabeled.",
+      "progress_reference": "docs/community-enterprise/API-PERMISSION-BINDING-2026-10-17.md",
       "progress_summary": "Retained webhook guard now checks current team/instance authority and rejects conflicting scope; source controls and native shared-webhook access prove this slice. Other route/handler atomicity and complete API inventory remain open."
     },
     {
@@ -1041,6 +1058,21 @@
           "command": "python3 scripts/run-community-enterprise-postgres.py --suite calendar-boundary --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
           "summary": "32 local Nest/controller/service/Prisma/PostgreSQL ownership cases pass, zero skips; fixture authentication and Google/OAuth boundaries explicit. Both existing aliases retained. Native full API/IdP/provider/per-action team scopes remain unfinished."
+        },
+        {
+          "file": "docs/community-enterprise/API-PERMISSION-BINDING-2026-10-17.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite api-auth --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "application_source": "e499ebf6e902c8c5729fd1b0e10989477d46e6d2",
+          "summary": "75 native Nest/Passport/real-PostgreSQL cases pass, including actual Atoms/private-link controller dispatch; upstream stale-cache admission and named domain boundaries are explicit. Original guard produced 23 discriminating failures; old-controller controls fail as expected. Real IdP, complete resource/atomic-write scopes and serving-image acceptance remain open."
+        },
+        {
+          "file": "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/api-session-boundary.test.cjs tests/community-enterprise/api-key-lifecycle.test.cjs tests/community-enterprise/api-runtime-admission.test.cjs",
+          "exit_code": 0,
+          "summary": "154 focused source cases; complete direct-decorator guard-order inventory54 methods/14 controllers. AST proves nine changed controller bodies and non-guard signatures/decorators unchanged. Native complete-API no-emit typing and actual guard Jest27 also pass."
         }
       ],
       "required_for_team_release": true,
@@ -1049,9 +1081,12 @@
       "priority": 1,
       "progress_references": [
         "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
-        "docs/community-enterprise/API-KEY-CONTROLLER-2026-10-13.md"
+        "docs/community-enterprise/API-KEY-CONTROLLER-2026-10-13.md",
+        "docs/community-enterprise/API-PERMISSION-BINDING-2026-10-17.md",
+        "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json"
       ],
-      "progress": "Calendar event reference read/update now carries authenticated owner ID and uses current primary selection. Focused native32 and existing unit47 tests verified; earlier key-controller receipt is separately linked, not rerun. Complete resource/API acceptance remains open."
+      "progress": "Managed client permissions now follow Passport\u2019s selected method and current primary token/client authority. Nine controller guard placements repaired; 54 direct permission-decorated methods in 14 controllers have correct order. Real HTTP/PostgreSQL75, key-controller36, native Jest27 and focused source154 pass. Full resource/transaction scopes, dynamic route reachability and deployed proof remain unfinished; no old image is relabeled.",
+      "progress_reference": "docs/community-enterprise/API-PERMISSION-BINDING-2026-10-17.md"
     },
     {
       "id": "CAL-06.REUSE",
