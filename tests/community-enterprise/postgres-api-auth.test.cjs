@@ -63,12 +63,14 @@ before(
     assert.match(path.basename(path.dirname(socket)), /^cal-enterprise-/);
     state = {
       primary: { prisma: null },
+      permissionFixture: true,
       replicaReads: 0,
       staleUser: { id: 1, role: "ADMIN", locked: false },
       config: new ConfigService({
         api: { keyPrefix: "cal_" },
         next: { authSecret: secret },
         app: { baseUrl: "https://calendar.example.test" },
+        CALENDSO_ENCRYPTION_KEY: secret,
       }),
     };
     const { load } = fixtureModules(state);
@@ -83,6 +85,29 @@ before(
       }),
     });
     state.primary.prisma = client;
+    state.replica = {
+      prisma: {
+        accessToken: {
+          findFirst(query) {
+            state.replicaReads++;
+            if (state.keepManagedSnapshot) {
+              if (query.select?.client) return Promise.resolve({ client: state.managedClient });
+              if (query.select?.userId) return Promise.resolve({ userId: 1 });
+              if (query.select?.expiresAt) return Promise.resolve({ expiresAt: state.managedExpiry });
+            }
+            return client.accessToken.findFirst(query);
+          },
+        },
+        platformOAuthClient: {
+          findUnique(query) {
+            state.replicaReads++;
+            return state.keepManagedSnapshot
+              ? Promise.resolve(state.managedClient)
+              : client.platformOAuthClient.findUnique(query);
+          },
+        },
+      },
+    };
     const [identity] =
       await client.$queryRaw`SELECT current_setting('data_directory') AS directory, current_user::text AS username`;
     assert.equal(identity.directory, directory);
@@ -102,8 +127,14 @@ beforeEach(async () => {
   policyEnvironment();
   state.primary.prisma = client;
   state.replicaReads = 0;
+  state.keepManagedSnapshot = false;
+  state.managedClient = null;
+  state.permissionUser = null;
   await client.user.updateMany({ data: { movedToProfileId: null } });
   for (const model of [
+    "accessToken",
+    "refreshToken",
+    "platformOAuthClient",
     "enterpriseAuditEvent",
     "apiKey",
     "account",
@@ -461,3 +492,276 @@ test("configured API-key prefix and case-insensitive Bearer scheme work on the r
   assert.equal((await request("key", { Authorization: `bearer ${credential}` })).status, 200);
   assert.equal((await request("key", { Authorization: `Bearer ${await key()}` })).status, 401);
 });
+
+async function managed(permissions = 16) {
+  const clientSecret = randomBytes(32).toString("hex");
+  const token = randomBytes(32).toString("hex");
+  await client.membership.update({
+    where: { userId_teamId: { userId: 1, teamId: 100 } },
+    data: { role: "OWNER" },
+  });
+  state.managedClient = await client.platformOAuthClient.create({
+    data: {
+      id: "permission-client",
+      name: "Permission fixture",
+      secret: clientSecret,
+      permissions,
+      organizationId: 100,
+      redirectUris: [],
+    },
+  });
+  state.managedExpiry = new Date(Date.now() + 3600000);
+  await client.accessToken.create({
+    data: {
+      secret: token,
+      userId: 1,
+      platformOAuthClientId: state.managedClient.id,
+      expiresAt: state.managedExpiry,
+    },
+  });
+  state.permissionUser = await client.user.findUniqueOrThrow({
+    where: { id: 1 },
+    select: { id: true, locked: true, role: true, profiles: { select: { organizationId: true } } },
+  });
+  return {
+    token,
+    clientSecret,
+    headers: { "x-cal-client-id": state.managedClient.id, "x-cal-secret-key": clientSecret },
+  };
+}
+async function permission(route, headers = {}) {
+  const response = await fetch(`${runtime.origin}/permission/${route}`, {
+    headers,
+    signal: AbortSignal.timeout(10000),
+  });
+  return { status: response.status, body: await response.json() };
+}
+for (const mode of ["client", "access"]) {
+  test(`${mode} permission positive control preserves the selected actor and read/write bits`, async () => {
+    const auth = await managed();
+    const headers = mode === "client" ? auth.headers : { Authorization: `Bearer ${auth.token}` };
+    const read = await permission("read", headers);
+    assert.equal(read.status, 200);
+    assert.equal(read.body.id, 1);
+    assert.equal(read.body.method, mode === "client" ? "oauth-client" : "access-token");
+    assert.equal((await permission("write", headers)).status, 403);
+    await client.platformOAuthClient.update({
+      where: { id: "permission-client" },
+      data: { permissions: 48 },
+    });
+    assert.equal((await permission("write", headers)).status, 200);
+  });
+  test(`${mode} cannot borrow an ambient signed native cookie to bypass write permissions`, async () => {
+    const auth = await managed();
+    const headers = mode === "client" ? auth.headers : { Authorization: `Bearer ${auth.token}` };
+    assert.equal((await permission("write", { ...headers, Cookie: await cookie() })).status, 403);
+  });
+  test(`${mode} honors controller-level permissions instead of treating missing method metadata as public`, async () => {
+    const auth = await managed();
+    const headers = mode === "client" ? auth.headers : { Authorization: `Bearer ${auth.token}` };
+    assert.equal((await permission("inherited", headers)).status, 403);
+    assert.equal((await permission("read", headers)).status, 200);
+  });
+  test(`${mode} sees a grant reduction despite a deliberately stale authentication replica/cache`, async () => {
+    const auth = await managed(48);
+    const headers = mode === "client" ? auth.headers : { Authorization: `Bearer ${auth.token}` };
+    assert.equal((await permission("write", headers)).status, 200);
+    state.keepManagedSnapshot = true;
+    await client.platformOAuthClient.update({
+      where: { id: "permission-client" },
+      data: { permissions: 16 },
+    });
+    assert.equal((await permission("write", headers)).status, 403);
+  });
+  test(`${mode} refuses the locally locked actor even when upstream authentication sees stale active state`, async () => {
+    const auth = await managed(48);
+    state.keepManagedSnapshot = true;
+    await client.user.update({ where: { id: 1 }, data: { locked: true } });
+    const headers = mode === "client" ? auth.headers : { Authorization: `Bearer ${auth.token}` };
+    assert.equal((await permission("write", headers)).status, 403);
+  });
+  test(`${mode} primary authority outage never falls back to the stale accepting reader`, async () => {
+    const auth = await managed(48);
+    state.keepManagedSnapshot = true;
+    state.primary.prisma = {
+      accessToken: {
+        findFirst: async () => {
+          throw new Error("Fixture primary unavailable");
+        },
+      },
+      platformOAuthClient: {
+        findFirst: async () => {
+          throw new Error("Fixture primary unavailable");
+        },
+      },
+    };
+    const headers = mode === "client" ? auth.headers : { Authorization: `Bearer ${auth.token}` };
+    assert.equal((await permission("write", headers)).status, 500);
+  });
+}
+for (const kind of ["unrelated-key", "unrelated-token"]) {
+  test(`selected client cannot obtain permissions from ${kind} in a secondary bearer header`, async () => {
+    const auth = await managed();
+    const bearer = kind === "unrelated-key" ? `cal_${randomBytes(24).toString("hex")}` : auth.token;
+    assert.equal(
+      (await permission("write", { ...auth.headers, Authorization: `Bearer ${bearer}` })).status,
+      403
+    );
+  });
+}
+for (const transition of ["expired", "deleted", "other-owner"]) {
+  test(`managed access token ${transition} is refused despite stale admission`, async () => {
+    const auth = await managed(48);
+    state.keepManagedSnapshot = true;
+    if (transition === "expired") await client.accessToken.updateMany({ data: { expiresAt: new Date(0) } });
+    if (transition === "deleted") await client.accessToken.deleteMany();
+    if (transition === "other-owner") await client.accessToken.updateMany({ data: { userId: 2 } });
+    assert.equal((await permission("write", { Authorization: `Bearer ${auth.token}` })).status, 403);
+  });
+}
+for (const transition of ["secret", "member", "invitation", "custom-role", "organization"]) {
+  test(`managed client ${transition} change is not hidden by an old accepted identity`, async () => {
+    const auth = await managed(48);
+    state.keepManagedSnapshot = true;
+    if (transition === "secret")
+      await client.platformOAuthClient.update({
+        where: { id: "permission-client" },
+        data: { secret: randomBytes(32).toString("hex") },
+      });
+    if (transition === "member")
+      await client.membership.update({
+        where: { userId_teamId: { userId: 1, teamId: 100 } },
+        data: { role: "MEMBER" },
+      });
+    if (transition === "invitation")
+      await client.membership.update({
+        where: { userId_teamId: { userId: 1, teamId: 100 } },
+        data: { accepted: false },
+      });
+    if (transition === "custom-role") {
+      await client.role.create({ data: { id: "limited-client-role", name: "Limited", teamId: 100 } });
+      await client.membership.update({
+        where: { userId_teamId: { userId: 1, teamId: 100 } },
+        data: { customRoleId: "limited-client-role" },
+      });
+    }
+    if (transition === "organization")
+      await client.platformOAuthClient.update({
+        where: { id: "permission-client" },
+        data: { organizationId: 200 },
+      });
+    assert.equal((await permission("write", auth.headers)).status, 403);
+  });
+}
+test("client route identity, not a conflicting header, remains the selected credential", async () => {
+  const auth = await managed();
+  assert.equal(
+    (
+      await permission("client/permission-client", {
+        ...auth.headers,
+        "x-cal-client-id": "other-client",
+        Cookie: await cookie(),
+      })
+    ).status,
+    403
+  );
+  await client.platformOAuthClient.update({ where: { id: "permission-client" }, data: { permissions: 48 } });
+  assert.equal(
+    (await permission("client/permission-client", { ...auth.headers, "x-cal-client-id": "other-client" }))
+      .status,
+    200
+  );
+});
+test("a permission guard without a preceding authenticator cannot trust cookies or client headers", async () => {
+  const auth = await managed(48);
+  assert.equal(
+    (
+      await permission("guard-only", {
+        ...auth.headers,
+        Cookie: await cookie(),
+        "x-auth-method": "next-auth",
+      })
+    ).status,
+    403
+  );
+});
+test("existing native-session and configured-prefix API-key routes retain their own-user contract", async (t) => {
+  assert.equal((await permission("write", { Cookie: await cookie() })).status, 200);
+  state.config.set("api.keyPrefix", "fixture_");
+  t.after(() => state.config.set("api.keyPrefix", "cal_"));
+  const credential = await lifecycle.createApiKey(client, 1, { teamId: 10 }, "fixture_");
+  assert.equal((await permission("write", { Authorization: `bearer ${credential}` })).status, 200);
+});
+test("a missing permission token is never included in the thrown error or serialized response", async () => {
+  const { PermissionsGuard } = runtime.load(
+    path.join(root, "apps/api/v2/src/modules/auth/guards/permissions/permissions.guard.ts")
+  );
+  const guard = runtime.module.get(PermissionsGuard);
+  const canary = randomBytes(32).toString("hex");
+  await assert.rejects(guard.getOAuthClientByAccessToken(canary, 1), (error) => {
+    assert.ok(!String(error).includes(canary));
+    assert.ok(!JSON.stringify(error).includes(canary));
+    return true;
+  });
+});
+
+test("explicit guest permission metadata still permits an anonymous route", async () => {
+  assert.deepEqual(await permission("guest"), { status: 200, body: { permitted: true } });
+});
+for (const mode of ["client", "access"]) {
+  test(`${mode} actual Atoms schedule controller enforces its declared read/write permissions`, async () => {
+    const auth = await managed();
+    const headers = mode === "client" ? auth.headers : { Authorization: `Bearer ${auth.token}` };
+    const invoke = async (method, suffix) => {
+      const response = await fetch(`${runtime.origin}/v2/atoms/schedules${suffix}`, {
+        method,
+        headers: { ...headers, "content-type": "application/json" },
+        ...(method === "PATCH" ? { body: JSON.stringify({ name: "Fixture only" }) } : {}),
+        signal: AbortSignal.timeout(10000),
+      });
+      return { status: response.status, body: await response.json() };
+    };
+    state.atomCalls = 0;
+    assert.equal((await invoke("GET", "")).status, 200);
+    assert.equal(state.atomCalls, 1);
+    assert.equal((await invoke("PATCH", "/91")).status, 403);
+    assert.equal(state.atomCalls, 1, "Denied write must not reach the fixture domain service");
+    await client.platformOAuthClient.update({
+      where: { id: "permission-client" },
+      data: { permissions: 48 },
+    });
+    assert.equal((await invoke("PATCH", "/91")).status, 200);
+    assert.equal(state.atomCalls, 2);
+  });
+}
+
+for (const mode of ["client", "access"]) {
+  test(`${mode} actual private-link controller authenticates before permission and preserves resource denial`, async () => {
+    const auth = await managed(1);
+    const headers = mode === "client" ? auth.headers : { Authorization: `Bearer ${auth.token}` };
+    const invoke = async (method) => {
+      const response = await fetch(`${runtime.origin}/v2/event-types/91/private-links`, {
+        method,
+        headers: { ...headers, "content-type": "application/json" },
+        ...(method === "POST" ? { body: JSON.stringify({ fixture: true }) } : {}),
+        signal: AbortSignal.timeout(10000),
+      });
+      return { status: response.status, body: await response.json() };
+    };
+    state.privateLinksAllowed = true;
+    state.privateLinkCalls = 0;
+    state.ownershipChecks = 0;
+    assert.equal((await invoke("GET")).status, 200);
+    assert.equal(state.privateLinkCalls, 1);
+    assert.equal(state.ownershipChecks, 1);
+    assert.equal((await invoke("POST")).status, 403);
+    assert.equal(state.privateLinkCalls, 1);
+    assert.equal(state.ownershipChecks, 1, "Missing permission must stop before the domain guard");
+    await client.platformOAuthClient.update({ where: { id: "permission-client" }, data: { permissions: 3 } });
+    assert.equal((await invoke("POST")).status, 201);
+    assert.equal(state.privateLinkCalls, 2);
+    state.privateLinksAllowed = false;
+    assert.equal((await invoke("GET")).status, 403);
+    assert.equal(state.privateLinkCalls, 2, "Permission success must not bypass resource denial");
+  });
+}
