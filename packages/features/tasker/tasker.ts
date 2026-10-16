@@ -5,6 +5,9 @@ type BookingAuditTaskConsumerPayload = string;
 
 export type TaskerTypes = "internal" | "redis";
 type TaskPayloads = {
+  organizationInvitation: z.infer<
+    typeof import("@calcom/features/community-enterprise/organizations/InvitationNoticeOutbox").invitationNoticePayload
+  >;
   sendWebhook: string;
   sendSms: string;
   triggerHostNoShowWebhook: z.infer<
