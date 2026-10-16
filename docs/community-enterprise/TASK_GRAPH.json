@@ -270,7 +270,9 @@
       "required_for_team_release": false,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 1
+      "priority": 1,
+      "progress": "The recorded schema5 migration remains unresolved. Current names-only inspection found no .beads in the active checkout or inspected existing project locations on g/g2; historical store location and supported recovery must be established without initialization/reset. Existing canonical CAL graph continues; no successful br operation is claimed.",
+      "progress_reference": "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md"
     },
     {
       "id": "CAL-02.INSTALL",
@@ -1308,15 +1310,37 @@
           "exit_code": 0,
           "summary": "Durable claim and success/uncertainty accounting proven across real process crash and lost database acknowledgement; not a full domain audit/outbox transaction.",
           "application_source": "2a8e335a652ad4aa8fc2ca6469b14e1c15f43fab"
+        },
+        {
+          "file": "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/invitation-inbox.test.cjs tests/community-enterprise/invitation-mail.test.cjs tests/community-enterprise/tasker-contract.test.cjs tests/community-enterprise/tasker-webhook-outcomes.test.cjs",
+          "exit_code": 0,
+          "application_source": "92d944676a7c9e3b5fda7cd530f6622db53d22a6",
+          "summary": "36 focused source cases pass; actual service executes with explicit in-memory page-query boundaries and retained mail/queue doubles. Actual native TypeScript import closure passes. No new PostgreSQL, browser, SMTP, crash/retry or deployed acceptance; native launch block is explicit in the paired receipt."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 1,
-      "progress": "Organization/team/key and invitation state transitions have transactional administrative audit. Invite notifications record attempts, not guaranteed delivery; SMTP failures do not grant access. Full durable outbox/crash-retry, booking audit and retention acceptance remain open.",
-      "progress_reference": "docs/community-enterprise/INVITATION-ACCEPTANCE-2026-10-14.md",
-      "progress_summary": "Handoff and exact administrative audit commit together with replay and real constraint-failure rollback; no distributed provider transaction or durable notification completion."
+      "progress": "Retained invitation mutation/audit/identity-only Task intent and targeted worker source are published together. Inbox pagination now batches current authority reads without increasing its ten-second limit. Native import-closure typing and 36 source tests pass; this continuation\u2019s PostgreSQL test launch was blocked by the execution safety check. Earlier 82/83 invitation and49/49 Tasker runs remain historical. Final native outbox/crash/retry, browser/SMTP, broader booking audit and retention acceptance remain open.",
+      "progress_reference": "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
+      "progress_summary": "Handoff and exact administrative audit commit together with replay and real constraint-failure rollback; no distributed provider transaction or durable notification completion.",
+      "progress_references": [
+        "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
+        "docs/community-enterprise/INVITATION-OUTBOX-RECEIPT-2026-10-17.json"
+      ],
+      "pending_native_validation": {
+        "status": "blocked_at_execution",
+        "source": "92d944676a7c9e3b5fda7cd530f6622db53d22a6",
+        "required": [
+          "existing private invitations suite on final source",
+          "existing private Tasker and crash-retry suite",
+          "fresh matching invitation browser/controlled SMTP journey"
+        ],
+        "no_alternative_execution_route_attempted": true
+      }
     },
     {
       "id": "CAL-07.REMINDERS",

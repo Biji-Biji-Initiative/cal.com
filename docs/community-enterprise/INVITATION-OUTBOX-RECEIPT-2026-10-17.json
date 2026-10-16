@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-16T23:18:33.583235+00:00",
+  "repository": "Biji-Biji-Initiative/cal.com",
+  "branch": "work/cal-diy-enterprise-20261010",
+  "predecessor": "5a1d207d6367923791c8bcae02f128dfae958c88",
+  "source": "92d944676a7c9e3b5fda7cd530f6622db53d22a6",
+  "commits": [
+    {
+      "id": "targeted-tasker",
+      "source": "cfd023dc9be0bd2ad1d51ac0fe2e7a586d48b1eb",
+      "parent": "5a1d207d6367923791c8bcae02f128dfae958c88",
+      "codeLines": 110,
+      "readbackVerified": true
+    },
+    {
+      "id": "outbox-core",
+      "source": "d248e8a0bc53ff27f330052a9448c44c8822f567",
+      "parent": "cfd023dc9be0bd2ad1d51ac0fe2e7a586d48b1eb",
+      "codeLines": 279,
+      "readbackVerified": true
+    },
+    {
+      "id": "service-registry",
+      "source": "d7a35c91eefb768b1744dbe717f5386dae4b8233",
+      "parent": "d248e8a0bc53ff27f330052a9448c44c8822f567",
+      "codeLines": 330,
+      "readbackVerified": true
+    },
+    {
+      "id": "ui-and-source-tests",
+      "source": "f7c69bf472212c6101cc99f0f18141251ec4c700",
+      "parent": "d7a35c91eefb768b1744dbe717f5386dae4b8233",
+      "codeLines": 258,
+      "readbackVerified": true
+    },
+    {
+      "id": "native-tests-first",
+      "source": "3045c71bbaae6280dd0bc3861e5a4f7280707c88",
+      "parent": "f7c69bf472212c6101cc99f0f18141251ec4c700",
+      "codeLines": 450,
+      "readbackVerified": true
+    },
+    {
+      "id": "native-tests-final",
+      "source": "e2d77f7f9f1d7485b0128de72340b4ff226b81d9",
+      "parent": "3045c71bbaae6280dd0bc3861e5a4f7280707c88",
+      "codeLines": 438,
+      "readbackVerified": true
+    },
+    {
+      "id": "browser-tests",
+      "source": "92d944676a7c9e3b5fda7cd530f6622db53d22a6",
+      "parent": "e2d77f7f9f1d7485b0128de72340b4ff226b81d9",
+      "codeLines": 94,
+      "readbackVerified": true
+    }
+  ],
+  "sourceHashes": {
+    "apps/web/modules/settings/enterprise/organization-invitations.tsx": "40a5154368d53bf87613df3854ada2ff21b022ecb5975045b9789b9d862ba998",
+    "packages/features/community-enterprise/organizations/OrganizationInvitationService.ts": "db6d5b962ff089efdaaf47cb51d7fbaef3033f2953f784ec2fada49cc32d952a",
+    "packages/features/tasker/repository.ts": "434f8dd3d9afdb410a00b26b6846ceed81b0b34da7e393208783c48918ac82f2",
+    "packages/features/tasker/task-processor.ts": "623e2156d833b2352e7927dde46be6de3c997c554fa8057f93fa8abc6d7a0e91",
+    "packages/features/tasker/tasker.ts": "4c92f4edfd6f085e8b06e87958306aac4a1308adc35f8a2c87d5523609e09bbf",
+    "packages/features/tasker/tasks/index.ts": "d8f9b423b8bd4d50324c63fc2a0852f93a1d60d4699fa841b7d74e37a1248f58",
+    "packages/i18n/locales/en/common.json": "1ac26ce8de31a58efad26e71969368f174898004a3204f1b1c473a9a2e0622e7",
+    "packages/trpc/server/routers/viewer/enterpriseTeams/_router.ts": "4f3bb3574f4c1422d51f5caba8a7e4be41f701137b245d3f176f2995003af94c",
+    "tests/community-enterprise/built-web.test.cjs": "bfbe9ba06b73ad2e8d884ff4cec6d68b68ebcc59d98d57bd01df0d9f5ca45349",
+    "tests/community-enterprise/invitation-browser-journey.cjs": "65b75b60ea2927a4d77a66c5dbaad28755db2e962300f69b9bcf74c93dea6c42",
+    "tests/community-enterprise/invitation-mail.test.cjs": "294878ec70e620a249063ee7858c3cabcc24056bfb3f3e1a023147ba6baabc51",
+    "tests/community-enterprise/postgres-invitations.test.ts": "6f7b833513348d9659e4444d5ff8e260cde7f24d3e54b0b85a0c597db51fd939",
+    "tests/community-enterprise/postgres-tasker.test.cjs": "bfed62302832c475705398e89f422e79e857cf9ab7b353724ebb0d1232c3030f",
+    "tests/community-enterprise/tasker-crash-worker.cjs": "13bf019d213d21782d44a32a4aa72239998dd5d9c78a45c049d9ec061f849a4c",
+    "tests/community-enterprise/tasker-fixture.cjs": "fbadddbb6992a315ede92ef485c10177e1ddbd36fdeea85c0d87cd54cbcf50af",
+    "packages/features/community-enterprise/organizations/InvitationNoticeDelivery.ts": "16493ca50ecf293bd1c6df9e4008f0dc2730c0eee43f52c73c3b74771dc9a0eb",
+    "packages/features/community-enterprise/organizations/InvitationNoticeOutbox.ts": "7835b123f041ae1e57529b85bcafad0adf3f0f2c05f54ff53de916addeacc9e4",
+    "packages/features/tasker/tasks/organizationInvitation.ts": "ae9371dc2bc6b50a965410d49f5de28db2a5cad9b11fd2c2d7280ed9b8a92e2a",
+    "tests/community-enterprise/invitation-inbox.test.cjs": "7f92eb80201cc2ea69eb47f0990719b6dd72c1cca200c43b3c96b304ab168607"
+  },
+  "executedChecks": {
+    "types-final": {
+      "command": [
+        "node",
+        "--max-old-space-size=6144",
+        "/data/worktrees/cal.com/cal-delivery-20261013/node_modules/typescript/bin/tsc",
+        "--project",
+        "/data/tmp/cal-invitation-finish-20261017-extcxq9u/tsconfig-notices.json"
+      ],
+      "exit_code": 0,
+      "seconds": 92.5
+    },
+    "source-final": {
+      "command": [
+        "node",
+        "--test",
+        "--test-reporter=spec",
+        "tests/community-enterprise/invitation-inbox.test.cjs",
+        "tests/community-enterprise/invitation-mail.test.cjs",
+        "tests/community-enterprise/tasker-contract.test.cjs",
+        "tests/community-enterprise/tasker-webhook-outcomes.test.cjs"
+      ],
+      "exit_code": 0,
+      "seconds": 3.1
+    }
+  },
+  "sourceCases": {
+    "passed": 36,
+    "failed": 0,
+    "skipped": 0,
+    "databaseConnection": false,
+    "inboxAddedCases": 4,
+    "logicalCallsPerPersonalPageInFixture": 6
+  },
+  "nativeTests": {
+    "status": "not_run",
+    "launchBlock": {
+      "result": "OpenAI execution safety check blocked the requested test launch before a process was returned",
+      "nativeTestsExecuted": false,
+      "command": "python3 scripts/run-community-enterprise-postgres.py --suite invitations / tasker",
+      "response": "This tool call was blocked by OpenAI's safety checks. Please double check what you are sending.",
+      "noAlternateExecutionRouteAttempted": true
+    },
+    "newNativeCasesAreNotClaimedPassed": true,
+    "browserJourney": "not_run",
+    "newSQLCountOrLatencyMeasured": false
+  },
+  "priorNativeEvidence": [
+    {
+      "path": "/data/tmp/cal-audit-wave-20261016-swwn_n9d/outbox-native-final.log",
+      "passed": 82,
+      "failed": 1,
+      "failure": "50-item inbox expired its actual ten-second read transaction during repeated record lookups. The batching source repair has not had a native rerun.",
+      "sha256": "97f4be554f3a13be81f5d0fcf4db8feba04ee58b454a3aeb89e3cfa1bb905602"
+    },
+    {
+      "path": "/data/tmp/cal-audit-wave-20261016-swwn_n9d/tasker-ready-native.log",
+      "passed": 49,
+      "failed": 0,
+      "scope": "Historical exact Tasker inputs only; not a new combined-source run.",
+      "sha256": "195946ae4d8d48d9a84dbd397beea0afe15252f5f2999d0d9953e269f9672bc8"
+    }
+  ],
+  "scanner": {
+    "gitleaksExit": 1,
+    "gitleaksReviews": [
+      {
+        "path": "packages/i18n/locales/en/common.json",
+        "rule": "generic-api-key",
+        "lines": [
+          686,
+          687
+        ],
+        "inheritedContainingLines": true
+      }
+    ],
+    "ubsExit": 1,
+    "ubsTotals": {
+      "critical": 6,
+      "warning": 53,
+      "info": 135,
+      "files": 10
+    }
+  },
+  "beads": {
+    "status": "blocked",
+    "lastRecordedSchema": 5,
+    "lastRecordedMigrationSupports": "13..16 to17",
+    "currentObservedStoreInActiveCheckout": false,
+    "inspectedGandG2ExistingProjectStorePresent": false,
+    "databaseMigrationOrInitializationPerformed": false,
+    "notEvidenceOfHistoricalDatabaseDeletion": true
+  },
+  "boundaries": {
+    "productionModified": false,
+    "liveNotificationsSent": false,
+    "databaseFixtureLaunchedThisContinuation": false,
+    "runtimeOrImageBuilt": false,
+    "dependenciesOrSchemaAdded": false,
+    "registryOrRunnerPermissionsChanged": false,
+    "priorQualifiedImageRelabeled": false,
+    "graphRecords": 39,
+    "executableComplete": 12,
+    "executableOpen": 17,
+    "auditTaskClosed": false
+  },
+  "rawEvidenceDirectory": "/data/tmp/cal-invitation-finish-20261017-extcxq9u",
+  "rawEvidence": [
+    {
+      "name": "takeover.json",
+      "sha256": "7ed6ede787ffa1d71ad439fe7eb535300a903874bf35d4f21a5520d39ab253cc"
+    },
+    {
+      "name": "final-source-checks.json",
+      "sha256": "eedf1b9bc2fd58b553fafd73204130bdd673c6e537aa4769a3a5770e667241c5"
+    },
+    {
+      "name": "source-final.log",
+      "sha256": "25ae8417f0faf665f1124661db29f69558fce9f5ed161a3c37538fe6c2815143"
+    },
+    {
+      "name": "types-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "native-launch-blocked.json",
+      "sha256": "dbba0129dc363c32d2737a1bb62d007a1e89f8fe8c7c58be07343ff956415693"
+    },
+    {
+      "name": "biome-final.log",
+      "sha256": "3e7737732f4258eb2cde02a97f558a843f85e5602994f9d6404e6721b6540bf6"
+    },
+    {
+      "name": "gitleaks.json",
+      "sha256": "10cbec06238c713f53e691fe2d9a7ee1d78c1c0c9f69afd084d7e1dc56c35fa5"
+    },
+    {
+      "name": "ubs.json",
+      "sha256": "f974dde6b15f2c055c275e53efa0dbccba3a098b48a53fc30278268cd1a62254"
+    },
+    {
+      "name": "publication-plan.json",
+      "sha256": "0a4da4c74dda7c4adac865697afc4cf47f9ceb08589c66be0d2dd70d90ee6239"
+    }
+  ]
+}
