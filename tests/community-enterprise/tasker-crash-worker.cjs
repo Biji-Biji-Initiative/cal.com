@@ -28,6 +28,7 @@ const { connectFixture, sourceModules } = require("./tasker-fixture.cjs");
     },
   });
   try {
+    process.send?.({ phase: "worker-ready" });
     await processor.processQueue();
   } finally {
     await db.$disconnect();

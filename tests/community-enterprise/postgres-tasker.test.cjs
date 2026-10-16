@@ -112,7 +112,7 @@ test("explicit ordinary handler failure keeps bounded scheduled retry semantics"
     async () => {
       throw new Error("fixture-sensitive-error");
     },
-    { config: { sendWebhook: { minRetryIntervalMins: 0.01 } } }
+    { maxTasks: 1, config: { sendWebhook: { minRetryIntervalMins: 0.01 } } }
   );
   const first = await fail.processQueue();
   assert.equal(first.retryScheduled, 1);
@@ -425,17 +425,24 @@ test("an actual worker killed after its HTTP effect is not automatically replaye
     }
   });
   const message = await new Promise((resolve, reject) => {
-    const timeout = setTimeout(
-      () => reject(new Error("Owned worker did not reach the effect boundary")),
-      8000
-    );
+    // Separate process/module startup from the unchanged eight-second effect
+    // boundary; host contention is not evidence that an external effect occurred.
+    let ready = false;
+    let timeout = setTimeout(() => reject(new Error("Owned worker did not finish fixture startup")), 30000);
     child.once("error", (error) => {
       clearTimeout(timeout);
       reject(error);
     });
-    child.once("message", (message) => {
+    child.on("message", (message) => {
+      if (message?.phase === "worker-ready" && !ready) {
+        ready = true;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => reject(new Error("Owned worker did not reach the effect boundary")), 8000);
+        return;
+      }
       clearTimeout(timeout);
-      resolve(message);
+      if (!ready) reject(new Error("Owned worker failed before fixture readiness"));
+      else resolve(message);
     });
     child.once("exit", () => {
       clearTimeout(timeout);
@@ -812,4 +819,60 @@ test("payload cancellation during a lock wait is rechecked before the still-live
     await db.$queryRaw`SELECT "scheduledAt" > (clock_timestamp() AT TIME ZONE 'UTC') AS live FROM "Task" WHERE id=${id}`;
   assert.equal(clock.live, true, "This refusal must come from cancellation, not lease expiry");
   assert.deepEqual(await row(id), before);
+});
+
+test("targeted processing uses the same lease without draining an unrelated earlier task", async () => {
+  const earlier = await create("other");
+  const target = await create("chosen");
+  const seen = [];
+  const result = await processor(async (payload) => {
+    seen.push(payload);
+  }).processQueue(target);
+  assert.equal(result.claimed, 1);
+  assert.equal(result.succeeded, 1);
+  assert.deepEqual(seen, ["chosen"]);
+  assert.equal((await row(earlier)).attempts, 0);
+  assert.equal((await row(earlier)).succeededAt, null);
+  assert.ok((await row(target)).succeededAt);
+});
+test("targeted recovery does not mutate another expired claimed task", async () => {
+  const a = await create("first"),
+    b = await create("second");
+  const first = await repository.claimNext(10000, a);
+  const second = await repository.claimNext(10000, b);
+  await expire(a);
+  await expire(b);
+  const result = await processor().processQueue(a);
+  assert.equal(result.claimed, 0);
+  assert.equal(result.recoveredInterruptions, 1);
+  assert.match((await row(a)).lastError, /^tasker:v1:unconfirmed:/);
+  assert.equal((await row(b)).lastError, modules.RUNNING_PREFIX + second.token);
+  assert.equal(await repository.recoverExpired(), 1);
+  assert.equal(await repository.settle(first, "succeeded"), false);
+});
+test("targeted claims retain future/exhaustion checks and global four-claim capacity", async () => {
+  const busy = [];
+  for (let i = 0; i < 4; i++) {
+    const id = await create(`busy-${i}`);
+    busy.push(await repository.claimNext(10000, id));
+  }
+  const target = await create("target");
+  assert.equal((await processor().processQueue(target)).claimed, 0);
+  assert.equal((await row(target)).attempts, 0);
+  assert.equal(await repository.settle(busy[0], "succeeded"), true);
+  assert.equal((await processor().processQueue(target)).succeeded, 1);
+  const future = await create("future", { scheduledAt: new Date(Date.now() + 60000) });
+  assert.equal((await processor().processQueue(future)).claimed, 0);
+  const exhausted = await create("exhausted");
+  await db.task.update({ where: { id: exhausted }, data: { attempts: 3 } });
+  assert.equal((await processor().processQueue(exhausted)).claimed, 0);
+});
+test("invalid targets cannot silently become an unrestricted queue pass", async () => {
+  const other = await create();
+  for (const value of ["", "x".repeat(257), null, 42]) {
+    await assert.rejects(repository.claimNext(10000, value));
+    await assert.rejects(repository.recoverExpired(value));
+    await assert.rejects(processor().processQueue(value));
+  }
+  assert.equal((await row(other)).attempts, 0);
 });

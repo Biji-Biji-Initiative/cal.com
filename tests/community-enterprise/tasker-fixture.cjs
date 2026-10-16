@@ -7,9 +7,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { createRequire } = require("node:module");
 const ts = require("typescript");
-const { PrismaClient } = require("@prisma/client");
-const { sqltag, join, empty } = require("@prisma/client/runtime/library");
-const Prisma = { sql: sqltag, join, empty };
+// SQL fragments must come from the SAME generated runtime as PrismaClient.
+// Importing a second runtime's tag makes nested SQL objects become parameters.
+const { PrismaClient, Prisma } = require("@prisma/client");
 const { PrismaPg } = require("@prisma/adapter-pg");
 const root = path.resolve(__dirname, "../..");
 

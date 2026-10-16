@@ -75,8 +75,11 @@ export class TaskRepository {
       ORDER BY "scheduledAt",id LIMIT 100`;
   }
 
-  async claimNext(leaseMs: number): Promise<ClaimedTask | null> {
+  async claimNext(leaseMs: number, taskId?: string): Promise<ClaimedTask | null> {
     milliseconds(leaseMs);
+    if (taskId !== undefined && (typeof taskId !== "string" || !taskId.length || taskId.length > 256))
+      throw new ErrorWithCode(ErrorCode.BadRequest, "Invalid task identity");
+    const target = taskId === undefined ? Prisma.empty : Prisma.sql`AND id = ${taskId}`;
     const token = randomUUID();
     return this.deps.prismaClient.$transaction(
       async (tx) => {
@@ -90,7 +93,7 @@ export class TaskRepository {
           Array<{ id: string; type: string; payload: string; attempts: number; maxAttempts: number }>
         >`
         WITH candidate AS (
-          SELECT id FROM "Task" WHERE ${runnable} ORDER BY "scheduledAt",id LIMIT 1 FOR UPDATE SKIP LOCKED
+          SELECT id FROM "Task" WHERE ${runnable} ${target} ORDER BY "scheduledAt",id LIMIT 1 FOR UPDATE SKIP LOCKED
         ) UPDATE "Task" t SET attempts=t.attempts+1,
           "scheduledAt"=${now}+(${leaseMs}::double precision * interval '1 millisecond'),
           "lastError"=${RUNNING_PREFIX + token},"updatedAt"=${now}
@@ -159,12 +162,15 @@ export class TaskRepository {
     return changed === 1;
   }
 
-  async recoverExpired(): Promise<number> {
+  async recoverExpired(taskId?: string): Promise<number> {
+    if (taskId !== undefined && (typeof taskId !== "string" || !taskId.length || taskId.length > 256))
+      throw new ErrorWithCode(ErrorCode.BadRequest, "Invalid task identity");
+    const target = taskId === undefined ? Prisma.empty : Prisma.sql`AND id = ${taskId}`;
     // A crashed worker may already have caused an external effect. Expiry is
     // evidence for reconciliation, not permission to send the operation again.
     return this.deps.prismaClient.$executeRaw`WITH expired AS (
       SELECT id FROM "Task" WHERE "succeededAt" IS NULL AND "lastError" LIKE ${RUNNING_PREFIX + "%"}
-        AND "scheduledAt" <= ${now} ORDER BY "scheduledAt",id LIMIT 100 FOR UPDATE SKIP LOCKED
+        AND "scheduledAt" <= ${now} ${target} ORDER BY "scheduledAt",id LIMIT 100 FOR UPDATE SKIP LOCKED
     ) UPDATE "Task" t SET "lastError"=${UNKNOWN_PREFIX + "interrupted"},"lastFailedAttemptAt"=${now},"updatedAt"=${now}
       FROM expired WHERE t.id=expired.id`;
   }

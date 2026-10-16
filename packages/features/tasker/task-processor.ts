@@ -146,7 +146,9 @@ export class TaskProcessor {
     }
   }
 
-  async processQueue(): Promise<TaskProcessingSummary> {
+  async processQueue(taskId?: string): Promise<TaskProcessingSummary> {
+    if (taskId !== undefined && (typeof taskId !== "string" || !taskId.length || taskId.length > 256))
+      throw new ErrorWithCode(ErrorCode.BadRequest, "Invalid targeted task identity");
     const summary: TaskProcessingSummary = {
       claimed: 0,
       succeeded: 0,
@@ -157,16 +159,16 @@ export class TaskProcessor {
       pendingReconciliation: 0,
       exhaustedTotal: 0,
     };
-    summary.recoveredInterruptions = await this.repository.recoverExpired();
+    summary.recoveredInterruptions = await this.repository.recoverExpired(taskId);
     const until = performance.now() + this.claimWindowMs;
-    let remaining = this.maxTasks;
+    let remaining = taskId === undefined ? this.maxTasks : 1;
     let infrastructureFailure = false;
     let stopClaiming = false;
     const worker = async () => {
       try {
         while (!infrastructureFailure && !stopClaiming && remaining > 0 && performance.now() < until) {
           remaining--;
-          const task = await this.repository.claimNext(this.leaseMs);
+          const task = await this.repository.claimNext(this.leaseMs, taskId);
           if (!task) return;
           summary.claimed++;
           const outcome = await this.execute(task);
@@ -183,7 +185,7 @@ export class TaskProcessor {
         infrastructureFailure = true;
       }
     };
-    await Promise.all(Array.from({ length: this.concurrency }, worker));
+    await Promise.all(Array.from({ length: taskId === undefined ? this.concurrency : 1 }, worker));
     if (infrastructureFailure)
       throw new ErrorWithCode(ErrorCode.InternalServerError, "Task processing state could not be confirmed");
     Object.assign(summary, await this.repository.attentionCounts());
