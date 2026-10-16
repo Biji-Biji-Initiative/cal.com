@@ -13,13 +13,15 @@ import {
   authorizeAuthentikSignIn,
   refreshAuthentikToken,
 } from "@calcom/features/community-enterprise/identity/AuthentikIdentity";
+import { PreviewOperatorBootstrap } from "@calcom/features/community-enterprise/identity/PreviewOperatorBootstrap";
+import { OrganizationProvisioningService } from "@calcom/features/community-enterprise/organizations/OrganizationProvisioningService";
 import { PrismaClient } from "@calcom/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, test } from "vitest";
 
 const root = path.resolve(__dirname, "../..");
-const database = `cal_identity_link_${process.pid}`;
+const database = `cal_enterprise_preview_${process.pid}`;
 const target = {
   issuer: "https://identity.example.test/application/o/calendar",
   webOrigin: "https://calendar.example.test",
@@ -462,4 +464,330 @@ test("linking preserves retained calendar credentials and appointment identifier
     before
   );
   assert.deepEqual(await counts(), { accounts: 2, audit: 1 });
+});
+
+const bootstrapTarget = () => ({
+  ...target,
+  webOrigin: "https://cal.mereka.dev",
+  databaseName: database,
+  nativeOnly: true,
+});
+const firstOperator = () => ({
+  operationId: randomUUID(),
+  operatorUuid: randomUUID(),
+  subject: "preview-fixture-subject",
+  name: "Preview Fixture",
+  email: "preview@example.test",
+  username: "preview-fixture",
+});
+async function emptyPreview() {
+  // beforeAll has independently bound this pool to the disposable runner's DB.
+  await pool.query('TRUNCATE "users", "Team", "EnterpriseAuditEvent" RESTART IDENTITY CASCADE');
+  return new PreviewOperatorBootstrap(prisma, bootstrapTarget(), () => clock);
+}
+const initialCounts = async () => ({
+  users: await prisma.user.count(),
+  accounts: await prisma.account.count(),
+  teams: await prisma.team.count(),
+  audit: await prisma.enterpriseAuditEvent.count(),
+});
+
+test("preview plan does not create an account or disclose the raw subject/email", async () => {
+  const bootstrap = await emptyPreview();
+  const input = firstOperator();
+  const plan = await bootstrap.plan(input);
+  assert.equal(plan.rows.length, 1);
+  assert.deepEqual(await initialCounts(), { users: 0, accounts: 0, teams: 0, audit: 0 });
+  for (const text of [input.email, input.subject, input.name])
+    assert.ok(!JSON.stringify(plan).includes(text));
+});
+test("preview apply creates one native operator without passwords, auto-membership or verified-email claims", async () => {
+  const bootstrap = await emptyPreview();
+  const input = firstOperator();
+  const result = await bootstrap.apply(input, await bootstrap.plan(input));
+  assert.equal(result.status, "applied");
+  assert.deepEqual(await initialCounts(), { users: 1, accounts: 1, teams: 0, audit: 1 });
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: result.userId },
+    select: {
+      role: true,
+      uuid: true,
+      completedOnboarding: true,
+      emailVerified: true,
+      locked: true,
+      password: { select: { userId: true } },
+    },
+  });
+  assert.deepEqual(user, {
+    role: "ADMIN",
+    uuid: input.operatorUuid,
+    completedOnboarding: false,
+    emailVerified: null,
+    locked: false,
+    password: null,
+  });
+  const audit = await prisma.enterpriseAuditEvent.findUniqueOrThrow({
+    where: { operationId: input.operationId },
+  });
+  assert.equal(audit.organizationId, 0);
+  assert.ok(JSON.stringify(audit.details).includes("out-of-band-database-operator"));
+  assert.ok(!JSON.stringify(audit.details).includes(input.subject));
+  const config = { issuer: target.issuer, clientId: "fixture-client", clientSecret: "fixture-only-secret" };
+  const account = {
+    provider: "authentik",
+    type: "oauth" as const,
+    providerAccountId: authentikAccountId(target.issuer, input.subject),
+  };
+  const profile = { sub: input.subject, iss: target.issuer };
+  assert.equal(
+    await authorizeAuthentikSignIn(prisma, config, {
+      account,
+      profile,
+      user: { id: result.userId },
+    }),
+    true
+  );
+  const token = await refreshAuthentikToken(
+    prisma,
+    config,
+    { token: {}, account, user: { id: result.userId } },
+    bootstrapTarget().webOrigin
+  );
+  assert.equal(token.id, result.userId);
+  assert.equal(token.role, "ADMIN");
+  assert.equal(token.org, undefined);
+});
+for (const change of [
+  { webOrigin: "https://cal.mereka.io" },
+  { webOrigin: "https://cal.mereka.dev.attacker.test" },
+  { webOrigin: "http://cal.mereka.dev" },
+  { databaseName: "calcom" },
+  { databaseName: "postgres" },
+  { databaseName: "cal_enterprise_preview;DROP" },
+  { nativeOnly: false },
+  { issuer: "https://user:password@identity.example.test/" },
+]) {
+  test(`preview target rejects ${JSON.stringify(change)}`, () => {
+    assert.throws(() => new PreviewOperatorBootstrap(prisma, { ...bootstrapTarget(), ...change }));
+  });
+}
+for (const state of [
+  "user",
+  "pending-team",
+  "credential",
+  "event",
+  "booking",
+  "audit",
+  "webhook",
+  "destination",
+] as const) {
+  test(`preview plan refuses pre-existing ${state} without modifying it`, async () => {
+    const bootstrap = await emptyPreview();
+    if (state === "user")
+      await prisma.user.create({ data: { email: "existing@example.test", locked: true } });
+    if (state === "pending-team")
+      await prisma.team.create({ data: { name: "Reserved", slug: "reserved", pendingPayment: true } });
+    if (state === "credential") await prisma.credential.create({ data: { type: "fixture", key: {} } });
+    if (state === "event")
+      await prisma.eventType.create({ data: { title: "Orphan", slug: "orphan", length: 20 } });
+    if (state === "booking")
+      await prisma.booking.create({
+        data: { uid: randomUUID(), title: "Existing", startTime: new Date(), endTime: new Date() },
+      });
+    if (state === "webhook")
+      await prisma.webhook.create({
+        data: { id: randomUUID(), subscriberUrl: "https://example.test/no-delivery", eventTriggers: [] },
+      });
+    if (state === "destination")
+      await prisma.destinationCalendar.create({
+        data: { integration: "fixture", externalId: "no-provider-id" },
+      });
+    if (state === "audit")
+      await prisma.enterpriseAuditEvent.create({
+        data: {
+          operationId: randomUUID(),
+          operationHash: "prior",
+          action: "prior",
+          actorUserId: 0,
+          organizationId: 0,
+          details: {},
+        },
+      });
+    const before = await initialCounts();
+    await assert.rejects(bootstrap.plan(firstOperator()));
+    assert.deepEqual(await initialCounts(), before);
+  });
+}
+test("preview apply rechecks an empty plan after another writer creates an account", async () => {
+  const bootstrap = await emptyPreview();
+  const input = firstOperator();
+  const plan = await bootstrap.plan(input);
+  await prisma.user.create({ data: { email: "raced@example.test" } });
+  await assert.rejects(bootstrap.apply(input, plan));
+  assert.deepEqual(await initialCounts(), { users: 1, accounts: 0, teams: 0, audit: 0 });
+});
+test("preview apply rejects expired, changed, foreign and malformed plans", async () => {
+  const bootstrap = await emptyPreview();
+  const input = firstOperator();
+  const plan = await bootstrap.plan(input);
+  await assert.rejects(bootstrap.apply({ ...input, role: "ADMIN" }, plan));
+  await assert.rejects(bootstrap.apply({ ...input, subject: "foreign-subject" }, plan));
+  await assert.rejects(bootstrap.apply(input, { ...plan, expiresAt: plan.expiresAt + 1 }));
+  const other = new PreviewOperatorBootstrap(
+    prisma,
+    { ...bootstrapTarget(), databaseFingerprint: "b".repeat(64) },
+    () => clock
+  );
+  await assert.rejects(other.apply(input, plan));
+  clock = plan.expiresAt;
+  await assert.rejects(bootstrap.apply(input, plan));
+  assert.deepEqual(await initialCounts(), { users: 0, accounts: 0, teams: 0, audit: 0 });
+});
+test("preview apply refuses a contending writer rather than waiting under old application activity", async () => {
+  const bootstrap = await emptyPreview();
+  const input = firstOperator();
+  const plan = await bootstrap.plan(input);
+  const blocker = await pool.connect();
+  try {
+    await blocker.query("BEGIN");
+    await blocker.query('LOCK TABLE "users" IN ROW EXCLUSIVE MODE');
+    await assert.rejects(bootstrap.apply(input, plan));
+    assert.deepEqual(await initialCounts(), { users: 0, accounts: 0, teams: 0, audit: 0 });
+  } finally {
+    await blocker.query("ROLLBACK");
+    blocker.release();
+  }
+});
+test("competing initial operators cannot both commit", async () => {
+  const bootstrap = await emptyPreview();
+  const a = firstOperator();
+  const b = { ...firstOperator(), email: "second@example.test", username: "second" };
+  const pa = await bootstrap.plan(a),
+    pb = await bootstrap.plan(b);
+  const outcomes = await Promise.allSettled([bootstrap.apply(a, pa), bootstrap.apply(b, pb)]);
+  assert.equal(outcomes.filter((x) => x.status === "fulfilled").length, 1);
+  assert.deepEqual(await initialCounts(), { users: 1, accounts: 1, teams: 0, audit: 1 });
+});
+test("preview account and identity roll back when mandatory audit creation fails", async () => {
+  const bootstrap = await emptyPreview();
+  const input = firstOperator();
+  const plan = await bootstrap.plan(input);
+  await pool.query(`CREATE OR REPLACE FUNCTION reject_preview_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture audit refused'; END $$;
+    CREATE TRIGGER refuse_identity_audit BEFORE INSERT ON "EnterpriseAuditEvent" FOR EACH ROW EXECUTE FUNCTION reject_preview_audit();`);
+  await assert.rejects(bootstrap.apply(input, plan));
+  assert.deepEqual(await initialCounts(), { users: 0, accounts: 0, teams: 0, audit: 0 });
+});
+for (const change of ["none", "locked", "demoted", "unlinked", "rebound"] as const) {
+  test(`preview replay is read-only and never repairs ${change} authority`, async () => {
+    const bootstrap = await emptyPreview();
+    const input = firstOperator();
+    const plan = await bootstrap.plan(input);
+    const result = await bootstrap.apply(input, plan);
+    if (change === "locked")
+      await prisma.user.update({ where: { id: result.userId }, data: { locked: true } });
+    if (change === "demoted")
+      await prisma.user.update({ where: { id: result.userId }, data: { role: "USER" } });
+    if (change === "unlinked" || change === "rebound") await prisma.account.deleteMany();
+    if (change === "rebound")
+      await prisma.account.create({
+        data: {
+          id: randomUUID(),
+          userId: result.userId,
+          type: "oauth",
+          provider: "authentik",
+          providerAccountId: authentikAccountId(target.issuer, input.subject),
+        },
+      });
+    const before = await initialCounts();
+    if (change === "none") assert.equal((await bootstrap.apply(input, plan)).status, "replayed");
+    else await assert.rejects(bootstrap.apply(input, plan));
+    assert.deepEqual(await initialCounts(), before);
+  });
+}
+test("actual preview CLI plans and applies under native-only configuration, without public setup", async () => {
+  await emptyPreview();
+  const input = firstOperator();
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "cal-bootstrap-cli-"));
+  const requestFile = path.join(directory, "request.json"),
+    planFile = path.join(directory, "plan.json");
+  const environment = Object.fromEntries(
+    ["PATH", "HOME", "USER", "LANG"].filter((key) => process.env[key]).map((key) => [key, process.env[key]])
+  );
+  const databaseUrl = `postgresql://cal_enterprise_test@localhost:55439/${database}?host=${encodeURIComponent(connection.host)}`;
+  Object.assign(environment, {
+    DATABASE_URL: databaseUrl,
+    CAL_AUTHENTIK_ISSUER: target.issuer,
+    NEXT_PUBLIC_WEBAPP_URL: "https://cal.mereka.dev",
+    CAL_AUTHENTIK_ENABLED: "true",
+    CAL_AUTHENTIK_ONLY: "true",
+  });
+  const invoke = (args: string[], extra: Record<string, string> = {}) =>
+    promisify(execFile)(process.execPath, ["scripts/link-enterprise-identity.cjs", ...args], {
+      cwd: root,
+      env: { ...environment, ...extra } as NodeJS.ProcessEnv,
+      encoding: "utf8",
+      timeout: 30000,
+    });
+  try {
+    fs.writeFileSync(requestFile, JSON.stringify(input), { mode: 0o600 });
+    const planArgs = ["bootstrap-plan", "--request", requestFile, "--out", planFile, "--database", database];
+    await assert.rejects(invoke(planArgs, { CAL_AUTHENTIK_ONLY: "false" }));
+    assert.equal(fs.existsSync(planFile), false);
+    const planned = await invoke(planArgs);
+    assert.equal(JSON.parse(planned.stdout).count, 1);
+    assert.equal(fs.statSync(planFile).mode & 0o777, 0o600);
+    assert.equal(await prisma.user.count(), 0);
+    const args = ["bootstrap-apply", "--request", requestFile, "--plan", planFile, "--database", database];
+    const applied = await invoke(args);
+    assert.equal(JSON.parse(applied.stdout).status, "applied");
+    assert.equal(JSON.parse((await invoke(args)).stdout).status, "replayed");
+    for (const value of [input.email, input.subject, databaseUrl]) assert.ok(!applied.stdout.includes(value));
+    assert.deepEqual(await initialCounts(), { users: 1, accounts: 1, teams: 0, audit: 1 });
+  } finally {
+    fs.rmSync(directory, { recursive: true });
+  }
+  // Four separate CLI processes retain their individual 30s bounds. This new
+  // aggregate test needs their combined budget; it is not a login-latency target.
+}, 150000);
+
+test("the bootstrapped operator can use the existing reviewed organization service", async () => {
+  const bootstrap = await emptyPreview();
+  const input = firstOperator();
+  const result = await bootstrap.apply(input, await bootstrap.plan(input));
+  const organization = new OrganizationProvisioningService(prisma);
+  const actor = { id: result.userId, uuid: result.userUuid };
+  const review = await organization.review(actor, {
+    name: "Synthetic Preview Organization",
+    slug: "preview-organization",
+    timeZone: "UTC",
+    ownerEmail: input.email,
+    memberEmails: [],
+  });
+  const created = await organization.provision(actor, review.input);
+  const member = await prisma.membership.findFirstOrThrow({
+    where: { teamId: created.organizationId, userId: result.userId },
+    select: { accepted: true, role: true },
+  });
+  assert.deepEqual(member, { accepted: true, role: "OWNER" });
+  assert.deepEqual(await initialCounts(), { users: 1, accounts: 1, teams: 1, audit: 2 });
+  assert.equal(await prisma.credential.count(), 0);
+  assert.equal(await prisma.booking.count(), 0);
+  assert.equal(await prisma.userPassword.count(), 0);
+});
+
+test("a plausible preview name cannot mislabel the actual database connection", async () => {
+  await emptyPreview();
+  const wrong = new PreviewOperatorBootstrap(
+    prisma,
+    {
+      ...bootstrapTarget(),
+      databaseName: "cal_enterprise_preview_different",
+    },
+    () => clock
+  );
+  await assert.rejects(
+    wrong.plan(firstOperator()),
+    /Preview bootstrap requires the reviewed empty isolated target/
+  );
+  assert.deepEqual(await initialCounts(), { users: 0, accounts: 0, teams: 0, audit: 0 });
 });

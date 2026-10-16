@@ -490,14 +490,22 @@
           "application_source": "e3a79afbffc3d81973d6f299a59e154f154d7cf8",
           "image_id": "sha256:0b3f92174bcb45eb7b7cdda0a23b98dc3262f13d342efc22103d36dd1dd4d4aa",
           "summary": "Current dependency repairs and runtime tool removal accepted within the recorded native/fixture scope. HIGH occurrences 113 -> 56; remaining findings, approved publisher, real native identity/data/guest cutover and shared preview remain open."
+        },
+        {
+          "file": "docs/community-enterprise/PREVIEW-OPERATOR-2026-10-16.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite identity-link --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "implementation_source": "14e300e348cb4afb2675f27c18d079b11e0f009b",
+          "summary": "59 actual private PostgreSQL/CLI cases prove the empty-preview first operator, native account binding and onward existing organization admission. No public setup or live identity mutation; actual registry/native configuration/deployment and staff-to-guest acceptance remain open."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 0,
-      "progress": "Current source e3a79afbffc3d81973d6f299a59e154f154d7cf8 passes exact local native web/API and HTTPS-image acceptance. Matched scanner HIGH occurrences 113 -> 56, zero CRITICAL/secrets; residual findings not waived. No published digest or native shared-preview deployment. Existing runner policy does not admit this public repository; approved publisher and native initial-account/client/cutover remain explicit.",
-      "progress_reference": "docs/community-enterprise/RUNTIME-SECURITY-2026-10-16.md",
+      "progress": "Qualified e3a79afb HTTPS image and matched 113\u219256 HIGH scan are published as evidence, not a registry upload. The missing empty-preview first-account path now has an explicit reviewed operator CLI with real 59-case database acceptance; live client/subject/database admission, approved publishing, native entrypoint/routing and serving journey remain unfinished.",
+      "progress_reference": "docs/community-enterprise/PREVIEW-OPERATOR-2026-10-16.md",
       "blockers": [
         "Live cal.mereka.dev is the restored legacy v6.2.0 image, not the enterprise candidate.",
         "Approved GHCR publication permissions and exact-image security disposition remain unresolved.",
@@ -515,6 +523,16 @@
         "publisher_state": "Actual runner admission blocks inherited public workflow; own-box publisher/credential-owner action requested, not executed",
         "candidate_deployed": false,
         "next": "Resolve remaining security findings and approved publisher; native client/test-account/isolated-data admission and serving staff/guest proof."
+      },
+      "progress_references": [
+        "docs/community-enterprise/PREVIEW-OPERATOR-2026-10-16.md",
+        "docs/community-enterprise/PREVIEW-OPERATOR-RECEIPT-2026-10-16.json"
+      ],
+      "preview_operator_tool": {
+        "implementation_source": "14e300e348cb4afb2675f27c18d079b11e0f009b",
+        "evidence": "docs/community-enterprise/PREVIEW-OPERATOR-2026-10-16.md",
+        "live_execution": false,
+        "requires": "Existing platform-owned isolated preview, sanctioned subject and native client configuration; never run against the retained legacy database."
       }
     },
     {

@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-16T09:28:41.494843+00:00",
+  "repository": "Biji-Biji-Initiative/cal.com",
+  "branch": "work/cal-diy-enterprise-20261010",
+  "implementationCommit": "14e300e348cb4afb2675f27c18d079b11e0f009b",
+  "codeAndTestSha256": {
+    "packages/features/community-enterprise/identity/PreviewOperatorBootstrap.ts": "c4727e9e5bccf626581ef553b14b5e1a863bf6ccc771dcc275d089e77fbdd0f4",
+    "scripts/link-enterprise-identity.cjs": "b5e35b502c1d08134dcfe7722ac831f47348013eb39e3b763cc6d483ebcd102a",
+    "tests/community-enterprise/postgres-identity-link.test.ts": "86c8d1a13aa134cdb40429d9b80e018f0e65e8c1cb79412a654d1ce017915a9d",
+    "tests/community-enterprise/identity-link-cli.test.cjs": "b7b143e8ee677a30fe5d2fccf3653bb0ad90801491af0c2a8dcd0c2b49a3074b"
+  },
+  "checks": {
+    "bootstrap-release-biome": {
+      "command": [
+        "node",
+        "node_modules/@biomejs/biome/bin/biome",
+        "check",
+        "--write",
+        "--diagnostic-level=error",
+        "packages/features/community-enterprise/identity/PreviewOperatorBootstrap.ts",
+        "scripts/link-enterprise-identity.cjs",
+        "tests/community-enterprise/postgres-identity-link.test.ts",
+        "tests/community-enterprise/identity-link-cli.test.cjs"
+      ],
+      "exit_code": 0,
+      "seconds": 2.6
+    },
+    "bootstrap-release-types": {
+      "command": [
+        "node",
+        "/data/worktrees/cal.com/cal-delivery-20261013/node_modules/typescript/bin/tsc",
+        "--project",
+        "/data/tmp/cal-qualification-finish-20261016-2yo80ax4/tsconfig-bootstrap.json"
+      ],
+      "exit_code": 0,
+      "seconds": 34.8
+    },
+    "bootstrap-release-database": {
+      "command": [
+        "python3",
+        "scripts/run-community-enterprise-postgres.py",
+        "--suite",
+        "identity-link",
+        "--pg-bin",
+        "/usr/lib/postgresql/18/bin",
+        "--scratch-root",
+        "/data/tmp"
+      ],
+      "exit_code": 0,
+      "seconds": 125.6
+    },
+    "bootstrap-release-source": {
+      "command": [
+        "yarn",
+        "test:community-enterprise"
+      ],
+      "exit_code": 0,
+      "seconds": 64.4
+    }
+  },
+  "counts": {
+    "nativeDatabaseAndCli": 59,
+    "retainedIdentityCases": 28,
+    "newPreviewCases": 31,
+    "registeredSourceTests": 594,
+    "sourceFailures": 0,
+    "sourceSkips": 0
+  },
+  "earlierAttempts": [
+    {
+      "cases": 55,
+      "passed": 54,
+      "failed": 1,
+      "reason": "New four-process CLI aggregate exhausted its default 30s outer budget; no original application or per-command bound was relaxed."
+    },
+    {
+      "cases": 58,
+      "passed": 58,
+      "failed": 0,
+      "reason": "Initial complete preview contract before independent service-side connected-database-name guard."
+    },
+    {
+      "cases": 59,
+      "passed": 45,
+      "failed": 14,
+      "reason": "Native raw query exposed PostgreSQL name type; cast metadata value to text, then rerun all 59 successfully."
+    }
+  ],
+  "security": {
+    "gitleaks_exit": 0,
+    "ubs_exit": 0,
+    "ubs_totals": {
+      "critical": 0,
+      "warning": 5,
+      "info": 5,
+      "files": 2
+    },
+    "sha256": {
+      "packages/features/community-enterprise/identity/PreviewOperatorBootstrap.ts": "c4727e9e5bccf626581ef553b14b5e1a863bf6ccc771dcc275d089e77fbdd0f4",
+      "scripts/link-enterprise-identity.cjs": "b5e35b502c1d08134dcfe7722ac831f47348013eb39e3b763cc6d483ebcd102a",
+      "tests/community-enterprise/postgres-identity-link.test.ts": "86c8d1a13aa134cdb40429d9b80e018f0e65e8c1cb79412a654d1ce017915a9d",
+      "tests/community-enterprise/identity-link-cli.test.cjs": "b7b143e8ee677a30fe5d2fccf3653bb0ad90801491af0c2a8dcd0c2b49a3074b"
+    }
+  },
+  "cleanup": {
+    "observedAt": "2026-10-16T09:26:42.548290+00:00",
+    "ownedDatabaseInvocations": 4,
+    "ownedDirectoriesAbsent": true,
+    "matchingPostgresProcesses": [],
+    "scope": "All initial/final/target-correction bootstrap test fixtures; no shared resource deletion."
+  },
+  "rawReceipts": [
+    {
+      "path": "bootstrap-checks.json",
+      "bytes": 1059,
+      "sha256": "52e0a4e5174c7b09e0c06c024776ece8e919be7cfc12da259de63cdb9f43f0f3"
+    },
+    {
+      "path": "bootstrap-database.log",
+      "bytes": 9645,
+      "sha256": "e66e196a30d147e232969a83b3a72715ec9bf029a61c9ca5bb7e2ed9ffb95e7e"
+    },
+    {
+      "path": "bootstrap-final-checks.json",
+      "bytes": 1098,
+      "sha256": "46a095bd18ef676d7ec4414367fbd29f3d0d7353c96070ca0a1aa4cb81190679"
+    },
+    {
+      "path": "bootstrap-database-final.log",
+      "bytes": 9554,
+      "sha256": "97ca9d14d2bf5b09012e207f88b206f5cbe1eb1a22f69d201af376e018bbd398"
+    },
+    {
+      "path": "bootstrap-target-checks.json",
+      "bytes": 1100,
+      "sha256": "b347e3658de3fd5ee1244bd1148ac23d89c743d2dc412f043d0e4cf8ed917fb6"
+    },
+    {
+      "path": "bootstrap-target-database.log",
+      "bytes": 28778,
+      "sha256": "c1022fcdb52c01d8a5642917443e870f3a91d21106a242687124f2b0529e48f8"
+    },
+    {
+      "path": "bootstrap-release-checks.json",
+      "bytes": 1253,
+      "sha256": "353218780f4846dac2626e28db45576f627aa534c0963499170bf5cd0d9cc609"
+    },
+    {
+      "path": "bootstrap-release-database.log",
+      "bytes": 8296,
+      "sha256": "1227993498f9094a808bdb9c8c54f16f2f60035707a4641894b1a7c5406c9d94"
+    },
+    {
+      "path": "bootstrap-release-source.log",
+      "bytes": 117227,
+      "sha256": "75a3e19c6b43b9719eeaf346187270a0bdc3183c0d45012b3f31c9c3c95809c7"
+    },
+    {
+      "path": "bootstrap-release-security.json",
+      "bytes": 674,
+      "sha256": "ffa67b409e1e569fcd546a6e5c380127a84f744fcb9e174bae6e712b787dac30"
+    },
+    {
+      "path": "bootstrap-release-cleanup.json",
+      "bytes": 260,
+      "sha256": "355ea716ce93fa039415d15ca38e00b7d46d781ea3ab723b38743f7c4edb05df"
+    },
+    {
+      "path": "bootstrap-release-hashes.json",
+      "bytes": 519,
+      "sha256": "4922c2877742b72f1b1997c5cb78cbaf28d2e313780e6ce1c3df180a30af60ef"
+    },
+    {
+      "path": "image-independent-readback.json",
+      "bytes": 1646,
+      "sha256": "d4e6fa4ef98112fc5f2feaa0d53a1abc28a0ab8c2ad50ee5c00f6fe7dbacaa6f"
+    },
+    {
+      "path": "publisher-readback-final.json",
+      "bytes": 261,
+      "sha256": "a9c3a2f8bad4107479bff5367e93f8e36b07988e2d36f4090df5617a9a5ac823"
+    }
+  ],
+  "rawEvidenceLocation": "/data/tmp/cal-qualification-finish-20261016-2yo80ax4",
+  "priorQualifiedImage": {
+    "source": "e3a79afbffc3d81973d6f299a59e154f154d7cf8",
+    "localIndex": "sha256:0b3f92174bcb45eb7b7cdda0a23b98dc3262f13d342efc22103d36dd1dd4d4aa",
+    "rebuiltByBootstrapSlice": false,
+    "registryPublishedByThisWork": false
+  },
+  "boundaries": {
+    "isolatedTestDatabaseWrites": true,
+    "liveAccountCreated": false,
+    "identityProviderAccountCreatedOrChanged": false,
+    "schemaChanged": false,
+    "applicationDependencyAdded": false,
+    "publicSetupChanged": false,
+    "liveDeploymentChanged": false,
+    "productionModified": false,
+    "runnerOrPublisherTrustModified": false,
+    "previewTaskClosed": false,
+    "graphCompletion": {
+      "completed": 12,
+      "remaining": 17
+    }
+  },
+  "operatorTrust": "Privileged out-of-band database operator with reviewed sanctioned identity; plan hash, database prefix and URL are not independent authorization or proof of physical isolation."
+}
