@@ -867,3 +867,441 @@ test("a kill-switch result is recorded as not submitted, not delivered or automa
   assert.equal(calls, 1);
   assert.equal((await getMember())?.accepted, false);
 });
+test("failed pre-send audit is safely retried on the same task after the database recovers", async () => {
+  const invite = await queuedInvite();
+  let calls = 0;
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "EnterpriseAuditEvent" ADD CONSTRAINT before_send_failure CHECK (action <> 'organization.invitation.notification-attempted')`
+  );
+  try {
+    assert.deepEqual(
+      await service.deliverQueuedNotice(invite.notificationTaskId, async () => {
+        calls++;
+        return "submitted";
+      }),
+      { email: "queued" }
+    );
+    assert.equal(calls, 0);
+  } finally {
+    await prisma.$executeRawUnsafe('ALTER TABLE "EnterpriseAuditEvent" DROP CONSTRAINT before_send_failure');
+  }
+  await makeDue(invite.notificationTaskId);
+  assert.equal(
+    (
+      await noticeWorker(async () => {
+        calls++;
+        return "submitted";
+      }).processQueue()
+    ).succeeded,
+    1
+  );
+  assert.equal(calls, 1);
+  assert.equal((await taskRow(invite.notificationTaskId)).attempts, 2);
+});
+test("failed post-send audit cannot turn an external submission into an automatic retry", async () => {
+  const invite = await queuedInvite();
+  let calls = 0;
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "EnterpriseAuditEvent" ADD CONSTRAINT after_send_failure CHECK (action <> 'organization.invitation.notification-submitted')`
+  );
+  try {
+    assert.deepEqual(
+      await service.deliverQueuedNotice(invite.notificationTaskId, async () => {
+        calls++;
+        return "submitted";
+      }),
+      { email: "unconfirmed" }
+    );
+    assert.equal(calls, 1);
+  } finally {
+    await prisma.$executeRawUnsafe('ALTER TABLE "EnterpriseAuditEvent" DROP CONSTRAINT after_send_failure');
+  }
+  await makeDue(invite.notificationTaskId);
+  assert.equal(
+    (
+      await noticeWorker(async () => {
+        calls++;
+        return "submitted";
+      }).processQueue()
+    ).claimed,
+    0
+  );
+  assert.equal(calls, 1);
+  assert.equal(await noticeOutcome(invite.notificationTaskId), null);
+  assert.equal(
+    await prisma.enterpriseAuditEvent.count({
+      where: { operationId: `${invite.notificationTaskId}:notice-attempt` },
+    }),
+    1
+  );
+});
+test("a claimed worker interruption stays ambiguous even before an external effect is observed", async () => {
+  const invite = await queuedInvite();
+  const repository = noticeRepository();
+  const claim = await repository.claimNext(10000, invite.notificationTaskId);
+  assert.ok(claim);
+  await makeDue(claim.id);
+  let sent = 0;
+  const result = await noticeWorker(async () => {
+    sent++;
+    return "submitted";
+  }).processQueue();
+  assert.equal(result.recoveredInterruptions, 1);
+  assert.equal(result.claimed, 0);
+  assert.equal(sent, 0);
+  assert.ok((await taskRow(claim.id)).lastError?.startsWith(UNKNOWN_PREFIX));
+  assert.equal(await repository.settle(claim, "succeeded"), false);
+});
+test("active global worker capacity yields queued rather than running a second sender", async () => {
+  const invite = await queuedInvite();
+  const repository = noticeRepository();
+  for (let i = 0; i < 4; i++) {
+    const id = await repository.create("sendWebhook", "fixture-capacity");
+    assert.ok(await repository.claimNext(10000, id));
+  }
+  let sent = 0;
+  assert.deepEqual(
+    await service.deliverQueuedNotice(invite.notificationTaskId, async () => {
+      sent++;
+      return "submitted";
+    }),
+    { email: "queued" }
+  );
+  assert.equal(sent, 0);
+  assert.equal((await taskRow(invite.notificationTaskId)).attempts, 0);
+});
+test("consumption requires a real live task claim and the exact stored task input", async () => {
+  const invite = await queuedInvite();
+  const repository = noticeRepository();
+  const stored = await taskRow(invite.notificationTaskId);
+  let sent = 0;
+  const send = async () => {
+    sent++;
+    return "submitted" as const;
+  };
+  await assert.rejects(service.consumeQueuedNotice(stored.payload, stored.id, send));
+  const claim = await repository.claimNext(10000, stored.id);
+  assert.ok(claim);
+  await assert.rejects(
+    taskExecution.run(
+      { claim: { ...claim, token: randomUUID() }, signal: new AbortController().signal },
+      () => service.consumeQueuedNotice(stored.payload, stored.id, send)
+    )
+  );
+  const changed = { ...JSON.parse(stored.payload), organizationId: 200 };
+  await assert.rejects(
+    taskExecution.run({ claim, signal: new AbortController().signal }, () =>
+      service.consumeQueuedNotice(JSON.stringify(changed), stored.id, send)
+    )
+  );
+  await makeDue(stored.id);
+  await assert.rejects(
+    taskExecution.run({ claim, signal: new AbortController().signal }, () =>
+      service.consumeQueuedNotice(stored.payload, stored.id, send)
+    )
+  );
+  assert.equal(sent, 0);
+  assert.equal(await noticeOutcome(stored.id), null);
+});
+test("explicit new resend is atomic and the same request cannot submit twice", async () => {
+  const invite = await queuedInvite();
+  let sent = 0;
+  const send = async () => {
+    sent++;
+    return "submitted" as const;
+  };
+  await service.deliverQueuedNotice(invite.notificationTaskId, send);
+  await ageNotice(invite.notificationTaskId);
+  const request = adminInput(invite.invitationId);
+  assert.deepEqual(await service.notify(actor(1), request, send), { email: "submitted" });
+  assert.deepEqual(await service.notify(actor(1), request, send), { email: "already_attempted" });
+  assert.equal(sent, 2);
+  assert.equal(await prisma.task.count({ where: { type: invitationNoticeType } }), 2);
+  assert.equal((await getMember())?.accepted, false);
+});
+
+async function heldNoticeRow(
+  table: "Team" | "Task",
+  work: (blocker: import("pg").PoolClient, pid: number) => Promise<void>
+) {
+  assert.ok(verified);
+  const { Pool } = await import("pg");
+  const control = new Pool({
+    host: process.env.CAL_ENTERPRISE_TEST_SOCKET,
+    port: 55439,
+    user: "cal_enterprise_test",
+    database: "postgres",
+    max: 1,
+  });
+  const blocker = await control.connect();
+  try {
+    await blocker.query("BEGIN");
+    const { rows } = await blocker.query<{ pid: number }>("SELECT pg_backend_pid() AS pid");
+    if (table === "Team") await blocker.query('SELECT id FROM "Team" WHERE id=100 FOR UPDATE');
+    await work(blocker, rows[0].pid);
+  } finally {
+    await blocker.query("ROLLBACK");
+    blocker.release();
+    await control.end();
+  }
+}
+async function observedNoticeWait(pid: number, table: string) {
+  const deadline = performance.now() + 5000;
+  while (performance.now() < deadline) {
+    const rows = await prisma.$queryRaw<Array<{ waiting: boolean }>>`SELECT EXISTS (
+      SELECT 1 FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND wait_event_type='Lock'
+        AND ${pid}::int = ANY(pg_blocking_pids(pid)) AND query LIKE ${'%FROM "' + table + '"%FOR UPDATE%'}
+    ) AS waiting`;
+    if (rows[0]?.waiting) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  assert.fail("The worker did not establish its expected database lock wait");
+}
+test("a committed issuer downgrade during the root lock wait is checked before sending", async () => {
+  const invite = await queuedInvite();
+  const repository = noticeRepository();
+  const claim = await repository.claimNext(15000, invite.notificationTaskId);
+  assert.ok(claim);
+  let sent = 0;
+  let pending: Promise<unknown> | undefined;
+  await heldNoticeRow("Team", async (blocker, pid) => {
+    pending = taskExecution.run({ claim, signal: new AbortController().signal }, () =>
+      service.consumeQueuedNotice(claim.payload, claim.id, async () => {
+        sent++;
+        return "submitted";
+      })
+    );
+    // Attach rejection immediately so a failed waiter cannot escape cleanup.
+    const completion = pending.then(
+      () => ({ ok: true }),
+      (error: unknown) => ({ ok: false, error })
+    );
+    try {
+      await observedNoticeWait(pid, "Team");
+      await blocker.query('UPDATE "Membership" SET role=\'MEMBER\' WHERE "userId"=1 AND "teamId"=100');
+      await blocker.query("COMMIT");
+      const result = await completion;
+      assert.equal(result.ok, true);
+      assert.equal(sent, 0);
+      assert.equal(
+        (await noticeOutcome(claim.id))?.action,
+        "organization.invitation.notification-suppressed"
+      );
+    } finally {
+      await blocker.query("ROLLBACK");
+      await completion;
+    }
+  });
+});
+test("a task-row lock wait cannot renew permission to send past the execution lease", async () => {
+  const invite = await queuedInvite();
+  const repository = noticeRepository();
+  const claim = await repository.claimNext(15000, invite.notificationTaskId);
+  assert.ok(claim);
+  let sent = 0;
+  await heldNoticeRow("Task", async (blocker, pid) => {
+    await blocker.query('SELECT id FROM "Task" WHERE id=$1 FOR UPDATE', [claim.id]);
+    const completed = taskExecution
+      .run({ claim, signal: new AbortController().signal }, () =>
+        service.consumeQueuedNotice(claim.payload, claim.id, async () => {
+          sent++;
+          return "submitted";
+        })
+      )
+      .then(
+        () => ({ ok: true }),
+        (error: unknown) => ({ ok: false, error })
+      );
+    try {
+      await observedNoticeWait(pid, "Task");
+      await blocker.query(
+        "UPDATE \"Task\" SET \"scheduledAt\"=(clock_timestamp() AT TIME ZONE 'UTC')-interval '1 millisecond' WHERE id=$1",
+        [claim.id]
+      );
+      await blocker.query("COMMIT");
+      assert.equal((await completed).ok, false);
+      assert.equal(sent, 0);
+      assert.equal(await noticeOutcome(claim.id), null);
+    } finally {
+      await blocker.query("ROLLBACK");
+      await completed;
+    }
+  });
+});
+test("late execution of an old queued notice still starts a fresh one-minute resend cooldown", async () => {
+  const invite = await queuedInvite();
+  await prisma.task.update({
+    where: { id: invite.notificationTaskId },
+    data: { createdAt: new Date(Date.now() - 120000) },
+  });
+  let sent = 0;
+  const send = async () => {
+    sent++;
+    return "submitted" as const;
+  };
+  await service.deliverQueuedNotice(invite.notificationTaskId, send);
+  await assert.rejects(service.notify(actor(1), adminInput(invite.invitationId), send), /one minute/);
+  assert.equal(sent, 1);
+});
+test("an outcome with another payload identity cannot report a new task as submitted", async () => {
+  const invite = await queuedInvite();
+  await prisma.enterpriseAuditEvent.create({
+    data: {
+      operationId: noticeOutcomeId(invite.notificationTaskId),
+      operationHash: "foreign-operation",
+      actorUserId: 3,
+      organizationId: 200,
+      entityId: invite.invitationId,
+      action: "organization.invitation.notification-submitted",
+      details: { taskId: invite.notificationTaskId },
+    },
+  });
+  let sent = 0;
+  assert.deepEqual(
+    await service.deliverQueuedNotice(invite.notificationTaskId, async () => {
+      sent++;
+      return "submitted";
+    }),
+    { email: "unconfirmed" }
+  );
+  assert.equal(sent, 0);
+  assert.ok((await taskRow(invite.notificationTaskId)).lastError?.startsWith(UNKNOWN_PREFIX));
+});
+
+test("a fabricated queue row cannot turn references to a current admin into permission to notify", async () => {
+  const invite = await queuedInvite();
+  const original = await taskRow(invite.notificationTaskId);
+  const payload = { ...JSON.parse(original.payload), requestId: randomUUID() };
+  const id = randomUUID();
+  await prisma.task.create({
+    data: {
+      id,
+      type: invitationNoticeType,
+      payload: JSON.stringify(payload),
+      referenceUid: `organization-invitation:${invite.invitationId}:${payload.requestId}`,
+    },
+  });
+  let sent = 0;
+  assert.deepEqual(
+    await service.deliverQueuedNotice(id, async () => {
+      sent++;
+      return "submitted";
+    }),
+    { email: "unconfirmed" }
+  );
+  assert.equal(sent, 0);
+  assert.ok((await taskRow(id)).lastError?.startsWith(UNKNOWN_PREFIX));
+  assert.equal(
+    await prisma.enterpriseAuditEvent.count({ where: { operationId: `${id}:notice-attempt` } }),
+    0
+  );
+  assert.equal((await taskRow(original.id)).attempts, 0);
+});
+test("resend audit failure rolls its new task back before another SMTP attempt", async () => {
+  const invite = await queuedInvite();
+  let sent = 0;
+  const send = async () => {
+    sent++;
+    return "submitted" as const;
+  };
+  await service.deliverQueuedNotice(invite.notificationTaskId, send);
+  await ageNotice(invite.notificationTaskId);
+  const before = await counts();
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "EnterpriseAuditEvent" ADD CONSTRAINT resend_queue_audit_failure CHECK (action <> 'organization.invitation.notification-queued')`
+  );
+  try {
+    await assert.rejects(service.notify(actor(1), adminInput(invite.invitationId), send));
+    assert.deepEqual(await counts(), before);
+    assert.equal(await prisma.task.count(), 1);
+    assert.equal(sent, 1);
+  } finally {
+    await prisma.$executeRawUnsafe(
+      'ALTER TABLE "EnterpriseAuditEvent" DROP CONSTRAINT resend_queue_audit_failure'
+    );
+  }
+});
+test("an aborted notice execution cannot start a transport despite an otherwise live claim", async () => {
+  const invite = await queuedInvite();
+  const claim = await noticeRepository().claimNext(15000, invite.notificationTaskId);
+  assert.ok(claim);
+  const controller = new AbortController();
+  controller.abort();
+  let sent = 0;
+  await assert.rejects(
+    taskExecution.run({ claim, signal: controller.signal }, () =>
+      service.consumeQueuedNotice(claim.payload, claim.id, async () => {
+        sent++;
+        return "submitted";
+      })
+    )
+  );
+  assert.equal(sent, 0);
+  assert.equal(await noticeOutcome(claim.id), null);
+});
+
+for (const change of [
+  "issuer-demoted",
+  "issuer-uuid",
+  "issuer-custom",
+  "recipient-unverified",
+  "accepted",
+  "wrong-member",
+  "directory",
+  "pending-root",
+] as const) {
+  test(`batched inbox preserves ${change} authority instead of trusting the binding snapshot`, async () => {
+    const invite = await service.invite(actor(1), inviteInput());
+    if (change === "issuer-demoted")
+      await prisma.membership.update({
+        where: { userId_teamId: { userId: 1, teamId: 100 } },
+        data: { role: "MEMBER" },
+      });
+    if (change === "issuer-uuid")
+      await prisma.user.update({ where: { id: 1 }, data: { uuid: randomUUID() } });
+    if (change === "issuer-custom") {
+      await prisma.role.create({ data: { id: "inbox-scoped-role", name: "Scoped", teamId: 100 } });
+      await prisma.membership.update({
+        where: { userId_teamId: { userId: 1, teamId: 100 } },
+        data: { customRoleId: "inbox-scoped-role" },
+      });
+    }
+    if (change === "recipient-unverified")
+      await prisma.user.update({ where: { id: 2 }, data: { emailVerified: null } });
+    if (change === "accepted")
+      await prisma.membership.update({
+        where: { userId_teamId: { userId: 2, teamId: 100 } },
+        data: { accepted: true },
+      });
+    if (change === "wrong-member") {
+      const row = await prisma.verificationToken.findUniqueOrThrow({ where: { id: invite.invitationId } });
+      const binding = parseOrganizationInvitationBinding(row.identifier);
+      const foreign = await prisma.membership.findUniqueOrThrow({
+        where: { userId_teamId: { userId: 3, teamId: 200 } },
+      });
+      await prisma.verificationToken.update({
+        where: { id: invite.invitationId },
+        data: {
+          identifier: `${organizationInvitationPrefix}${binding.recipient.uuid}:${JSON.stringify({ ...binding, membershipId: foreign.id })}`,
+        },
+      });
+    }
+    if (change === "directory") {
+      await prisma.dSyncData.create({ data: { directoryId: "inbox-directory", tenant: "fixture" } });
+      await prisma.dSyncTeamGroupMapping.create({
+        data: { organizationId: 100, teamId: 100, directoryId: "inbox-directory", groupName: "staff" },
+      });
+    }
+    if (change === "pending-root")
+      await prisma.team.update({ where: { id: 100 }, data: { pendingPayment: true } });
+    const page = await service.pending(actor(2), {});
+    if (["accepted", "wrong-member", "directory", "pending-root"].includes(change))
+      assert.deepEqual(page.items, []);
+    else {
+      assert.equal(page.items.length, 1);
+      assert.equal(page.items[0].actionable, false);
+    }
+    assert.ok(!JSON.stringify(page).includes("identifier"));
+    assert.ok(!JSON.stringify(page).includes(uuids[2]));
+  });
+}
