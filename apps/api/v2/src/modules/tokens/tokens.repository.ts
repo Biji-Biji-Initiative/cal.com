@@ -1,12 +1,10 @@
+import type { PlatformAuthorizationToken } from "@calcom/prisma/client";
+import { Injectable, Logger } from "@nestjs/common";
+import { DateTime } from "luxon";
+import { v4 as uuidv4 } from "uuid";
 import { JwtService } from "@/modules/jwt/jwt.service";
 import { PrismaReadService } from "@/modules/prisma/prisma-read.service";
 import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
-import { Injectable } from "@nestjs/common";
-import { Logger } from "@nestjs/common";
-import { DateTime } from "luxon";
-import { v4 as uuidv4 } from "uuid";
-
-import type { PlatformAuthorizationToken } from "@calcom/prisma/client";
 
 @Injectable()
 export class TokensRepository {
@@ -210,6 +208,22 @@ export class TokensRepository {
       }),
     ]);
     return { accessToken, refreshToken };
+  }
+
+  async getAccessTokenPermissionState(accessToken: string, userId: number) {
+    // Permission admission cannot rely on a cached validation or read replica.
+    return this.dbWrite.prisma.accessToken.findFirst({
+      where: {
+        secret: accessToken,
+        userId,
+        expiresAt: { gt: new Date() },
+        owner: { locked: false },
+      },
+      select: {
+        expiresAt: true,
+        client: { select: { id: true, permissions: true } },
+      },
+    });
   }
 
   async getAccessTokenClient(accessToken: string) {

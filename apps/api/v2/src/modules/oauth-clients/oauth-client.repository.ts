@@ -1,12 +1,14 @@
+import type { PlatformOAuthClient, Prisma } from "@calcom/prisma/client";
+import { Injectable } from "@nestjs/common";
 import { PrismaReadService } from "@/modules/prisma/prisma-read.service";
 import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
-import { Injectable } from "@nestjs/common";
-
-import type { PlatformOAuthClient, Prisma } from "@calcom/prisma/client";
 
 @Injectable()
 export class OAuthClientRepository {
-  constructor(private readonly dbRead: PrismaReadService, private readonly dbWrite: PrismaWriteService) {}
+  constructor(
+    private readonly dbRead: PrismaReadService,
+    private readonly dbWrite: PrismaWriteService
+  ) {}
 
   async createOAuthClient(
     organizationId: number,
@@ -23,6 +25,27 @@ export class OAuthClientRepository {
   async getOAuthClient(clientId: string): Promise<PlatformOAuthClient | null> {
     return this.dbRead.prisma.platformOAuthClient.findUnique({
       where: { id: clientId },
+    });
+  }
+
+  async getOAuthClientPermissionState(clientId: string, userId: number, organizationId: number) {
+    return this.dbWrite.prisma.platformOAuthClient.findFirst({
+      where: {
+        id: clientId,
+        organizationId,
+        organization: {
+          members: {
+            some: {
+              userId,
+              accepted: true,
+              role: { in: ["OWNER", "ADMIN"] },
+              customRoleId: null,
+              user: { locked: false },
+            },
+          },
+        },
+      },
+      select: { id: true, secret: true, permissions: true },
     });
   }
 
