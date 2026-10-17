@@ -1361,18 +1361,26 @@
           "application_source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
           "build_id": "pJhmrSvd_ZjeWuiPjexI2",
           "summary": "Fresh local-origin built UI/tRPC/cron/SMTP journey passes, with3 synthetic native identities,4 local SMTP submissions, explicit consent, queued/cancelled/uncertain cases and no duplicate cron send. Same build also passes the native Tasker route journey. No live IdP/external inbox/new API image/deployed preview is claimed."
+        },
+        {
+          "file": "docs/community-enterprise/BOOKING-AUDIT-BOUNDARY-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/booking-audit-boundary.test.cjs",
+          "exit_code": 0,
+          "summary": "Five focused source assertions pass. The booking-audit producer materializes PII-free actors before queueing and the consumer persists records, but the producer is not wired into a booking mutation path, has no transaction client or task referenceUid, and catches queue errors. operationId is indexed but not unique; no production retention/anonymization worker is present; organizationId is accepted by the access service but owner-only scope is the only enforced check."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 1,
-      "progress": "Invitation outbox component now has runtime proof on exact source39ea68b4:91 invitation DB cases,49 Tasker/crash cases, actual50-item page with7 SELECTs, fresh local built invitation/SMTP and Tasker cron journeys.604 registered source cases pass. No application code/test was changed in this acceptance pass. Broader booking audit, retention, real reminder delivery and serving-preview gates remain open.",
-      "progress_reference": "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
-      "progress_summary": "Pending invitation, audit and ID-only task intent plus the shared send/cron claim path now pass native database/process and built-browser/local-SMTP acceptance. Unknown external results are held, not automatically resent; this is not global exactly-once delivery.",
+      "progress": "Invitation outbox component now has runtime proof on exact source39ea68b4:91 invitation DB cases,49 Tasker/crash cases, actual50-item page with7 SELECTs, fresh local built invitation/SMTP and Tasker cron journeys.604 registered source cases pass. Booking-audit boundary inventory now has five focused source assertions, while mutation wiring, transaction-bound outbox behavior, idempotency, retention/anonymization, organization/team authorization and serving-preview gates remain open.",
+      "progress_reference": "docs/community-enterprise/BOOKING-AUDIT-BOUNDARY-2026-10-17.md",
+      "progress_summary": "Invitation delivery and Tasker behavior are runtime-proven at the recorded local fixture scope. Booking-audit source inspection makes the remaining transactional, wiring, retention and organization-scope gaps explicit; source evidence does not close runtime acceptance.",
       "progress_references": [
         "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
-        "docs/community-enterprise/INVITATION-OUTBOX-RECEIPT-2026-10-17.json"
+        "docs/community-enterprise/INVITATION-OUTBOX-RECEIPT-2026-10-17.json",
+        "docs/community-enterprise/BOOKING-AUDIT-BOUNDARY-2026-10-17.md"
       ],
       "pending_native_validation": {
         "status": "passed_at_recorded_local_fixture_scope",
@@ -1467,12 +1475,21 @@
           "command": "kubectl read-only production inventory: Argo application, deployments, pods, images, CNPG health, backup CronJob and latest backup job",
           "exit_code": 0,
           "summary": "Read-only RKE2 production readback records calcom-prod Synced/Healthy, legacy web/API image digests, ready replicas, healthy 2/2 CNPG, public 302/404 probes and a succeeded latest logical-backup job. Isolated restore, row-count/booking-link reconciliation and credential decryption remain open; this evidence does not complete CAL-08.BASELINE."
+        },
+        {
+          "file": "docs/community-enterprise/RESTORE-RECONCILIATION-CONTRACT-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/restore-reconciliation-contract.test.cjs",
+          "exit_code": 0,
+          "summary": "Five focused source cases pass and the contract is registered in test:community-enterprise. It validates isolated-scope receipt metadata, stable row counts and IDs, booking URL safety, encryption-key fingerprints and deterministic reconciliation without accepting key material or connecting to a database. Authorized backup restore, encryption/decryption, migration, rollback and post-cutover write recovery remain unproven."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
-      "priority": 1
+      "priority": 1,
+      "progress": "Read-only production inventory and backup metadata remain recorded. The new write-free restore reconciliation contract is registered and source-tested for isolated receipt shape, stable IDs, booking URLs and encryption fingerprints; authorized isolated restore, credential decryption, row-count/booking-link reconciliation, migration, rollback and post-cutover write recovery remain open.",
+      "progress_summary": "The restore receipt validator now gives the operator a deterministic, write-free reconciliation boundary. It is not an authorized backup restore or migration runtime proof."
     },
     {
       "id": "CAL-08.MIGRATE",
@@ -1516,7 +1533,7 @@
       "parent": "CAL-08",
       "kind": "task",
       "title": "Prove an actual Cal.diy upstream update with enterprise contracts",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-02.BUILD",
         "CAL-03.LIST",
@@ -1550,13 +1567,35 @@
           "exit_code": 0,
           "summary": "Actual Host foreign-key deletion contract plus synthetic-cascade negative extends the retained preservation acceptance pattern; not a full upstream upgrade or live migration.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
+        },
+        {
+          "file": "docs/community-enterprise/UPSTREAM-UPDATE-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/upstream-update-contract.test.cjs",
+          "exit_code": 0,
+          "code_revision": "33391a2",
+          "summary": "Two real upstream revisions are recorded, the reviewed one-line timezone patch is replayed exactly once, and the Asia/Kolkata fractional-offset assertion is present. The upstream PR was open/stale at review time; this is a bounded source rehearsal, not an upstream merge, production update or deployed build."
+        },
+        {
+          "file": "docs/community-enterprise/UPSTREAM-UPDATE-2026-10-17.md",
+          "level": "source",
+          "command": "TZ=UTC yarn vitest run apps/web/test/lib/getTimezone.test.ts --maxWorkers=1 --no-file-parallelism",
+          "exit_code": 0,
+          "summary": "The exact source checkout passes all six timezone tests, including the Asia/Kolkata +5:30 fractional-offset assertion. This is a focused source test, not a built-image, serving-preview or production result."
+        },
+        {
+          "file": "docs/community-enterprise/UPSTREAM-UPDATE-2026-10-17.md",
+          "level": "source",
+          "command": "yarn test:community-enterprise",
+          "exit_code": 0,
+          "summary": "The registered enterprise source suite passes 633 tests with zero failures, cancellations or skips after registering the booking-audit, restore-reconciliation and upstream-update contracts. This remains source evidence and does not close runtime or deployment gates."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 1,
-      "progress_summary": "Actual Host foreign-key deletion contract plus synthetic-cascade negative extends the retained preservation acceptance pattern; not a full upstream upgrade or live migration."
+      "progress_summary": "A bounded source rehearsal now records upstream baseline 54343aa685ae8f33159d2f485ec4a57bad5c574a and incoming PR commit b84a32150e34dd29caa46e69676a78c0d53f732a, replays the exact timezone patch and adds a fractional-offset assertion. The PR was open/stale and no merge object, production update or deployed build is claimed."
     },
     {
       "id": "CAL-09.ACCEPT",
@@ -1687,13 +1726,20 @@
           "command": "yarn test:community-enterprise",
           "exit_code": 0,
           "summary": "Registered enterprise suite passes 621 tests with zero failures, cancellations or skips after adding the scoped report contract; this is overlapping source evidence, not a count of deployed production journeys."
+        },
+        {
+          "file": "docs/community-enterprise/BOOKING-REPORT-CONTRACT-2026-10-17.md",
+          "level": "source",
+          "command": "yarn test:community-enterprise",
+          "exit_code": 0,
+          "summary": "The registered enterprise source suite now passes 633 tests with zero failures, cancellations or skips after the booking-audit, restore-reconciliation and upstream-update contracts were added; report endpoint, durable audit/retention query and deployed export remain open."
         }
       ],
       "required_for_team_release": false,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 2,
-      "progress": "Aggregate-only booking reporting contract now enforces organization/team scope, fail-closed mixed-row handling, duplicate-row rejection, cancellation/no-show and delivery-failure counts, deterministic host distribution and exact reconciliation. Runtime endpoint, Prisma/audit retention query and deployed export remain open.",
+      "progress": "Aggregate-only booking reporting contract now enforces organization/team scope, fail-closed mixed-row handling, duplicate-row rejection, cancellation/no-show and delivery-failure counts, deterministic host distribution and exact reconciliation. The registered source suite now passes 633 cases; runtime endpoint, Prisma/audit retention query and deployed export remain open.",
       "progress_reference": "docs/community-enterprise/BOOKING-REPORT-CONTRACT-2026-10-17.md",
       "progress_summary": "Scoped reporting source contract is proven; live report delivery and durable audit coverage remain open."
     },
@@ -1996,6 +2042,48 @@
       "production_changed": false,
       "notes": "Scoped booking report source contract is recorded and focused plus registered suite checks pass (621 tests); report endpoint, durable booking audit/retention, shared preview, native identity and serving journey remain open.",
       "source_wave_tasks": [
+        "CAL-10.REPORTS"
+      ]
+    },
+    {
+      "date": "2026-10-17",
+      "base": "bf87e735c",
+      "local_head": "bf87e735c",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-07.AUDIT",
+      "production_changed": false,
+      "notes": "Booking-audit boundary inventory is recorded with five focused source assertions: PII-free actor materialization, explicit consumer/repository behavior, absent mutation wiring, absent retention/anonymization worker, and owner-only access despite an organizationId parameter. The producer is not transactional or idempotent at the task layer, so CAL-07.AUDIT remains open; scoped reporting remains source-only and preview/identity/serving gates remain open.",
+      "source_wave_tasks": [
+        "CAL-07.AUDIT",
+        "CAL-10.REPORTS"
+      ]
+    },
+    {
+      "date": "2026-10-17",
+      "base": "bf87e735c",
+      "local_head": "bf87e735c",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-08.BASELINE",
+      "production_changed": false,
+      "notes": "A write-free restore reconciliation contract is registered and passes five focused source cases. It validates the receipt boundary without touching a database; authorized isolated backup restore, encryption/decryption, migration, rollback and post-cutover write recovery remain open.",
+      "source_wave_tasks": [
+        "CAL-07.AUDIT",
+        "CAL-08.BASELINE",
+        "CAL-10.REPORTS"
+      ]
+    },
+    {
+      "date": "2026-10-17",
+      "base": "bf87e735c",
+      "local_head": "bf87e735c",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-08.UPDATE",
+      "production_changed": false,
+      "notes": "A bounded source-only upstream rehearsal is recorded for PR #30296: two immutable revisions, exact timezone patch replay and Asia/Kolkata fractional-offset coverage. The upstream change remains open/stale and the branch has no upstream merge object; exact build, migration, preview and production gates remain open.",
+      "source_wave_tasks": [
+        "CAL-07.AUDIT",
+        "CAL-08.BASELINE",
+        "CAL-08.UPDATE",
         "CAL-10.REPORTS"
       ]
     }

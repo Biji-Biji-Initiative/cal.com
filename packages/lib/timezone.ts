@@ -1,7 +1,5 @@
-import type { ITimezoneOption } from "react-timezone-select";
-
 import dayjs from "@calcom/dayjs";
-
+import type { ITimezoneOption } from "react-timezone-select";
 import isProblematicTimezone from "./isProblematicTimezone";
 
 export type Timezones = { label: string; timezone: string }[];
@@ -24,8 +22,7 @@ export const addTimezonesToDropdown = (timezones: Timezones) => {
   );
 };
 
-const formatOffset = (offset: string) =>
-  offset.replace(/^([-+])(0)(\d):00$/, (_, sign, _zero, hour) => `${sign}${hour}:00`);
+const formatOffset = (offset: string) => offset.replace(/^([-+])0(\d):(\d{2})$/, "$1$2:$3");
 
 export const handleOptionLabel = (option: ITimezoneOption, timezones: Timezones) => {
   const offsetUnit = option.label.split(/[-+]/)[0].substring(1);

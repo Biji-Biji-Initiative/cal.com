@@ -1,6 +1,5 @@
-import { expect, beforeEach, afterEach, it, vi, describe } from "vitest";
-
-import { addTimezonesToDropdown, handleOptionLabel, filterBySearchText } from "@calcom/lib/timezone";
+import { addTimezonesToDropdown, filterBySearchText, handleOptionLabel } from "@calcom/lib/timezone";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const timezonesFixture = [
   { label: "San Francisco", timezone: "America/Argentina/Cordoba" },
@@ -99,6 +98,16 @@ describe("getTimezone", () => {
     expect(handleOptionLabel(option, timezonesFixture)).toMatchInlineSnapshot(`"San Francisco GMT -8:00"`);
     vi.setSystemTime(new Date("2020-06-01"));
     expect(handleOptionLabel(option, timezonesFixture)).toMatchInlineSnapshot(`"San Francisco GMT -7:00"`);
+  });
+
+  it("should format one-digit hours with nonzero minutes", () => {
+    const indiaOption = {
+      ...option,
+      value: "Asia/Kolkata",
+      label: "(GMT+5:30) Mumbai",
+    };
+
+    expect(handleOptionLabel(indiaOption, timezonesFixture)).toBe("Mumbai GMT +5:30");
   });
 
   it("should return timezone as option label if cityData is empty", () => {
