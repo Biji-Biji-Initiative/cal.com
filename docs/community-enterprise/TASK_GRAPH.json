@@ -847,11 +847,22 @@
         "Record grant source; preserve local grants and booking history; disabled staff stop new assignment and enter reassignment queue.",
         "Changing IdP group-sync filters must not be mistaken for revocation of previously provisioned membership."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/SCIM-PROVISIONING-CONTRACT-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/scim-contract.test.cjs",
+          "exit_code": 0,
+          "summary": "Eight source cases validate exact externalId handling, bounded SCIM user/group/page parsing, provenance ambiguity rejection, filter-change no-op behavior, local-grant and booking-history preservation, and disabled/deprovisioned handoff planning. The contract is write-free; Authentik discovery, scoped token dispatch, persistence, and 60-second runtime revocation remain open."
+        }
+      ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
-      "priority": 1
+      "priority": 1,
+      "progress": "A write-free SCIM contract now fixes externalId identity, bounded paging, member-only group PATCH, grant provenance, local-grant and booking-history preservation, and disabled/deprovisioned handoff planning. Native Authentik discovery, scoped token dispatch, persistence and runtime revocation remain open.",
+      "progress_reference": "docs/community-enterprise/SCIM-PROVISIONING-CONTRACT-2026-10-17.md",
+      "progress_summary": "SCIM source contract is proven; native identity lifecycle remains open."
     },
     {
       "id": "CAL-04.REVOCATION",
@@ -1082,6 +1093,13 @@
           "command": "node --test --test-reporter=spec tests/community-enterprise/api-session-boundary.test.cjs tests/community-enterprise/api-key-lifecycle.test.cjs tests/community-enterprise/api-runtime-admission.test.cjs",
           "exit_code": 0,
           "summary": "154 focused source cases; complete direct-decorator guard-order inventory54 methods/14 controllers. AST proves nine changed controller bodies and non-guard signatures/decorators unchanged. Native complete-API no-emit typing and actual guard Jest27 also pass."
+        },
+        {
+          "file": "docs/community-enterprise/API-ROUTE-INVENTORY-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/api-route-inventory.test.cjs",
+          "exit_code": 0,
+          "summary": "Source AST inventory covers all 38 API v2 controller files, 175 routes, 89 mutations, 54 permission-decorated routes, effective class/method guard coverage and 13 direct token-reader files. Full resource intersection, key lifecycle runtime and serving-image acceptance remain open."
         }
       ],
       "required_for_team_release": true,
@@ -1095,7 +1113,8 @@
         "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json"
       ],
       "progress": "Managed client permissions now follow Passport\u2019s selected method and current primary token/client authority. Nine controller guard placements repaired; 54 direct permission-decorated methods in 14 controllers have correct order. Real HTTP/PostgreSQL75, key-controller36, native Jest27 and focused source154 pass. Full resource/transaction scopes, dynamic route reachability and deployed proof remain unfinished; no old image is relabeled.",
-      "progress_reference": "docs/community-enterprise/API-PERMISSION-BINDING-2026-10-17.md"
+      "progress_reference": "docs/community-enterprise/API-ROUTE-INVENTORY-2026-10-17.md",
+      "progress_summary": "API route and permission inventory is source-proven; full principal/scope/resource runtime intersection remains open."
     },
     {
       "id": "CAL-06.REUSE",
@@ -1399,12 +1418,22 @@
           "exit_code": 0,
           "summary": "Actual signed local webhook acknowledgement/refusal and no-show task cancellation boundary pass; live reminders and all legacy-handler idempotency remain open.",
           "application_source": "2a8e335a652ad4aa8fc2ca6469b14e1c15f43fab"
+        },
+        {
+          "file": "docs/community-enterprise/REMINDER-IDEMPOTENCY-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/booking-reminder-intervals.test.cjs",
+          "exit_code": 0,
+          "summary": "Focused source contract proves the pending-booking reminder query uses exact elapsed thresholds and same-booking matching; runtime delivery, cancellation/rescheduling, concurrency and legacy-handler idempotency remain open."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
-      "priority": 1
+      "priority": 1,
+      "progress": "A source-level threshold/idempotency repair now prevents an older pending-booking reminder row from suppressing the 24-hour or 3-hour threshold. PostgreSQL cron, cancellation/rescheduling, concurrent sender, external delivery and legacy-handler coverage remain open.",
+      "progress_reference": "docs/community-enterprise/REMINDER-IDEMPOTENCY-2026-10-17.md",
+      "progress_summary": "Exact-threshold matcher is source-proven; the runtime reminder contract remains open."
     },
     {
       "id": "CAL-08.BASELINE",
@@ -1678,7 +1707,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/API-ROUTE-INVENTORY-2026-10-17.md",
+  "latest_evidence": "docs/community-enterprise/SCIM-PROVISIONING-CONTRACT-2026-10-17.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
@@ -1929,10 +1958,15 @@
       "closed_source_task": "CAL-03.ROUTES",
       "partial_runtime_task": "CAL-08.BASELINE",
       "production_changed": false,
-      "notes": "Invitation runtime gate remains accepted at its recorded local scope; source routing policy and API route inventory plus read-only production baseline are recorded; current production readback remains legacy v6.2.0 and no enterprise candidate was promoted.",
+      "notes": "Invitation runtime gate remains accepted at its recorded local scope; source routing policy, API route inventory, exact-threshold reminder repair and write-free SCIM contract are recorded; current production readback remains legacy v6.2.0 and no enterprise candidate was promoted.",
       "closed_source_tasks": [
         "CAL-03.ROUTES",
         "CAL-10.ROUTING"
+      ],
+      "source_wave_tasks": [
+        "CAL-04.SCIM",
+        "CAL-05.API",
+        "CAL-07.REMINDERS"
       ]
     }
   ]

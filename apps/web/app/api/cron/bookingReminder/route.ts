@@ -13,6 +13,11 @@ import { BookingStatus, ReminderType } from "@calcom/prisma/enums";
 import type { EventTypeMetadata } from "@calcom/prisma/zod-utils";
 import type { CalendarEvent } from "@calcom/types/Calendar";
 
+import {
+  BOOKING_REMINDER_INTERVAL_MINUTES,
+  hasReminderForInterval,
+} from "./reminderIntervals";
+
 async function postHandler(request: NextRequest) {
   const apiKey = request.headers.get("authorization") || request.nextUrl.searchParams.get("apiKey");
 
@@ -20,10 +25,9 @@ async function postHandler(request: NextRequest) {
     return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
 
-  const reminderIntervalMinutes = [48 * 60, 24 * 60, 3 * 60];
   let notificationsSent = 0;
 
-  for (const interval of reminderIntervalMinutes) {
+  for (const interval of BOOKING_REMINDER_INTERVAL_MINUTES) {
     const bookings = await prisma.booking.findMany({
       where: {
         status: BookingStatus.PENDING,
@@ -86,13 +90,13 @@ async function postHandler(request: NextRequest) {
         referenceId: {
           in: bookingsToRemind.map((b) => b.id),
         },
-        elapsedMinutes: {
-          gte: interval,
-        },
+        elapsedMinutes: interval,
       },
     });
 
-    for (const booking of bookingsToRemind.filter((b) => !reminders.some((r) => r.referenceId == b.id))) {
+    for (const booking of bookingsToRemind.filter(
+      (booking) => !hasReminderForInterval(reminders, booking.id, interval)
+    )) {
       const { user } = booking;
       const name = user?.name || user?.username;
       if (!user || !name || !user.timeZone) {
