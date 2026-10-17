@@ -860,14 +860,16 @@
           "level": "source",
           "command": "node --test --test-reporter=spec tests/community-enterprise/scim-runtime-boundary.test.cjs",
           "exit_code": 0,
-          "summary": "Eight focused source assertions pass. The write-free SCIM contract has user/group schemas and a reconciliation plan; tracked API v2 and identity source contain no direct SCIM route, HTTP adapter or database write markers, while local session revocation markers are classified separately. Authentik dispatch, durable persistence, group reconciliation, webhook handling and runtime revocation remain unproven."
+          "summary": "Eight focused source assertions pass. The write-free SCIM contract has user/group schemas and a reconciliation plan; tracked API v2 and identity source contain no direct SCIM route, HTTP adapter or database write markers, while local session revocation markers are classified separately. Authentik dispatch, durable persistence, group reconciliation, webhook handling and runtime revocation remain unproven.",
+          "code_revision": "aa8f7df30"
         },
         {
           "file": "docs/community-enterprise/SCIM-RUNTIME-BOUNDARY-2026-10-17.md",
           "level": "source",
           "command": "yarn test:community-enterprise",
           "exit_code": 0,
-          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates."
+          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates.",
+          "code_revision": "aa8f7df30"
         }
       ],
       "required_for_team_release": true,
@@ -908,14 +910,16 @@
           "level": "source",
           "command": "node --test --test-reporter=spec tests/community-enterprise/scim-runtime-boundary.test.cjs",
           "exit_code": 0,
-          "summary": "Eight focused source assertions pass. The write-free SCIM contract has user/group schemas and a reconciliation plan; tracked API v2 and identity source contain no direct SCIM route, HTTP adapter or database write markers, while local session revocation markers are classified separately. Authentik dispatch, durable persistence, group reconciliation, webhook handling and runtime revocation remain unproven."
+          "summary": "Eight focused source assertions pass. The write-free SCIM contract has user/group schemas and a reconciliation plan; tracked API v2 and identity source contain no direct SCIM route, HTTP adapter or database write markers, while local session revocation markers are classified separately. Authentik dispatch, durable persistence, group reconciliation, webhook handling and runtime revocation remain unproven.",
+          "code_revision": "aa8f7df30"
         },
         {
           "file": "docs/community-enterprise/SCIM-RUNTIME-BOUNDARY-2026-10-17.md",
           "level": "source",
           "command": "yarn test:community-enterprise",
           "exit_code": 0,
-          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates."
+          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates.",
+          "code_revision": "aa8f7df30"
         }
       ],
       "required_for_team_release": true,
@@ -1404,7 +1408,8 @@
           "level": "source",
           "command": "yarn test:community-enterprise",
           "exit_code": 0,
-          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates."
+          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates.",
+          "code_revision": "aa8f7df30"
         }
       ],
       "required_for_team_release": true,
@@ -1476,14 +1481,16 @@
           "level": "source",
           "command": "node --test --test-reporter=spec tests/community-enterprise/booking-reminder-boundary.test.cjs",
           "exit_code": 0,
-          "summary": "Five focused source assertions pass. The route keeps exact 2,880/1,440/180-minute thresholds, pending/future gates, booking-plus-threshold identity and send-before-marker ordering, and the checked-in scheduler runs every fifteen minutes. Source inspection also records no transaction/upsert claim, no compound idempotency constraint, no cancellation/reschedule invalidation call site, no database claim/lock and no Tasker path; runtime delivery, cancellation/reschedule and concurrency remain open."
+          "summary": "Five focused source assertions pass. The route keeps exact 2,880/1,440/180-minute thresholds, pending/future gates, booking-plus-threshold identity and send-before-marker ordering, and the checked-in scheduler runs every fifteen minutes. Source inspection also records no transaction/upsert claim, no compound idempotency constraint, no cancellation/reschedule invalidation call site, no database claim/lock and no Tasker path; runtime delivery, cancellation/reschedule and concurrency remain open.",
+          "code_revision": "aa8f7df30"
         },
         {
           "file": "docs/community-enterprise/REMINDER-RUNTIME-BOUNDARY-2026-10-17.md",
           "level": "source",
           "command": "yarn test:community-enterprise",
           "exit_code": 0,
-          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates."
+          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates.",
+          "code_revision": "aa8f7df30"
         }
       ],
       "required_for_team_release": true,
@@ -1539,7 +1546,8 @@
           "level": "source",
           "command": "yarn test:community-enterprise",
           "exit_code": 0,
-          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates."
+          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates.",
+          "code_revision": "aa8f7df30"
         }
       ],
       "required_for_team_release": true,
@@ -1653,7 +1661,8 @@
           "level": "source",
           "command": "yarn test:community-enterprise",
           "exit_code": 0,
-          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates."
+          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates.",
+          "code_revision": "aa8f7df30"
         }
       ],
       "required_for_team_release": true,
@@ -1804,7 +1813,8 @@
           "level": "source",
           "command": "yarn test:community-enterprise",
           "exit_code": 0,
-          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates."
+          "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates.",
+          "code_revision": "aa8f7df30"
         }
       ],
       "required_for_team_release": false,
@@ -2178,11 +2188,11 @@
     {
       "date": "2026-10-17",
       "base": "2395e8523",
-      "local_head": "2395e8523",
+      "local_head": "aa8f7df30",
       "closed_source_task": null,
       "partial_runtime_task": "CAL-04.SCIM",
       "production_changed": false,
-      "notes": "SCIM runtime boundary inventory passes eight focused source assertions. It confirms the write-free contract and absence of direct API/HTTP/database adapters in the inspected scope while separating local session markers from IdP revocation; Authentik dispatch, persistence, deprovisioning and runtime revocation remain open.",
+      "notes": "SCIM runtime boundary inventory passes eight focused source assertions and the registered enterprise source suite passes 641 tests with zero failures, cancellations or skips. It confirms the write-free contract and absence of direct API/HTTP/database adapters in the inspected scope while separating local session markers from IdP revocation; Authentik dispatch, persistence, deprovisioning and runtime revocation remain open.",
       "source_wave_tasks": [
         "CAL-04.SCIM",
         "CAL-04.REVOCATION",
