@@ -1918,11 +1918,11 @@
     {
       "date": "2026-10-17",
       "base": "33436a36e",
-      "local_head": "77e98a0ad",
+      "local_head": "cc26a4a86",
       "closed_source_task": "CAL-10.ROUTING",
       "partial_runtime_task": "CAL-08.BASELINE",
       "production_changed": false,
-      "notes": "Invitation runtime gate remains accepted at its recorded local scope; current production readback remains legacy v6.2.0 and no enterprise candidate was promoted."
+      "notes": "Invitation runtime gate remains accepted at its recorded local scope; source routing policy and read-only production baseline are recorded; current production readback remains legacy v6.2.0 and no enterprise candidate was promoted."
     }
   ]
 }
