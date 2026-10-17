@@ -1680,6 +1680,13 @@
           "command": "node --test --test-reporter=spec tests/community-enterprise/booking-report-contract.test.cjs",
           "exit_code": 0,
           "summary": "Seven focused source cases pass. Aggregate-only report contract rejects mixed organization/team rows and duplicate IDs, counts bookings/cancellations/no-shows/failed or uncertain delivery, and reconciles status and host totals to scoped rows without returning attendee payloads or booking IDs."
+        },
+        {
+          "file": "docs/community-enterprise/BOOKING-REPORT-CONTRACT-2026-10-17.md",
+          "level": "source",
+          "command": "yarn test:community-enterprise",
+          "exit_code": 0,
+          "summary": "Registered enterprise suite passes 621 tests with zero failures, cancellations or skips after adding the scoped report contract; this is overlapping source evidence, not a count of deployed production journeys."
         }
       ],
       "required_for_team_release": false,
@@ -1987,7 +1994,7 @@
       "closed_source_task": null,
       "partial_runtime_task": "CAL-10.REPORTS",
       "production_changed": false,
-      "notes": "Scoped booking report source contract is recorded and focused checks pass; report endpoint, durable booking audit/retention, shared preview, native identity and serving journey remain open.",
+      "notes": "Scoped booking report source contract is recorded and focused plus registered suite checks pass (621 tests); report endpoint, durable booking audit/retention, shared preview, native identity and serving journey remain open.",
       "source_wave_tasks": [
         "CAL-10.REPORTS"
       ]
