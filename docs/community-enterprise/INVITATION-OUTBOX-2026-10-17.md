@@ -1,137 +1,150 @@
-# Invitation outbox: source checkpoint, runtime acceptance pending
+# Invitation outbox: native runtime acceptance
 
-17 October 2026. Existing `Biji-Biji-Initiative/cal.com` repository and
-`work/cal-diy-enterprise-20261010` branch. Predecessor `5a1d207d6367923791c8bcae02f128dfae958c88`.
-Exact implementation commits and input hashes are in the paired machine receipt.
-This advances CAL-07.AUDIT; it does not close audit, reminders or the shared preview.
+17 October 2026. Existing repository `Biji-Biji-Initiative/cal.com`, branch
+`work/cal-diy-enterprise-20261010`. Tested source:
+`39ea68b4cba1aa3375bba40596e6b605c90a9b3b` (application/test source originally
+published at `92d944676a7c9e3b5fda7cd530f6622db53d22a6`). The continuation accepts
+the previously pending invitation/Tasker component at its demonstrated scope;
+it does not close the broader booking-audit, reminder or deployed-preview gates.
+No application implementation was changed to obtain these runtime results.
 
-## What this continuation actually accomplished
+## The previously blocked database checks now execute
 
-The prior invitation-delivery lane left 18 modified/new code and test files in
-the retained checkout. They had been quiet for hours and no matching Cal process
-was active. This continuation preserved those exact bytes before reviewing and
-finishing the source, rather than reverting, recreating or attributing the entire
-implementation to a new writer. One existing inbox source-test file was extended,
-so the final publication covers 19 code/test/translation files in seven small
-commits. An unrelated pre-existing Python cache file is not part of this work.
+The preceding source checkpoint recorded a generic tool-level launch refusal.
+After reviewing the unchanged maintained runner and current source, this
+continuation made a direct request through the same tool and host. It executed
+normally. No alternate execution host, credential, database target, policy change
+or weakened test was used. The old refusal is retained as historical evidence;
+it was not an application failure and is not relabeled as an earlier success.
 
-The previous native invitation suite had **82 passes and one failure**. Its
-50-invitation inbox test expired the actual 10-second interactive read transaction
-while the service performed repeated per-row lookups. That failure was not waived
-as host slowness or hidden by a larger application transaction timeout.
+All **91 invitation database/service cases passed**, including the new batched
+page checks and every retained consent, identity, outbox and ambiguity case.
+The actual complete page of 50 invitations executed **seven SQL SELECTs**, as
+measured by the native test. The 51-record continuation returned the final
+invitation without duplication or loss. The original ten-second application
+transaction limit and the existing pagination size were unchanged.
 
-The pending-page service now parses the selected bindings once and batches the
-member, issuer/recipient and organization reads. It retains the existing 51-row
-scan, 50-item page, ascending cursor, RepeatableRead snapshot and 10-second bound.
-Pure authority predicates are shared with the existing service checks. A pending
-member must still belong to the exact bound user and root, have the ordinary
-unaccepted MEMBER role and no custom override. Current identity, root and issuer
-state determine visibility and actionability. Expired/unverified invitations
-remain non-actionable; removed, malformed, wrong-member or directory-owned records
-do not acquire authority through batching. Filtered rows still advance the raw
-page cursor, so a page of unusable records does not hide a later valid invitation.
-A failed batch query rejects the read rather than returning a misleading empty list.
+That is now a PostgreSQL measurement, not the earlier six-logical-call source
+fixture result. The two numbers describe different layers. The formerly failing
+pagination case completed in the current run; its observed test duration is not
+a production response-time percentile, and different host load makes it unsuitable
+for a claimed before/after latency multiplier. No indexing or schema change was
+needed for this read-path acceptance.
 
-Four new source tests execute the actual service against named in-memory query
-boundaries. They observe six logical calls per personal page, including a full
-50-item page and its continuation. **This is not a measured PostgreSQL query
-count, latency result or proof that the former transaction timeout is fixed in
-native execution.** The native test now records actual SQL calls and enforces a
-bounded count, but that new test was not run in this continuation.
+All **49 Tasker database/process cases passed** on the same source. They cover
+claim ownership, four-claim global capacity, targeted processing without draining
+unrelated tasks, bounded retries, lease loss, expired/late acknowledgements,
+uncertain completion and stopped work. The process-crash case actually terminates
+its newly created fixture worker after its local HTTP effect, then proves that
+a new worker does not automatically resend. That HTTP/process test is distinct
+from the invitation-specific service tests; it is not a real production SMTP
+process-crash experiment.
 
-## Retained durable-delivery implementation now recorded in source
+The sender remains the existing mail transport and template. Pending invitation,
+audit and identity-reference-only intent commit together. Both immediate and
+scheduled delivery use the same durable Tasker claim. A failed pre-send audit
+prevents dispatch; a failed/ambiguous post-send result is held unconfirmed, not
+made runnable automatically. Cancellation, accepted/declined invitations,
+revoked actors, unverified or changed recipient identity and directory ownership
+are checked before the attempt. Already-in-flight external mail cannot be
+recalled, and exactly-once external delivery is not claimed.
 
-The pending invitation, its administrative audit and an identity-reference-only
-Task row are created in the same existing mutation transaction. The task payload
-has no email address, provider secret or invitation bearer capability. A replay
-finds the same task; a historical invitation with no outbox row is not silently
-resent. New notification requests remain explicitly audited and rate-limited.
+## Build and browser acceptance
 
-The request's opportunistic delivery and the existing worker use the same Tasker
-claim mechanism. Targeted processing does not drain unrelated queued work or
-bypass the global claim limit. Delivery requires the exact task payload/reference,
-current claim token and lease, and matching committed audit intent. Current
-invitation, issuer, recipient, verified address and directory ownership are
-rechecked before the attempted-send marker is committed.
+A fresh local-origin web build completed from the pinned source. Immutable
+installation, Prisma/app registry generation, tRPC generation, native web type
+checking and the optimized Next build all passed. Its build ID is
+`pJhmrSvd_ZjeWuiPjexI2`, with manifest SHA-256
+`29cbb20588074a55846a17c0898816e8ab892c9e1237d46edbd60a3250c6644d` and origin
+`http://127.0.0.1:38917`. Those source and manifest identities were checked again
+before publishing evidence. The build is not an HTTPS deployment artifact or a
+new full API binary/container qualification.
 
-No SMTP operation runs inside that state transaction. The subsequent result is
-recorded as submitted, not_sent, suppressed or unconfirmed. SMTP acceptance is
-not final inbox delivery. A process interruption, ambiguous transport exception
-or failed post-send acknowledgement is not interpreted as permission to resend.
-Such work remains unconfirmed for reconciliation. Re-entry also checks the
-attempt marker and cannot silently turn a lost acknowledgement into a second
-sender. The original sender, kill switch, template and authenticated inbox link
-are retained; there is no new relay or accept-on-GET capability.
+Both assembled journeys passed on this one new build. The invitation journey
+uses three existing synthetic identities with real encrypted sessions against a
+local TLS identity-provider fixture, the actual built UI/tRPC/cron/registered
+handler, PostgreSQL and a controlled local SMTP receiver. It verifies one
+acceptance, two declines, three cancellations, identity/verified-email checks,
+queued notification display under full worker capacity, rejected unauthenticated
+cron requests, and recovery of the same queued intent through the actual cron.
 
-UI and response copy distinguish queued from mail-server submission and from
-uncertainty. The internal task identifier is removed from the browser response.
-Recipient consent still creates membership through the existing explicit flow;
-a notification alone grants no access. Suppression before an attempted send is
-not a promise to recall an email whose external submission is already in flight.
-This source work makes no exactly-once external-delivery claim.
+Exactly four messages were accepted by the local SMTP fixture. Cancellation of
+a queued invitation suppressed its later send; repeating cron did not resend.
+A deliberately rejected SMTP submission preserved the pending invitation and
+reported uncertainty. The controlled six-second inbox response delay remains in
+the test; the existing five-second post-response rendering assertion passes.
+This is not a six-second production latency target or final external inbox proof.
 
-## Verification: completed and not completed
+The separate built Tasker route journey verifies authenticated cron admission,
+signed local-webhook success/non-success, recovery of interrupted work without
+replaying uncertain effects, future-task preservation and retained failure
+receipts during cleanup. Its exact assertions are not interpreted as complete
+calendar reminder or external provider acceptance.
 
-| Check | Observed result |
-| --- | --- |
-| Actual TypeScript import closure | Passed against the existing generated Prisma types, organization service, Tasker registry, tRPC/UI and native fixture sources. No replacement service declarations. |
-| Focused source tests | 36 passed, zero failures/cancellations/skips across inbox, invitation mail, Tasker contract and webhook-outcome tests. Includes four new batch-reader cases with explicit in-memory boundaries. |
-| Biome error-level check | Passed on all 18 JS/TS inputs; the nineteenth file is the translation JSON. No unsafe suggested fixes applied. |
-| Final native invitation/Tasker tests | **Not executed.** The tool invocation was blocked by the execution safety check before a process was returned. The refusal is retained in the machine receipt; no alternative execution route was attempted. |
-| Updated browser journey | Source preserved and reviewed; no fresh application build, browser run or actual SMTP delivery in this continuation. |
-| Earlier native Tasker evidence | 49 passed on the earlier writer's recorded inputs. Historical evidence only, not a fresh combined-source verdict. |
-| Earlier native invitation evidence | 82 of 83 passed, with the pagination transaction timeout still recorded. Not converted into current acceptance. |
+The full registered source suite passed **604 cases, zero failures/skips** on
+this same source, and the focused invitation/Tasker/graph set passed **61**
+(36 focused source cases plus the 25 graph regressions). These overlapping totals
+are not added together or represented as hundreds of deployed user journeys.
 
-The first new type check caught ES5-target incompatibility from iterating Set via
-spread. The code now uses Array.from without relaxing the repository compiler
-target; the final type and source checks passed. The proposed native test additions
-cover actual SQL count and eight identity/root/membership regressions, but compile
-success does not turn them into passed database tests.
+The prior HTTPS e3a79afb container is a separate artifact. It was neither rebuilt
+nor relabeled as this newer source or as the local-origin browser build. All
+four owned PostgreSQL fixtures have shutdown receipts and absent temporary
+directories. No matching Cal test application/browser process or listener on
+port38917 remained at final inspection.
 
-Source scanning is also qualified. Gitleaks inspected all 19 inputs and retained
-one match in unchanged localization text; those containing lines were checked
-against the published parent. It did not exit clean, and no new secret finding
-was waived. UBS inspected ten production files and reported six heuristic critical
-findings, 53 warnings and 135 information items. The critical lines compare public
-UI operation identity or bound resource/user IDs, not secret credentials. Warning
-groups cover typed Prisma/tRPC/property access, dynamic handler imports whose
-rejections propagate to the existing processor catch, and intentional parse
-failures handled by the caller. No suppression rule was added. None of this is
-application-wide security approval or a reduction of the older image's open ledger.
+## Boundaries retained
 
-## Task graph and Beads
+All accounts, addresses, task rows, calendars and identity-provider exchanges in
+these tests are synthetic. The maintained database runner verifies its new private
+socket/data directory and dedicated test user, binds only that fixture and stops
+it afterward. No configured live DATABASE_URL, customer address, actual IdP
+account, calendar provider, deployment, DNS, production or registry permission
+was modified. The local SMTP fixture proves submission to that controlled
+receiver, not delivery to a person's external inbox.
 
-All 39 original graph records, criteria, dependencies and milestone boundaries
-remain. CAL-07.AUDIT stays in progress; full booking audit, retention and final
-outbox crash/retry acceptance remain open. CAL-07.REMINDERS stays open, including
-controlled-recipient delivery. No native/runtime completion is inferred from
-source checks. The executable task count remains 12 complete and 17 open.
+The build uses the retained checkout rather than a clone or new worktree. It
+checks the pinned HEAD and unchanged tracked inputs before and after each step.
+The one inherited untracked Python bytecode file is preserved and hash-bound as
+a non-application artifact. The repository is not described as completely clean,
+and the image preparer's stricter clean-tree contract is not changed. This
+acceptance does not publish a container or bypass that preparer.
 
-CAL-01.TRACKER remains blocked. The last recorded native Beads migration rejected
-schema 5 because its reviewed migration supported only 13 through 16 to 17. No
-`.beads` store is present in the active checkout or the inspected existing project
-locations on g and g2. This does not prove the historical database was deleted;
-its supported recovery source still needs locating/admission. No new tracker was
-initialized, no migration/reset was run, and this graph update is not represented
-as a successful `br` operation or a closed bead.
+The original 19 source/test/translation inputs match their previously published
+hashes. Their existing security findings are therefore retained, not magically
+cleared by a new test run. No new image scan or reduction of the older image's
+56 open HIGH package/advisory occurrences is claimed. Publication metadata was
+scanned separately: two matches are unchanged identifier lines in the existing
+graph, verified against the parent. No suppression was added or clean metadata
+scanner exit claimed. The updated graph validator and all25 graph tests pass.
 
-## Required next acceptance
+## What remains on the existing graph
 
-The existing maintained private-database runner's invitation and Tasker suites
-must pass on the exact combined source when execution is available. In particular,
-measure the actual bounded-page SQL, preserve the current timeout, and rerun
-commit/attempt/claim/lease/SMTP ambiguity and retry controls. The native browser
-journey then requires a fresh matching web build and its isolated controlled
-recipient. These are recorded follow-up requirements, not queued background work.
-Do not bypass the execution refusal, run against a configured live database or
-weaken authority checks to obtain green output.
+CAL-07.AUDIT keeps its original administrative-and-booking contract. This
+invitation component now has native runtime evidence; complete booking audit
+coverage, retention and any missing domain transaction proof remain open.
+CAL-07.REMINDERS is not closed by testing invitation notices. Actual external
+controlled-recipient reminder acceptance and cancellation/rescheduling coverage
+remain its own requirements.
 
-The older qualified e3a79afb image is not relabeled as this newer source. Registry
-publication, native identity/database admission and actual staff-to-guest preview
-remain separate release gates. Production, domains, existing data, staff/provider
-accounts and publishing/runner permissions were unchanged. All source processes
-launched in this continuation are bounded; no new agent or unattended worker was
-dispatched. Raw receipts and inherited snapshots are retained at
-`/data/tmp/cal-invitation-finish-20261017-extcxq9u` on g2.
+CAL-02.PREVIEW and CAL-06.JOURNEY still require an admitted publisher, actual
+isolated native identity/database/routing setup and the serving staff-to-guest
+journey. A successful local browser build does not establish those outcomes.
+The 39-record canonical graph, original criteria/dependencies and 12-complete /
+17-open executable count remain. Native Beads recovery is still its separate
+blocked task; no new store, migration or fabricated bead closure is introduced.
 
-Agent: ChatGPT-CalInvitationFinish-20261017
+Reproduce with the candidate's native installed dependencies and generated schema:
+
+```sh
+python3 scripts/run-community-enterprise-postgres.py --suite invitations --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp
+python3 scripts/run-community-enterprise-postgres.py --suite tasker --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp
+```
+
+The assembled browser checks require a fresh matching local-origin application
+build first; do not reuse an unrelated or HTTPS-only bundle as proof. Commands,
+source/build identities, measurements, scope limits and cleanup are in the paired
+machine receipt. Prior source-only evidence remains available at commit39ea68b4;
+this dated continuation supersedes its pending runtime status without altering
+what actually happened in the earlier attempt.
+
+Agent: ChatGPT-CalInvitationRuntime-20261017

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "observedAt": "2026-10-16T23:18:33.583235+00:00",
+  "observedAt": "2026-10-17T01:55:56.155260+00:00",
   "repository": "Biji-Biji-Initiative/cal.com",
   "branch": "work/cal-diy-enterprise-20261010",
   "predecessor": "5a1d207d6367923791c8bcae02f128dfae958c88",
@@ -103,26 +103,27 @@
       "seconds": 3.1
     }
   },
-  "sourceCases": {
-    "passed": 36,
-    "failed": 0,
-    "skipped": 0,
-    "databaseConnection": false,
-    "inboxAddedCases": 4,
-    "logicalCallsPerPersonalPageInFixture": 6
-  },
+  "sourceCases": 604,
   "nativeTests": {
-    "status": "not_run",
-    "launchBlock": {
-      "result": "OpenAI execution safety check blocked the requested test launch before a process was returned",
-      "nativeTestsExecuted": false,
-      "command": "python3 scripts/run-community-enterprise-postgres.py --suite invitations / tasker",
-      "response": "This tool call was blocked by OpenAI's safety checks. Please double check what you are sending.",
-      "noAlternateExecutionRouteAttempted": true
+    "status": "passed_at_recorded_local_scope",
+    "source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
+    "invitations": {
+      "passed": 91,
+      "failed": 0,
+      "skipped": 0,
+      "pageSize": 50,
+      "actualSqlSelects": 7
     },
-    "newNativeCasesAreNotClaimedPassed": true,
-    "browserJourney": "not_run",
-    "newSQLCountOrLatencyMeasured": false
+    "tasker": {
+      "passed": 49,
+      "failed": 0,
+      "skipped": 0
+    },
+    "browserJourney": "passed_on_fresh_local_origin_build",
+    "builtTaskerJourney": "passed_on_same_build",
+    "localSmtpMessages": 4,
+    "duplicateCronResends": 0,
+    "realIdpOrExternalInboxVerified": false
   },
   "priorNativeEvidence": [
     {
@@ -173,15 +174,19 @@
   "boundaries": {
     "productionModified": false,
     "liveNotificationsSent": false,
-    "databaseFixtureLaunchedThisContinuation": false,
-    "runtimeOrImageBuilt": false,
+    "databaseFixtureLaunchedThisContinuation": true,
+    "runtimeOrImageBuilt": true,
     "dependenciesOrSchemaAdded": false,
     "registryOrRunnerPermissionsChanged": false,
     "priorQualifiedImageRelabeled": false,
     "graphRecords": 39,
     "executableComplete": 12,
     "executableOpen": 17,
-    "auditTaskClosed": false
+    "auditTaskClosed": false,
+    "localWebBuildOnly": true,
+    "newFullApiOrContainerBuilt": false,
+    "imagePublishedOrDeployed": false,
+    "trackedApplicationImplementationChanged": false
   },
   "rawEvidenceDirectory": "/data/tmp/cal-invitation-finish-20261017-extcxq9u",
   "rawEvidence": [
@@ -221,5 +226,435 @@
       "name": "publication-plan.json",
       "sha256": "0a4da4c74dda7c4adac865697afc4cf47f9ceb08589c66be0d2dd70d90ee6239"
     }
-  ]
+  ],
+  "originalSourceCheckpointObservedAt": "2026-10-16T23:18:33.583235+00:00",
+  "previousNativeTests": {
+    "status": "not_run",
+    "launchBlock": {
+      "result": "OpenAI execution safety check blocked the requested test launch before a process was returned",
+      "nativeTestsExecuted": false,
+      "command": "python3 scripts/run-community-enterprise-postgres.py --suite invitations / tasker",
+      "response": "This tool call was blocked by OpenAI's safety checks. Please double check what you are sending.",
+      "noAlternateExecutionRouteAttempted": true
+    },
+    "newNativeCasesAreNotClaimedPassed": true,
+    "browserJourney": "not_run",
+    "newSQLCountOrLatencyMeasured": false
+  },
+  "sourceCheckpointSourceCases": {
+    "passed": 36,
+    "failed": 0,
+    "skipped": 0,
+    "databaseConnection": false,
+    "inboxAddedCases": 4,
+    "logicalCallsPerPersonalPageInFixture": 6
+  },
+  "priorSourceBoundaries": {
+    "productionModified": false,
+    "liveNotificationsSent": false,
+    "databaseFixtureLaunchedThisContinuation": false,
+    "runtimeOrImageBuilt": false,
+    "dependenciesOrSchemaAdded": false,
+    "registryOrRunnerPermissionsChanged": false,
+    "priorQualifiedImageRelabeled": false,
+    "graphRecords": 39,
+    "executableComplete": 12,
+    "executableOpen": 17,
+    "auditTaskClosed": false
+  },
+  "runtimeEvidenceDirectory": "/data/tmp/cal-invitation-runtime-20261017-iv31dsup",
+  "runtimeAcceptance": {
+    "observedAt": "2026-10-17T01:55:56.155260+00:00",
+    "source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
+    "same19SourceInputsAsSourceCheckpoint": true,
+    "native": {
+      "invitations": {
+        "source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "invitations",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ],
+        "tests": 91,
+        "passed": 91,
+        "failures": 0,
+        "skipped": 0,
+        "logSha256": "bd3aa67aad7455647162d885ad61ab280e181d2b3b162c6b6aa795a409769723",
+        "bytes": 19903,
+        "nativeMeasurement": {
+          "invitationPageSize": 50,
+          "selectCount": 7
+        },
+        "databaseStopped": true,
+        "ownedFixtureAbsent": true,
+        "ownedFixturePath": "/data/tmp/cal-enterprise-ymfwbw9x/postgres"
+      },
+      "tasker": {
+        "source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
+        "command": [
+          "python3",
+          "scripts/run-community-enterprise-postgres.py",
+          "--suite",
+          "tasker",
+          "--pg-bin",
+          "/usr/lib/postgresql/18/bin",
+          "--scratch-root",
+          "/data/tmp"
+        ],
+        "tests": 49,
+        "passed": 49,
+        "failures": 0,
+        "skipped": 0,
+        "logSha256": "9899d96958e943233e78e56c1b6bc7c0a22f38d7fd0104665181b7ab30d19384",
+        "bytes": 12886,
+        "nativeMeasurement": null,
+        "databaseStopped": true,
+        "ownedFixtureAbsent": true,
+        "ownedFixturePath": "/data/tmp/cal-enterprise-gpk8wgfp/postgres"
+      }
+    },
+    "build": {
+      "source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
+      "origin": "http://127.0.0.1:38917",
+      "startedAt": "2026-10-17T01:41:11.966815+00:00",
+      "inheritedNonApplicationArtifact": {
+        "path": "scripts/__pycache__/run-community-enterprise-postgres.cpython-314.pyc",
+        "sha256": "0c70e270a5d958a76ba899916fb6761f121eac9df0944685e1e4ed74c3768593"
+      },
+      "steps": {
+        "immutable-install": {
+          "command": [
+            "node",
+            "/data/worktrees/cal.com/cal-delivery-20261013/.yarn/releases/yarn-4.12.0.cjs",
+            "install",
+            "--immutable",
+            "--mode=skip-build"
+          ],
+          "exitCode": 0,
+          "seconds": 9.5
+        },
+        "generate": {
+          "command": [
+            "node",
+            "node_modules/prisma/build/index.js",
+            "generate",
+            "--schema",
+            "packages/prisma/schema.prisma"
+          ],
+          "exitCode": 0,
+          "seconds": 13.7
+        },
+        "app-registry": {
+          "command": [
+            "node",
+            "/data/worktrees/cal.com/cal-delivery-20261013/.yarn/releases/yarn-4.12.0.cjs",
+            "workspace",
+            "@calcom/app-store-cli",
+            "build"
+          ],
+          "exitCode": 0,
+          "seconds": 39.1
+        },
+        "trpc": {
+          "command": [
+            "node",
+            "/data/worktrees/cal.com/cal-delivery-20261013/.yarn/releases/yarn-4.12.0.cjs",
+            "workspace",
+            "@calcom/trpc",
+            "build"
+          ],
+          "exitCode": 0,
+          "seconds": 153.1
+        },
+        "web-types": {
+          "command": [
+            "node",
+            "/data/worktrees/cal.com/cal-delivery-20261013/.yarn/releases/yarn-4.12.0.cjs",
+            "workspace",
+            "@calcom/web",
+            "type-check:ci"
+          ],
+          "exitCode": 0,
+          "seconds": 133.4
+        },
+        "assets": {
+          "command": [
+            "node",
+            "scripts/copy-app-store-static.js"
+          ],
+          "exitCode": 0,
+          "seconds": 1.4
+        },
+        "web-build": {
+          "command": [
+            "node",
+            "../../node_modules/next/dist/bin/next",
+            "build"
+          ],
+          "exitCode": 0,
+          "seconds": 184.0
+        },
+        "invitation-journey": {
+          "command": [
+            "python3",
+            "scripts/run-community-enterprise-postgres.py",
+            "--suite",
+            "invitation-journey",
+            "--pg-bin",
+            "/usr/lib/postgresql/18/bin",
+            "--scratch-root",
+            "/data/tmp"
+          ],
+          "exitCode": 0,
+          "seconds": 32.6
+        },
+        "tasker-runtime": {
+          "command": [
+            "python3",
+            "scripts/run-community-enterprise-postgres.py",
+            "--suite",
+            "tasker-runtime",
+            "--pg-bin",
+            "/usr/lib/postgresql/18/bin",
+            "--scratch-root",
+            "/data/tmp"
+          ],
+          "exitCode": 0,
+          "seconds": 8.7
+        }
+      },
+      "buildComplete": true,
+      "acceptanceComplete": true,
+      "registryPublication": false,
+      "liveDeployment": false,
+      "lockSha256": "a1ad9263848c7edc8cead0ec3ee1ea1577b813d0845171a78b6273d1908daa7e",
+      "buildId": "pJhmrSvd_ZjeWuiPjexI2",
+      "buildManifestSha256": "29cbb20588074a55846a17c0898816e8ab892c9e1237d46edbd60a3250c6644d",
+      "finishedAt": "2026-10-17T01:50:48.669653+00:00"
+    },
+    "journeys": {
+      "invitation-journey": {
+        "diagnostics": [
+          {
+            "nativeIdentities": 3,
+            "actualMutationAndInboxReadback": true,
+            "inboxResponseMilliseconds": [
+              533,
+              458,
+              6347,
+              447
+            ],
+            "controlledInboxDelayMilliseconds": 6000,
+            "verifiedEmailRequiredAtIssueAndAccept": true,
+            "accepted": 1,
+            "declined": 2,
+            "cancelled": 3,
+            "staleAcceptDenied": true,
+            "deliveredToLocalSmtp": 4,
+            "initialOutboxSurvivesUndispatchedRequest": true,
+            "actualCronUsesRegisteredNoticeHandler": true,
+            "queuedUiAndGlobalCapacity": true,
+            "cancelledQueueSuppressedBeforeSmtp": true,
+            "duplicateCronResends": 0,
+            "smtpFailurePreservesPending": true,
+            "personalIdentityUnmoved": true,
+            "scope": "built web, PostgreSQL and real encrypted sessions against TLS fixture; existing users only; no live IdP, external inbox delivery or community enrollment"
+          },
+          {
+            "buildId": "pJhmrSvd_ZjeWuiPjexI2",
+            "checks": 4,
+            "scope": "localhost built web plus synthetic PostgreSQL; no live IdP",
+            "manifestSha256": "29cbb20588074a55846a17c0898816e8ab892c9e1237d46edbd60a3250c6644d"
+          }
+        ],
+        "logSha256": "d9231151205d67f7a1e552461f8ce93dbba4a1953eea38b6de00b72a763b5d83"
+      },
+      "tasker-runtime": {
+        "diagnostics": [
+          {
+            "source": "built native Tasker GET routes",
+            "admittedTasks": 2,
+            "recoveredInterruptions": 1,
+            "replayedUnconfirmedTasks": 0,
+            "unauthorizedRequests": 4,
+            "futureTaskUntouched": true,
+            "cleanupPreservedEvidence": true,
+            "signedWebhookAcknowledged": true,
+            "signedWebhookNon2xxPreserved": true,
+            "laterCronReplayedDeliveries": 0,
+            "scope": "synthetic queue records and real current application/PostgreSQL; no customer notifications or external provider operations"
+          },
+          {
+            "buildId": "pJhmrSvd_ZjeWuiPjexI2",
+            "checks": 4,
+            "scope": "localhost built web plus synthetic PostgreSQL; no live IdP",
+            "manifestSha256": "29cbb20588074a55846a17c0898816e8ab892c9e1237d46edbd60a3250c6644d"
+          }
+        ],
+        "logSha256": "7021ac4ec3dcfbeb41dc06e09ffc3f09b1234288d70e091613a8f6a2c824c0b8"
+      }
+    },
+    "registeredSource": {
+      "source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
+      "command": [
+        "yarn",
+        "test:community-enterprise"
+      ],
+      "exitCode": 0,
+      "seconds": 16.7
+    },
+    "focusedSourceAndGraphCases": 61,
+    "cleanup": {
+      "observedAt": "2026-10-17T01:53:34.895419+00:00",
+      "ownedFixtureCount": 4,
+      "allOwnedDatabaseStopReceipts": true,
+      "ownedDirectoriesAbsent": true,
+      "matchingPostgresOrAppProcesses": [],
+      "testPort38917NotListening": true,
+      "inheritedBytecodeUnchanged": true,
+      "noDeletionOfUnownedFiles": true
+    },
+    "rawEvidence": [
+      {
+        "name": "start.json",
+        "bytes": 603,
+        "sha256": "47fff04a6b1d322b94d1a869c8ff89d75748e2de16e881049bda3a1bcc0571b1"
+      },
+      {
+        "name": "native-acceptance.json",
+        "bytes": 1348,
+        "sha256": "5a532d1c783a0bb4444565c7999da2cf2c72df747f7f68a2c9692ba3758e0d7f"
+      },
+      {
+        "name": "invitations-native.log",
+        "bytes": 19903,
+        "sha256": "bd3aa67aad7455647162d885ad61ab280e181d2b3b162c6b6aa795a409769723"
+      },
+      {
+        "name": "tasker-native.log",
+        "bytes": 12886,
+        "sha256": "9899d96958e943233e78e56c1b6bc7c0a22f38d7fd0104665181b7ab30d19384"
+      },
+      {
+        "name": "integration-supervisor.log",
+        "bytes": 169,
+        "sha256": "ffd96df2d5e33811d29da076bfa5cc6367a244269fc8221077a12da7aaf8eb0b"
+      },
+      {
+        "name": "integration/receipt.json",
+        "bytes": 3064,
+        "sha256": "84ceb2a6f66e34022a288db83d2e48583a5c27382c4a05b0c5a3a9444af3e593"
+      },
+      {
+        "name": "integration/invitation-journey.log",
+        "bytes": 2821,
+        "sha256": "d9231151205d67f7a1e552461f8ce93dbba4a1953eea38b6de00b72a763b5d83"
+      },
+      {
+        "name": "integration/tasker-runtime.log",
+        "bytes": 2550,
+        "sha256": "7021ac4ec3dcfbeb41dc06e09ffc3f09b1234288d70e091613a8f6a2c824c0b8"
+      },
+      {
+        "name": "journey-readback.json",
+        "bytes": 2302,
+        "sha256": "ef1a1bb687d4ac8b14fe8cce1634e0a2127e4d5cde8b6d6bd978e91be9d26350"
+      },
+      {
+        "name": "registered-source.json",
+        "bytes": 158,
+        "sha256": "02e52f94c10a0e651ed90a9b8e8ead03dad73c31d9a440a6ac917e0e8b2398db"
+      },
+      {
+        "name": "registered-source.log",
+        "bytes": 119471,
+        "sha256": "0a07a7451569538fec570482842072c8e23ec77ea71eeab03233b3431fc56055"
+      },
+      {
+        "name": "source-and-graph.log",
+        "bytes": 5244,
+        "sha256": "e970515311c2f3ea99d774c788f5b8d7efad8e062c71c28455083279dc4150f2"
+      },
+      {
+        "name": "cleanup-readback.json",
+        "bytes": 305,
+        "sha256": "1a0ec3610949a52ac58221225d1e7c26cb297c99d32a9e6009528b9dbf604609"
+      },
+      {
+        "name": "build_and_accept.py",
+        "bytes": 6244,
+        "sha256": "9cab389ec1e9fd81fa4735e861f9171e22ac71592025fbc442448ea6d0668c0d"
+      },
+      {
+        "name": "integration/immutable-install.log",
+        "bytes": 19669,
+        "sha256": "d3d3b3f7fb8e8117951fba6d3fa59aad3118fd93c7287e21252d4cca7204f0e3"
+      },
+      {
+        "name": "integration/generate.log",
+        "bytes": 582,
+        "sha256": "b78bb76d5fbdbfd2a46366109a0ca29e5c23d379485af4bdbfc6af09efdcfed9"
+      },
+      {
+        "name": "integration/app-registry.log",
+        "bytes": 840,
+        "sha256": "18e400dbd23fa74efc38c9bc737747edb19aade0c556ab3b07c38c75b23e5474"
+      },
+      {
+        "name": "integration/trpc.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "integration/web-types.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "integration/assets.log",
+        "bytes": 67584,
+        "sha256": "42fa5e5034e8c6b8861fa11235e44eef311aff1fb3c918dc42a9c48af9030966"
+      },
+      {
+        "name": "integration/web-build.log",
+        "bytes": 6918,
+        "sha256": "5c92d1601e5edbd2ab110e90546e735c4337ae284ddcf436b41a9c097c64a0bb"
+      }
+    ],
+    "previousToolRefusalDidNotRecur": true,
+    "sameReviewedRunnerHostAndPolicy": true,
+    "sourceLevelScannerFindingsUnchanged": true,
+    "metadataScan": {
+      "exitCode": 1,
+      "reviewedFindings": [
+        {
+          "file": "docs/community-enterprise/TASK_GRAPH.json",
+          "rule": "generic-api-key",
+          "lines": [
+            407,
+            407
+          ],
+          "inheritedContainingLines": true,
+          "recomputedEvidenceDigest": false
+        },
+        {
+          "file": "docs/community-enterprise/TASK_GRAPH.json",
+          "rule": "generic-api-key",
+          "lines": [
+            407,
+            407
+          ],
+          "inheritedContainingLines": true,
+          "recomputedEvidenceDigest": false
+        }
+      ],
+      "suppressionAdded": false
+    },
+    "postEvidenceGraphRegressionCases": 25
+  }
 }

@@ -1318,28 +1318,50 @@
           "exit_code": 0,
           "application_source": "92d944676a7c9e3b5fda7cd530f6622db53d22a6",
           "summary": "36 focused source cases pass; actual service executes with explicit in-memory page-query boundaries and retained mail/queue doubles. Actual native TypeScript import closure passes. No new PostgreSQL, browser, SMTP, crash/retry or deployed acceptance; native launch block is explicit in the paired receipt."
+        },
+        {
+          "file": "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite invitations --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "application_source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
+          "summary": "91 actual invitation cases pass, including the previously unexecuted batching/authority tests; a full50-item page measures7 SQL SELECTs under the unchanged10s transaction. The paired native Tasker49-case run, source604-case run and cleanup are recorded in the receipt."
+        },
+        {
+          "file": "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
+          "level": "runtime",
+          "command": "python3 scripts/run-community-enterprise-postgres.py --suite invitation-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
+          "exit_code": 0,
+          "application_source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
+          "build_id": "pJhmrSvd_ZjeWuiPjexI2",
+          "summary": "Fresh local-origin built UI/tRPC/cron/SMTP journey passes, with3 synthetic native identities,4 local SMTP submissions, explicit consent, queued/cancelled/uncertain cases and no duplicate cron send. Same build also passes the native Tasker route journey. No live IdP/external inbox/new API image/deployed preview is claimed."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 1,
-      "progress": "Retained invitation mutation/audit/identity-only Task intent and targeted worker source are published together. Inbox pagination now batches current authority reads without increasing its ten-second limit. Native import-closure typing and 36 source tests pass; this continuation\u2019s PostgreSQL test launch was blocked by the execution safety check. Earlier 82/83 invitation and49/49 Tasker runs remain historical. Final native outbox/crash/retry, browser/SMTP, broader booking audit and retention acceptance remain open.",
+      "progress": "Invitation outbox component now has runtime proof on exact source39ea68b4:91 invitation DB cases,49 Tasker/crash cases, actual50-item page with7 SELECTs, fresh local built invitation/SMTP and Tasker cron journeys.604 registered source cases pass. No application code/test was changed in this acceptance pass. Broader booking audit, retention, real reminder delivery and serving-preview gates remain open.",
       "progress_reference": "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
-      "progress_summary": "Handoff and exact administrative audit commit together with replay and real constraint-failure rollback; no distributed provider transaction or durable notification completion.",
+      "progress_summary": "Pending invitation, audit and ID-only task intent plus the shared send/cron claim path now pass native database/process and built-browser/local-SMTP acceptance. Unknown external results are held, not automatically resent; this is not global exactly-once delivery.",
       "progress_references": [
         "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
         "docs/community-enterprise/INVITATION-OUTBOX-RECEIPT-2026-10-17.json"
       ],
       "pending_native_validation": {
-        "status": "blocked_at_execution",
-        "source": "92d944676a7c9e3b5fda7cd530f6622db53d22a6",
+        "status": "passed_at_recorded_local_fixture_scope",
+        "source": "39ea68b4cba1aa3375bba40596e6b605c90a9b3b",
         "required": [
           "existing private invitations suite on final source",
           "existing private Tasker and crash-retry suite",
           "fresh matching invitation browser/controlled SMTP journey"
         ],
-        "no_alternative_execution_route_attempted": true
+        "no_alternative_execution_route_attempted": true,
+        "observed_at": "2026-10-17T01:55:56.155260+00:00",
+        "evidence": "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
+        "receipt": "docs/community-enterprise/INVITATION-OUTBOX-RECEIPT-2026-10-17.json",
+        "build_id": "pJhmrSvd_ZjeWuiPjexI2",
+        "deployed_preview_accepted": false
       }
     },
     {
