@@ -3,6 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
+const nodeProcess = require("node:process");
 
 const root = path.resolve(__dirname, "..");
 const sourceRoot = path.join(root, "apps/api/v2/src");
@@ -13,12 +14,14 @@ function filesUnder(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const absolute = path.join(directory, entry.name);
     if (entry.isDirectory()) return filesUnder(absolute);
-    return entry.isFile() && entry.name.endsWith(".controller.ts") ? [absolute] : [];
+    if (!entry.isFile() || !entry.name.endsWith(".controller.ts")) return [];
+    return [absolute];
   });
 }
 
 function decorators(node) {
-  return ts.canHaveDecorators(node) ? ts.getDecorators(node) || [] : [];
+  if (!ts.canHaveDecorators(node)) return [];
+  return ts.getDecorators(node) || [];
 }
 
 function decoratorName(decorator) {
@@ -31,13 +34,15 @@ function decoratorName(decorator) {
 
 function decoratorCall(decorator) {
   const expression = decorator.expression;
-  return ts.isCallExpression(expression) ? expression : undefined;
+  if (!ts.isCallExpression(expression)) return undefined;
+  return expression;
 }
 
 function firstStringArgument(decorator) {
   const call = decoratorCall(decorator);
-  const argument = call && call.arguments[0];
-  return argument && ts.isStringLiteralLike(argument) ? argument.text : "";
+  const argument = call?.arguments[0];
+  if (!argument || !ts.isStringLiteralLike(argument)) return "";
+  return argument.text;
 }
 
 function hasDecorator(node, expected) {
@@ -48,7 +53,7 @@ function hasPermissionsGuard(node) {
   return decorators(node).some((decorator) => {
     if (decoratorName(decorator) !== "UseGuards") return false;
     const call = decoratorCall(decorator);
-    return Boolean(call && call.arguments.some((argument) => argument.getText().includes("PermissionsGuard")));
+    return Boolean(call?.arguments.some((argument) => argument.getText().includes("PermissionsGuard")));
   });
 }
 
@@ -68,7 +73,9 @@ function inventoryFile(file) {
   const result = [];
   function visit(node) {
     if (ts.isClassDeclaration(node) && node.name && hasDecorator(node, "Controller")) {
-      const controller = firstStringArgument(decorators(node).find((decorator) => decoratorName(decorator).endsWith("Controller")));
+      const controller = firstStringArgument(
+        decorators(node).find((decorator) => decoratorName(decorator).endsWith("Controller"))
+      );
       const classPermissionsGuard = hasPermissionsGuard(node);
       for (const member of node.members) {
         if (!ts.isMethodDeclaration(member) || !member.name) continue;
@@ -97,7 +104,10 @@ const inventories = filesUnder(sourceRoot).map(inventoryFile);
 const routes = inventories.flatMap((item) => item.routes);
 const permissionRoutes = routes.filter((route) => route.permissions);
 const missingPermissionsGuard = permissionRoutes.filter((route) => !route.permissionsGuard);
-const directJwtReaders = inventories.filter((item) => item.directJwtReader).map((item) => item.file).sort();
+const directJwtReaders = inventories
+  .filter((item) => item.directJwtReader)
+  .map((item) => item.file)
+  .sort();
 const output = {
   schemaVersion: 1,
   sourceRoot: path.relative(root, sourceRoot),
@@ -110,4 +120,5 @@ const output = {
   directJwtReaders,
   routes,
 };
-process.stdout.write(JSON.stringify(output, null, 2) + "\n");
+nodeProcess.stdout.write(JSON.stringify(output, null, 2));
+nodeProcess.stdout.write("\n");

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 const assert = require("node:assert/strict");
 const { execFileSync } = require("node:child_process");
+const nodeProcess = require("node:process");
 const path = require("node:path");
 const test = require("node:test");
 
 const root = path.resolve(__dirname, "../..");
 
 test("API v2 route inventory covers permission-decorated methods and direct JWT readers", () => {
-  const output = execFileSync(process.execPath, ["scripts/inventory-enterprise-api-routes.cjs"], {
+  const output = execFileSync(nodeProcess.execPath, ["scripts/inventory-enterprise-api-routes.cjs"], {
     cwd: root,
     encoding: "utf8",
   });
