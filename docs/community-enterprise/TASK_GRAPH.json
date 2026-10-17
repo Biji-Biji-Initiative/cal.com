@@ -1990,7 +1990,7 @@
     {
       "date": "2026-10-17",
       "base": "caf79b8270d2392928aeafcc9545e1fec5379907",
-      "local_head": "caf79b8270d2392928aeafcc9545e1fec5379907",
+      "local_head": "189a852e1",
       "closed_source_task": null,
       "partial_runtime_task": "CAL-10.REPORTS",
       "production_changed": false,
