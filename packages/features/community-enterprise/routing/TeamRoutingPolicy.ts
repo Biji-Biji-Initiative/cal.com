@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-export type RoutingDimension = "programme" | "service" | "language";
+type RoutingDimension = "programme" | "service" | "language";
 
-export type RoutingRule = {
+type RoutingRule = {
   id: string;
   teamId: number;
   programme?: string | null;
@@ -13,14 +13,14 @@ export type RoutingRule = {
   enabled?: boolean;
 };
 
-export type RoutingRequest = {
+type RoutingRequest = {
   programme?: string | null;
   service?: string | null;
   language?: string | null;
   eligibleTeamIds: readonly number[];
 };
 
-export type RoutingDecision =
+type RoutingDecision =
   | {
       kind: "matched";
       teamId: number;
@@ -40,7 +40,8 @@ const DIMENSIONS: readonly RoutingDimension[] = ["programme", "service", "langua
 function normalize(value: string | null | undefined): string | null {
   if (value == null) return null;
   const normalized = value.trim().toLocaleLowerCase("en-US");
-  return normalized.length ? normalized : null;
+  if (normalized.length === 0) return null;
+  return normalized;
 }
 
 function validId(value: number): boolean {
@@ -59,11 +60,8 @@ function ruleMatches(rule: RoutingRule, request: RoutingRequest): RoutingDimensi
   return matched;
 }
 
-/**
- * Resolve one operator-authored rule. Wildcards are explicit null fields;
- * fallback rules are considered only after all non-fallback rules.
- */
-export function resolveTeamRoute(rules: readonly RoutingRule[], request: RoutingRequest): RoutingDecision {
+/** Resolve one operator-authored rule with explicit wildcard and fallback semantics. */
+function resolveTeamRoute(rules: readonly RoutingRule[], request: RoutingRequest): RoutingDecision {
   const eligible = new Set(request.eligibleTeamIds.filter(validId));
   if (eligible.size === 0) {
     return {
@@ -76,7 +74,10 @@ export function resolveTeamRoute(rules: readonly RoutingRule[], request: Routing
   const candidates = rules
     .filter((rule) => rule.enabled !== false && eligible.has(rule.teamId) && validId(rule.teamId))
     .map((rule, index) => ({ rule, index, matched: ruleMatches(rule, request) }))
-    .filter((candidate): candidate is { rule: RoutingRule; index: number; matched: RoutingDimension[] } => candidate.matched !== null);
+    .filter(
+      (candidate): candidate is { rule: RoutingRule; index: number; matched: RoutingDimension[] } =>
+        candidate.matched !== null
+    );
 
   if (candidates.length === 0) {
     return {
@@ -93,8 +94,9 @@ export function resolveTeamRoute(rules: readonly RoutingRule[], request: Routing
     if (specificityDifference !== 0) return specificityDifference;
     const priorityDifference = (left.rule.priority ?? 0) - (right.rule.priority ?? 0);
     if (priorityDifference !== 0) return priorityDifference;
-    const idDifference = left.rule.id.localeCompare(right.rule.id);
-    return idDifference !== 0 ? idDifference : left.index - right.index;
+    if (left.rule.id < right.rule.id) return -1;
+    if (left.rule.id > right.rule.id) return 1;
+    return left.index - right.index;
   });
   const selected = ordered[0];
   if (!selected) {
@@ -105,15 +107,35 @@ export function resolveTeamRoute(rules: readonly RoutingRule[], request: Routing
     };
   }
   const fallback = Boolean(selected.rule.fallback);
-  const matchedText = selected.matched.length ? selected.matched.join(", ") : "wildcard";
+  let matchedText = selected.matched.join(", ");
+  if (matchedText.length === 0) matchedText = "wildcard";
+  let explanation =
+    "Rule " +
+    selected.rule.id +
+    " selected for eligible team " +
+    selected.rule.teamId +
+    "; matched " +
+    matchedText +
+    ".";
+  if (fallback) {
+    explanation =
+      "Fallback rule " +
+      selected.rule.id +
+      " selected for eligible team " +
+      selected.rule.teamId +
+      "; matched " +
+      matchedText +
+      ".";
+  }
   return {
     kind: "matched",
     teamId: selected.rule.teamId,
     ruleId: selected.rule.id,
     fallback,
     matchedDimensions: selected.matched,
-    explanation: fallback
-      ? `Fallback rule ${selected.rule.id} selected for eligible team ${selected.rule.teamId}; matched ${matchedText}.`
-      : `Rule ${selected.rule.id} selected for eligible team ${selected.rule.teamId}; matched ${matchedText}.`,
+    explanation,
   };
 }
+
+export { resolveTeamRoute };
+export type { RoutingDecision, RoutingDimension, RoutingRequest, RoutingRule };

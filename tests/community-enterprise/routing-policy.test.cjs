@@ -23,14 +23,21 @@ const base = {
   service: "Mentoring",
   language: "English",
 };
-const rule = (overrides) => ({ id: "r-" + Math.random(), teamId: 10, ...overrides });
+const rule = (overrides) => ({ id: "default", teamId: 10, ...overrides });
 
 test("selects the most specific exact rule and normalizes request values", () => {
   const result = resolveTeamRoute(
     [
       rule({ id: "fallback", teamId: 30, fallback: true }),
       rule({ id: "programme", teamId: 20, programme: "yseali 2026" }),
-      rule({ id: "exact", teamId: 10, programme: "YSEALI 2026", service: "mentoring", language: "ENGLISH", priority: 50 }),
+      rule({
+        id: "exact",
+        teamId: 10,
+        programme: "YSEALI 2026",
+        service: "mentoring",
+        language: "ENGLISH",
+        priority: 50,
+      }),
     ],
     base
   );
@@ -89,10 +96,7 @@ test("no eligible team and no matching rule are explainable", () => {
     reason: "no-eligible-team",
     explanation: "No active team is eligible for this request.",
   });
-  const unmatched = resolveTeamRoute(
-    [rule({ id: "other", teamId: 10, programme: "other" })],
-    base
-  );
+  const unmatched = resolveTeamRoute([rule({ id: "other", teamId: 10, programme: "other" })], base);
   assert.deepEqual(unmatched, {
     kind: "no_match",
     reason: "no-matching-rule",
@@ -101,10 +105,7 @@ test("no eligible team and no matching rule are explainable", () => {
 });
 
 test("a fallback rule is selected when it is the only eligible match", () => {
-  const result = resolveTeamRoute(
-    [rule({ id: "fallback", teamId: 20, fallback: true })],
-    base
-  );
+  const result = resolveTeamRoute([rule({ id: "fallback", teamId: 20, fallback: true })], base);
   assert.equal(result.kind, "matched");
   assert.equal(result.fallback, true);
   assert.equal(result.ruleId, "fallback");
