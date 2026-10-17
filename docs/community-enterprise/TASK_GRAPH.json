@@ -1657,7 +1657,7 @@
       "parent": "CAL-10",
       "kind": "task",
       "title": "Scoped operational reporting and export",
-      "state": "open",
+      "state": "in_progress",
       "requires": [
         "CAL-03.LIST",
         "CAL-07.AUDIT",
@@ -1673,11 +1673,22 @@
         "Bookings, cancellations, no-shows, host distribution and delivery failures; org/team privacy enforced on exports.",
         "Figures reconcile to scoped booking data, not global totals."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/BOOKING-REPORT-CONTRACT-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/booking-report-contract.test.cjs",
+          "exit_code": 0,
+          "summary": "Seven focused source cases pass. Aggregate-only report contract rejects mixed organization/team rows and duplicate IDs, counts bookings/cancellations/no-shows/failed or uncertain delivery, and reconciles status and host totals to scoped rows without returning attendee payloads or booking IDs."
+        }
+      ],
       "required_for_team_release": false,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 2
+      "priority": 2,
+      "progress": "Aggregate-only booking reporting contract now enforces organization/team scope, fail-closed mixed-row handling, duplicate-row rejection, cancellation/no-show and delivery-failure counts, deterministic host distribution and exact reconciliation. Runtime endpoint, Prisma/audit retention query and deployed export remain open.",
+      "progress_reference": "docs/community-enterprise/BOOKING-REPORT-CONTRACT-2026-10-17.md",
+      "progress_summary": "Scoped reporting source contract is proven; live report delivery and durable audit coverage remain open."
     },
     {
       "id": "CAL-10.ROLLOUT",
@@ -1967,6 +1978,18 @@
         "CAL-04.SCIM",
         "CAL-05.API",
         "CAL-07.REMINDERS"
+      ]
+    },
+    {
+      "date": "2026-10-17",
+      "base": "caf79b8270d2392928aeafcc9545e1fec5379907",
+      "local_head": "caf79b8270d2392928aeafcc9545e1fec5379907",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-10.REPORTS",
+      "production_changed": false,
+      "notes": "Scoped booking report source contract is recorded and focused checks pass; report endpoint, durable booking audit/retention, shared preview, native identity and serving journey remain open.",
+      "source_wave_tasks": [
+        "CAL-10.REPORTS"
       ]
     }
   ]
