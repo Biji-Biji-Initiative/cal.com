@@ -1,4 +1,4 @@
-# Explainable team routing ºw^~)Þt 2026-10-17
+# Explainable team routing policy - 2026-10-17
 
 This source slice advances CAL-10.ROUTING without coupling routing to the live
 deployment or silently selecting a team. The resolveTeamRoute pure policy

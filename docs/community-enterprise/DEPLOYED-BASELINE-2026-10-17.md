@@ -1,4 +1,4 @@
-# Deployed baseline readback+ßuÁ‚ùÁT 2026-10-17
+# Deployed baseline readback - 2026-10-17
 
 This is a read-only inventory for CAL-08.BASELINE. It records the actual
 production objects visible from the existing RKE2 context on 2026-10-17. It
@@ -13,7 +13,7 @@ or restore a database.
 | Argo application | calcom-prod, Synced / Healthy |
 | Argo revision | ddac90eb8b27f89fba95d7abce23a2749259e841 |
 | Web deployment | 3 ready / 3 updated replicas |
-| Web image | calcom/cal.com:v6.2.0@sha256:ace3bb1219fb7306585ab9f4d41af7ee064c343db0498173436bbe857bd49 |
+| Web image | calcom/cal.com:v6.2.0@sha256:ace3bb1219fb7306585ab9f4d41af7ee064c343db049db0498173436bbe857bd49 |
 | Web runtime sidecar | node:22-alpine@sha256:ab07539e0988b63558ff621f5fbe1077054c39d9809112974fb79993949d41cd |
 | API deployment | 1 ready / 1 updated replica |
 | API image | ghcr.io/biji-biji-initiative/cal.com-api-v2:v6.2.0@sha256:40f5fc141a7090eeca8b14c09bd9a37d03c428500f75eddb7b35af3673c58507 |
