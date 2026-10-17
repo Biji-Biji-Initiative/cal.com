@@ -1573,7 +1573,7 @@
           "level": "source",
           "command": "node --test --test-reporter=spec tests/community-enterprise/upstream-update-contract.test.cjs",
           "exit_code": 0,
-          "code_revision": "33391a2",
+          "code_revision": "0769474f6081865b7243886f84bade82756fe657",
           "summary": "Two real upstream revisions are recorded, the reviewed one-line timezone patch is replayed exactly once, and the Asia/Kolkata fractional-offset assertion is present. The upstream PR was open/stale at review time; this is a bounded source rehearsal, not an upstream merge, production update or deployed build."
         },
         {
@@ -2075,7 +2075,7 @@
     {
       "date": "2026-10-17",
       "base": "bf87e735c",
-      "local_head": "bf87e735c",
+      "local_head": "0769474f6081865b7243886f84bade82756fe657",
       "closed_source_task": null,
       "partial_runtime_task": "CAL-08.UPDATE",
       "production_changed": false,
