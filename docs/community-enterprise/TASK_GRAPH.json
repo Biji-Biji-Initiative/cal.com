@@ -1424,6 +1424,13 @@
           "exit_code": 0,
           "summary": "Prior retained dev database and backup metadata recorded; fresh live preservation/consumer verification remains required.",
           "code_revision": "d90ee815ef37bbbbbb721b354902ec8e32cad9c2"
+        },
+        {
+          "file": "docs/community-enterprise/DEPLOYED-BASELINE-2026-10-17.md",
+          "level": "runtime",
+          "command": "kubectl read-only production inventory: Argo application, deployments, pods, images, CNPG health, backup CronJob and latest backup job",
+          "exit_code": 0,
+          "summary": "Read-only RKE2 production readback records calcom-prod Synced/Healthy, legacy web/API image digests, ready replicas, healthy 2/2 CNPG, public 302/404 probes and a succeeded latest logical-backup job. Isolated restore, row-count/booking-link reconciliation and credential decryption remain open; this evidence does not complete CAL-08.BASELINE."
         }
       ],
       "required_for_team_release": true,
@@ -1580,7 +1587,7 @@
       "parent": "CAL-10",
       "kind": "task",
       "title": "Explainable routing rules and tested fallbacks",
-      "state": "open",
+      "state": "source_proven",
       "requires": [
         "CAL-06.REUSE",
         "CAL-05.CORE"
@@ -1595,7 +1602,15 @@
         "Programme/service/language rules select eligible teams; fallbacks and no-match behavior clear.",
         "Do not block source development on the production pilot."
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "file": "docs/community-enterprise/ROUTING-POLICY-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/routing-policy.test.cjs",
+          "exit_code": 0,
+          "summary": "Six deterministic source cases pass: normalization, specificity, priority, stable tie-breaking, explicit fallback, disabled/ineligible rules and explainable no-match outcomes. The policy is intentionally not wired to a live production catalog or preview deployment in this source slice."
+        }
+      ],
       "required_for_team_release": false,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
@@ -1656,7 +1671,7 @@
       "priority": 2
     }
   ],
-  "latest_evidence": "docs/community-enterprise/RUNTIME-SECURITY-2026-10-16.md",
+  "latest_evidence": "docs/community-enterprise/ROUTING-POLICY-2026-10-17.md",
   "repository_decision": {
     "date": "2026-10-13",
     "status": "owner_decided",
@@ -1898,5 +1913,16 @@
         "CAL-10.ROLLOUT": "Full routing/reporting plus operational handover and broader rollout; all upstream prerequisites remain."
       }
     }
-  }
+  },
+  "continuation_checkpoints": [
+    {
+      "date": "2026-10-17",
+      "base": "33436a36e",
+      "local_head": "77e98a0ad",
+      "closed_source_task": "CAL-10.ROUTING",
+      "partial_runtime_task": "CAL-08.BASELINE",
+      "production_changed": false,
+      "notes": "Invitation runtime gate remains accepted at its recorded local scope; current production readback remains legacy v6.2.0 and no enterprise candidate was promoted."
+    }
+  ]
 }
