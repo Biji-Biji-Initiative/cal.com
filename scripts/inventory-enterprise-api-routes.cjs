@@ -41,8 +41,16 @@ function decoratorCall(decorator) {
 function firstStringArgument(decorator) {
   const call = decoratorCall(decorator);
   const argument = call?.arguments[0];
-  if (!argument || !ts.isStringLiteralLike(argument)) return "";
-  return argument.text;
+  if (!argument) return "";
+  if (ts.isStringLiteralLike(argument)) return argument.text;
+  if (!ts.isObjectLiteralExpression(argument)) return "";
+  const property = argument.properties.find((item) => {
+    if (!ts.isPropertyAssignment(item)) return false;
+    return item.name?.getText() === "path";
+  });
+  if (!property || !ts.isPropertyAssignment(property)) return "";
+  if (!ts.isStringLiteralLike(property.initializer)) return "";
+  return property.initializer.text;
 }
 
 function hasDecorator(node, expected) {
