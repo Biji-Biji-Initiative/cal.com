@@ -2346,6 +2346,15 @@
       "production_changed": false,
       "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
       "notes": "Actual full e452 web producer completed all9 steps0, full types151.129s and Next build581.494s; immutable lock and private output verified, unit/worktree/PIDs/cgroup gone and slot released. Earlier isolated108 diagnostics and three Prisma trace warnings remain unwaived. Five pure source-control commands pass with explicit doubles, no image/JWE/SQL proof. Packaging remains preparation, no rebuilt OCI/security/native/browser/deployment acceptance. Infra5b339 exact3 files independently API-verified; native Velero parser/modifier and64 reader controls pass but fullwrapper140s timeout and UBS checksum refusal remain open. One metadata archive transfer200 refused historical-metadata-unqualified; exact offending metadata is unknown, complete raw custody cleanup verified. No metadata/Restore/FSB/SQL/quiescence acceptance. Last serving observation stock6.2; Google provider mismatch last directly checked10:54:48UTC, Console/admin/publisher and real staff journeys remain open. All39 tasks/prior checkpoints/other fields unchanged; no production mutation or task closure."
+    },
+    {
+      "date": "2026-10-19",
+      "application_source": "e452d8ee92c60b2301be387aaae20624bed11ee3",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-02.PREVIEW",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
+      "notes": "Exact e452 OCI c5455d12 packaged/596 migration+replay/native positives; bridge a03 FAILED only refreshed email mismatch, actual NextAuth decoded-token default plus omitted email projection confirmed, minimal source fix/regression in progress. Onboarding/logout/CAS purge unexecuted; owned fixture teardown distinct. Raw Trivy diagnostic HIGH0 CRITICAL0 MEDIUM58 LOW10/defaultsecrets0, OS14/Node776 not physical-inventory-qualified. Full58-source secrets native0/17/EOF+CRC+diffID+exactbytes completed89unwaived detector matches (86generic2private1square), not89unique/confirmed secrets; root independently verifiedall58reports. Reader159PASS/Gitleaks0/Biome0 with native8test-critical130info retained/PythonUBSchecksumrefusal; originalwrapperFAILEDown92Bcache/latercleanupverified. Livegen38 node24fb5 image config177 matchesregistry, sourcebc4Oct15onlyNode replacement over stock6.2 application; not e452functionalfixes. Canonicalreaderexact+inject+consumerPASS is read-only/no publisherauthority. FreshGoogle18:29 provider302redirect_uri_mismatch exactdevcallback, Console/adminpending. Metadata2c415 projection accepted onlyafterreviewedSA+scheduling/pullreset; raworigin/reinjection/FSB/SQL/quiescencefalse, exactcustodydisposed, isolatedrestoreplanonly/freshreadgatespending. OwnersSunny/Hazy147244 plusIcyPine147251publisherroute requested; no workflowsdispatched. All39taskobjects/priorcheckpoints/otherfieldsunchanged; no production or realstaffacceptance."
     }
   ]
 }
