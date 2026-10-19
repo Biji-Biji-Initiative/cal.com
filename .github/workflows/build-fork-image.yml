@@ -1,0 +1,190 @@
+name: Build Fork Image
+
+on:
+  push:
+    tags:
+      - "v*-mereka*"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Build legacy image or publish an admitted exact prebuilt candidate."
+        type: choice
+        options: [build, prebuilt]
+        default: build
+      source_sha:
+        description: "Prebuilt: full application source SHA (not publisher SHA)."
+        required: false
+      release_id:
+        description: "Prebuilt: same-repository published candidate prerelease ID."
+        required: false
+      receipt_asset_id:
+        description: "Prebuilt: publication.json asset ID in that release."
+        required: false
+      receipt_sha256:
+        description: "Prebuilt: independently checked publication.json SHA256."
+        required: false
+      tag_override:
+        description: "Optional image tag override. Defaults to main-<short-sha>."
+        required: false
+
+# Only one build per branch at a time. Don't cancel in-progress builds
+# because cold Docker builds take 40+ minutes and cancelling wastes work.
+concurrency:
+  group: build-fork-image-${{ inputs.mode == 'prebuilt' && 'prebuilt' || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build and push to GHCR
+    runs-on: mereka-k8s-heavy-builders
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ inputs.mode == 'prebuilt' && 0 || 1 }}
+          persist-credentials: false
+
+      - name: Admit exact prebuilt candidate
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'prebuilt'
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          RELEASE_ID: ${{ inputs.release_id }}
+          RECEIPT_ASSET_ID: ${{ inputs.receipt_asset_id }}
+          RECEIPT_SHA256: ${{ inputs.receipt_sha256 }}
+          TAG_OVERRIDE: ${{ inputs.tag_override }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = Biji-Biji-Initiative/cal.com
+          test -z "$TAG_OVERRIDE"
+          [[ "$RELEASE_ID" =~ ^[1-9][0-9]{0,15}$ && "$RECEIPT_ASSET_ID" =~ ^[1-9][0-9]{0,15}$ ]]
+          python3 -B scripts/publish-enterprise-prebuilt.py fetch \
+            --directory "$RUNNER_TEMP/cal-prebuilt" --source-sha "$SOURCE_SHA" \
+            --actor "$GITHUB_ACTOR" --receipt-sha256 "$RECEIPT_SHA256" \
+            --release-id "$RELEASE_ID" --receipt-asset-id "$RECEIPT_ASSET_ID"
+
+      - name: Prepare pinned prebuilt publisher
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'prebuilt'
+        env:
+          CRANE_VERSION: v0.22.1
+          CRANE_SHA256: 0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = x86_64
+          curl --proto '=https' --tlsv1.2 -fsSL --max-time 120 -o "$RUNNER_TEMP/cal-crane.tgz" \
+            "https://github.com/google/go-containerregistry/releases/download/$CRANE_VERSION/go-containerregistry_Linux_x86_64.tar.gz"
+          echo "$CRANE_SHA256  $RUNNER_TEMP/cal-crane.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/cal-crane-bin"
+          tar -xzf "$RUNNER_TEMP/cal-crane.tgz" -C "$RUNNER_TEMP/cal-crane-bin" crane
+          echo "$RUNNER_TEMP/cal-crane-bin" >> "$GITHUB_PATH"
+
+      - name: Publish and read back exact candidate
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'prebuilt'
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          RECEIPT_SHA256: ${{ inputs.receipt_sha256 }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 -B scripts/publish-enterprise-prebuilt.py publish \
+            --directory "$RUNNER_TEMP/cal-prebuilt" --source-sha "$SOURCE_SHA" \
+            --actor "$GITHUB_ACTOR" --receipt-sha256 "$RECEIPT_SHA256" \
+            > "$RUNNER_TEMP/cal-publication.json"
+          cat "$RUNNER_TEMP/cal-publication.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove prebuilt job artifacts
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.mode == 'prebuilt'
+        run: |
+          python3 -B - <<'PY'
+          import os, pathlib, shutil
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          for name in ['cal-prebuilt', 'cal-crane-bin']:
+              shutil.rmtree(root / name, ignore_errors=True)
+          for name in ['cal-crane.tgz', 'cal-publication.json']:
+              (root / name).unlink(missing_ok=True)
+          PY
+
+      - name: Compute image tags
+        if: inputs.mode != 'prebuilt'
+        id: tags
+        env:
+          TAG_OVERRIDE: ${{ inputs.tag_override }}
+        run: |
+          set -euo pipefail
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          REGISTRY="ghcr.io/biji-biji-initiative/cal.com"
+
+          if [[ -n "$TAG_OVERRIDE" ]]; then
+            [[ "$TAG_OVERRIDE" =~ ^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$ && "$TAG_OVERRIDE" != candidate-* ]]
+            VERSION_TAG="$TAG_OVERRIDE"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == refs/tags/* ]]; then
+            VERSION_TAG="${GITHUB_REF_NAME}"
+          else
+            VERSION_TAG="main-${SHORT_SHA}"
+          fi
+          [[ "$VERSION_TAG" =~ ^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$ && "$VERSION_TAG" != candidate-* ]]
+
+          # Always produce a versioned tag; also tag as latest on tag-push events.
+          TAGS="${REGISTRY}:${VERSION_TAG}"
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == refs/tags/* ]]; then
+            TAGS="${TAGS},${REGISTRY}:latest"
+          fi
+
+          echo "version_tag=${VERSION_TAG}" >> "$GITHUB_OUTPUT"
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        if: inputs.mode != 'prebuilt'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: inputs.mode != 'prebuilt'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        if: inputs.mode != 'prebuilt'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=registry,ref=ghcr.io/biji-biji-initiative/cal.com:buildcache
+          cache-to: type=registry,ref=ghcr.io/biji-biji-initiative/cal.com:buildcache,mode=max
+          # DATABASE_URL is required by `yarn build` (Next.js env substitution) but
+          # the Dockerfile never opens a DB connection at build time — prisma generate
+          # only reads the schema file. A syntactically-valid dummy URL is sufficient.
+          build-args: |
+            NEXT_PUBLIC_WEBAPP_URL=http://NEXT_PUBLIC_WEBAPP_URL_PLACEHOLDER
+            NEXT_PUBLIC_API_V2_URL=http://NEXT_PUBLIC_API_V2_URL_PLACEHOLDER
+            NEXT_PUBLIC_LICENSE_CONSENT=agree
+            NEXT_PUBLIC_APP_LOGO=/mereka-logo.png
+            NEXT_PUBLIC_APP_LOGO_ICON=/mereka-logo.png
+            DATABASE_URL=postgresql://postgres:postgres@localhost:5432/calendso
+            DATABASE_DIRECT_URL=postgresql://postgres:postgres@localhost:5432/calendso
+
+      - name: Summary
+        if: inputs.mode != 'prebuilt'
+        env:
+          IMAGE_TAGS: ${{ steps.tags.outputs.tags }}
+        run: |
+          {
+            echo "### Image built and pushed"
+            echo ""
+            echo "**Tags:**"
+            echo '```'
+            echo "$IMAGE_TAGS" | tr ',' '\n'
+            echo '```'
+            echo ""
+            echo "**Commit:** \`${{ github.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
