@@ -35,7 +35,12 @@ async function startSmtpTestSink() {
               /\r\n[ \t]+/g,
               " "
             );
-            messages.push({ recipients: [...recipients], subject, bytes: Buffer.byteLength(raw) });
+            messages.push({
+              recipients: [...recipients],
+              subject,
+              bytes: Buffer.byteLength(raw),
+              hasCalendarMime: /^Content-Type:\s*(?:text\/calendar|application\/ics)\b/im.test(raw),
+            });
             recipients = [];
             content = [];
             size = 0;
@@ -83,6 +88,8 @@ async function startSmtpTestSink() {
       EMAIL_SERVER_PORT: String(server.address().port),
     },
     count: () => messages.length,
+    summariesSince: (index) =>
+      messages.slice(index).map((message) => ({ ...message, recipients: [...message.recipients] })),
     setRejecting: (value) => {
       assert.equal(typeof value, "boolean");
       rejecting = value;

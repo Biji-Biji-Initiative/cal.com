@@ -1,0 +1,20 @@
+diff --git a/providers/email.d.ts b/providers/email.d.ts
+--- a/providers/email.d.ts
++++ b/providers/email.d.ts
+@@ -1,10 +1,10 @@
+ import { Transport, TransportOptions } from "nodemailer";
+-import * as JSONTransport from "nodemailer/lib/json-transport/index.js";
+-import * as SendmailTransport from "nodemailer/lib/sendmail-transport/index.js";
+-import * as SESTransport from "nodemailer/lib/ses-transport/index.js";
+-import * as SMTPPool from "nodemailer/lib/smtp-pool/index.js";
+-import * as SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
+-import * as StreamTransport from "nodemailer/lib/stream-transport/index.js";
++import type JSONTransport from "nodemailer/lib/json-transport/index.js";
++import type SendmailTransport from "nodemailer/lib/sendmail-transport/index.js";
++import type SESTransport from "nodemailer/lib/ses-transport/index.js";
++import type SMTPPool from "nodemailer/lib/smtp-pool/index.js";
++import type SMTPTransport from "nodemailer/lib/smtp-transport/index.js";
++import type StreamTransport from "nodemailer/lib/stream-transport/index.js";
+ import type { Awaitable } from "..";
+ import type { CommonProviderOptions } from ".";
+ import type { Theme } from "../core/types";

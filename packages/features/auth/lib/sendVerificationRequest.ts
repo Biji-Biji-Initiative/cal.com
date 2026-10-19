@@ -4,12 +4,9 @@ import { APP_NAME, WEBAPP_URL } from "@calcom/lib/constants";
 import { serverConfig } from "@calcom/lib/serverConfig";
 import Handlebars from "handlebars";
 import type { SendVerificationRequestParams } from "next-auth/providers/email";
-import type { TransportOptions } from "nodemailer";
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport<TransportOptions>({
-  ...(serverConfig.transport as TransportOptions),
-} as TransportOptions);
+const transporter = nodemailer.createTransport(serverConfig.transport);
 
 const sendVerificationRequest = async ({
   identifier,

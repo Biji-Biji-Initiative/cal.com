@@ -2509,7 +2509,7 @@ __metadata:
     jose: "npm:4.15.9"
     lru-cache: "npm:9.0.3"
     next-auth: "npm:4.24.15"
-    nodemailer: "npm:7.0.12"
+    nodemailer: "npm:10.1.7"
     otplib: "npm:12.0.1"
   languageName: unknown
   linkType: soft
@@ -3373,7 +3373,6 @@ __metadata:
     "@types/memory-cache": "npm:0.2.2"
     "@types/micro": "npm:7.3.7"
     "@types/module-alias": "npm:2.0.1"
-    "@types/nodemailer": "npm:6.4.5"
     "@types/qrcode": "npm:1.4.3"
     "@types/react": "npm:18.0.26"
     "@types/remove-markdown": "npm:0.3.1"
@@ -3424,7 +3423,7 @@ __metadata:
     next-themes: "npm:0.2.0"
     node-html-parser: "npm:6.1.13"
     node-mocks-http: "npm:1.16.2"
-    nodemailer: "npm:7.0.12"
+    nodemailer: "npm:10.1.7"
     nuqs: "npm:2.8.2"
     openid-client: "npm:6.5.0"
     otplib: "npm:12.0.1"
@@ -17110,15 +17109,6 @@ __metadata:
   dependencies:
     undici-types: "npm:~6.19.2"
   checksum: 10/162fee54e25b464de91da1c0744f421c0d6301925893f5d8e48effeae321d343c87fa7f8eefc53384bf86cae3974bb1740830d4b62754383b18f2d3dff4e1fe9
-  languageName: node
-  linkType: hard
-
-"@types/nodemailer@npm:6.4.5":
-  version: 6.4.5
-  resolution: "@types/nodemailer@npm:6.4.5"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10/33feec925954745ccccad7abd033cdfb003f2df4b1c3f375cc7e590c696cdbd573673f945d9025940308777d32589477b5e27b6733e7b899bdf8f7ee70e66c21
   languageName: node
   linkType: hard
 
@@ -32016,6 +32006,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"next-auth@patch:next-auth@npm%3A4.24.15#./.yarn/patches/next-auth-npm-4.24.15-nodemailer10-types.patch::locator=calcom-monorepo%40workspace%3A.":
+  version: 4.24.15
+  resolution: "next-auth@patch:next-auth@npm%3A4.24.15#./.yarn/patches/next-auth-npm-4.24.15-nodemailer10-types.patch::version=4.24.15&hash=56fb7a&locator=calcom-monorepo%40workspace%3A."
+  dependencies:
+    "@babel/runtime": "npm:^7.20.13"
+    "@panva/hkdf": "npm:^1.0.2"
+    cookie: "npm:^0.7.0"
+    jose: "npm:^4.15.5"
+    oauth: "npm:^0.9.15"
+    openid-client: "npm:^5.4.0"
+    preact: "npm:^10.6.3"
+    preact-render-to-string: "npm:^5.1.19"
+    uuid: "npm:^11.1.1"
+  peerDependencies:
+    "@auth/core": 0.34.3
+    next: ^12.2.5 || ^13 || ^14 || ^15 || ^16
+    nodemailer: ^7.0.7
+    react: ^17.0.2 || ^18 || ^19
+    react-dom: ^17.0.2 || ^18 || ^19
+  peerDependenciesMeta:
+    "@auth/core":
+      optional: true
+    nodemailer:
+      optional: true
+  checksum: 10/7cec775a8896841804f2233b44579fd80435aa722e2866879925004bdefe9317ebcd29851678625cac6a0afceba214a8f32f743f3b88d5ee9b5fa066b17188ae
+  languageName: node
+  linkType: hard
+
 "next-axiom@npm:0.17.0":
   version: 0.17.0
   resolution: "next-axiom@npm:0.17.0"
@@ -32637,10 +32655,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nodemailer@npm:7.0.12":
-  version: 7.0.12
-  resolution: "nodemailer@npm:7.0.12"
-  checksum: 10/31a2713be588fb6849d05698cb355a88902a64e17e63b1a5c8a10db3acc4349c329c3bbd83bc5bdefda92f8df5e0297364502f93042c0bae87c48e5652b663b7
+"nodemailer@npm:10.1.7":
+  version: 10.1.7
+  resolution: "nodemailer@npm:10.1.7"
+  checksum: 10/456acdf231fa03042f5dab0f80fdcda3e92b76bfcb9bde369f3b7b65baf31c53d10e6c4dab78c4019cbb7e130232e3e7b68c204e1088c7c4241415d4d6c6e2e3
   languageName: node
   linkType: hard
 
