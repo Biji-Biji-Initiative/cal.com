@@ -346,6 +346,9 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  if scenario=='wrong-entrypoint': config['config']['Entrypoint']=['yarn','start']
  if scenario=='wrong-label': config['config']['Labels']['org.opencontainers.image.revision']='0'*40
  if scenario=='secret-env': config['config']['Env'].append('NEXTAUTH_SECRET=fixture-only-must-not-print')
+ if scenario in ['distroless-home','wrong-home','duplicate-home']:
+  config['config']['Env']+=['PATH=/nodejs/bin','HOME='+('/root' if scenario=='wrong-home' else '/home/node')]
+ if scenario=='duplicate-home':config['config']['Env'].append('HOME=/home/node')
  layer_files={'calcom/enterprise-build.json':encoded(build),'calcom/apps/web/.next/BUILD_ID':b'fixture-build',
               'calcom/apps/web/.next/build-manifest.json':b'{}'}
  for key,file in m.RECIPES.items():
@@ -357,10 +360,37 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  if scenario=='ambiguous-package':layer_files['calcom/node_modules/extra/package.json']=encoded({'name':'extra'})
  if scenario=='module-marker':layer_files['calcom/node_modules/next/esm/package.json']=encoded({'type':'module'})
  layer_files['var/lib/dpkg/status']=b'Package: fixture-os\nStatus: install ok installed\nVersion: 1.0\nArchitecture: amd64\n\n'
+ status_path='var/lib/dpkg/status.d/fixture-os';os_version='2:1.0-3+deb13u1' if scenario=='status-d-epoch' else '1.0'
+ if scenario.startswith('status-d-'):
+  layer_files.pop('var/lib/dpkg/status')
+  layer_files[status_path]=('Package: fixture-os\nVersion: '+os_version+'\nArchitecture: amd64\n\n').encode()
+ if scenario=='status-d-explicit':layer_files[status_path]=b'Package: fixture-os\nVersion: 1.0\nStatus: install ok installed\n'
+ if scenario=='status-d-md5sums':layer_files[status_path+'.md5sums']=b'not a control record\n'
+ if scenario=='status-d-only-md5sums':
+  layer_files.pop(status_path);layer_files[status_path+'.md5sums']=b'not a control record\n'
+ if scenario=='status-d-multiple-records':layer_files[status_path]+=b'Package: fixture-old\nVersion: 1.0\nStatus: deinstall ok config-files\n'
+ if scenario=='status-d-uninstalled-record':layer_files[status_path+'-old']=b'Package: fixture-old\nVersion: 1.0\nStatus: deinstall ok config-files\n'
+ if scenario=='status-d-replaced':layer_files[status_path]=b'Package: fixture-os\nVersion: 0.0\n'
+ if scenario=='status-d-whiteout-replacement':layer_files[status_path+'-old']=b'Package: fixture-old\nVersion: 1.0\n'
+ if scenario=='status-d-transition':
+  layer_files.pop(status_path);layer_files['var/lib/dpkg/status']=b'Package: fixture-old\nStatus: install ok installed\nVersion: 1.0\n'
+ if scenario=='status-d-duplicate-field':layer_files[status_path]=b'Package: fixture-os\nPackage: fixture-os\nVersion: 1.0\n'
+ if scenario=='status-d-case-duplicate-field':layer_files[status_path]=b'Package: fixture-os\npackage: fixture-os\nVersion: 1.0\n'
+ if scenario=='status-d-duplicate-package':layer_files[status_path+'-copy']=layer_files[status_path]
+ if scenario=='status-d-missing-version':layer_files[status_path]=b'Package: fixture-os\n'
+ if scenario=='status-d-identity-continuation':layer_files[status_path]=b'Package: fixture-os\n extra\nVersion: 1.0\n'
+ if scenario=='status-d-mixed':layer_files['var/lib/dpkg/status']=b'Package: fixture-os\nStatus: install ok installed\nVersion: 1.0\n'
+ if scenario=='combined-missing-status':layer_files['var/lib/dpkg/status']=b'Package: fixture-os\nVersion: 1.0\n'
  extra='calcom/node_modules/next/node_modules/extra/package.json'
  if scenario in ['nested-copy-missing','nested-copy-included','removed-copy','opaque-copy']:
   layer_files[extra]=encoded({'name':'extra','version':'2.0.0'})
  layers=[layer_files]
+ if scenario=='status-d-replaced':layers.append({status_path:b'Package: fixture-os\nVersion: 1.0\n'})
+ if scenario=='status-d-whiteout-replacement':layers.append({status_path:layer_files[status_path],'var/lib/dpkg/status.d/.wh..wh..opq':b''})
+ if scenario=='status-d-whiteout':layers.append({'var/lib/dpkg/status.d/.wh.fixture-os':b''})
+ if scenario=='status-d-opaque':layers.append({'var/lib/dpkg/status.d/.wh..wh..opq':b''})
+ if scenario=='status-d-nondirectory':layers.append({'var/lib/dpkg/status.d':b'replaced-directory'})
+ if scenario=='status-d-transition':layers.append({'var/lib/dpkg/.wh.status':b'',status_path:b'Package: fixture-os\nVersion: 1.0\n'})
  if scenario=='whiteout':layers.append({'calcom/.wh.enterprise-build.json':b''})
  if scenario=='removed-copy':layers.append({'calcom/node_modules/next/node_modules/.wh.extra':b''})
  if scenario=='opaque-copy':layers.append({'calcom/node_modules/next/node_modules/.wh..wh..opq':b''})
@@ -406,6 +436,12 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
   layers.append({'calcom/node_modules/next/package.json':encoded({'name':'next','version':'2.0.0'}),'calcom/node_modules/.wh.next':b''})
  if scenario=='alias-dpkg-ancestor':
   layers.append({});alias_entries={'var/lib/dpkg':(tarfile.SYMTYPE,'../dpkg-target')}
+ if scenario in ['status-d-alias','status-d-hardlink','status-d-alias-ancestor']:
+  layer_files.pop(status_path)
+  alias_entries={status_path:(tarfile.SYMTYPE if scenario!='status-d-hardlink' else tarfile.LNKTYPE,'fixture-control')}
+  if scenario=='status-d-alias-ancestor':
+   layer_files[status_path]=b'Package: fixture-os\nVersion: 1.0\n'
+   alias_entries={'var/lib/dpkg/status.d':(tarfile.SYMTYPE,'../elsewhere')}
  layer_blobs=[];layer_descriptors=[];config['rootfs']['diff_ids']=[]
  for layer_number,layer_files in enumerate(layers):
   layerbuf=io.BytesIO()
@@ -467,9 +503,9 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  container={**identity,'publicOrigin':m.ORIGIN,'buildId':build['buildId'],'nativeReceiptSha256':m.sha(b'private native fixture'),
   'expectedMigrations':596,'appliedMigrations':596,
   'checks':{k:True for k in ['migration','migrationReplay','nonRootReadOnlyWeb','nativePublicCallback','anonymousSession']}}
- high={'VulnerabilityID':'CVE-fixture','PkgName':'fixture-os','InstalledVersion':'1.0','Severity':'HIGH'}
+ high={'VulnerabilityID':'CVE-fixture','PkgName':'fixture-os','InstalledVersion':os_version,'Severity':'HIGH'}
  os_result={'Target':'Debian GNU/Linux','Class':'os-pkgs','Type':'debian',
-  'Packages':[{'ID':'fixture-os@1.0','Name':'fixture-os','Version':'1.0','PkgPath':''}],'Vulnerabilities':[high],'Secrets':[]}
+  'Packages':[{'ID':'fixture-os@'+os_version,'Name':'fixture-os','Version':os_version,'PkgPath':''}],'Vulnerabilities':[high],'Secrets':[]}
  node_result={'Target':'Node packages','Class':'lang-pkgs','Type':'node-pkg','Packages':[
   {'ID':str(i),'Name':name,'Version':'1.0.0','PkgPath':file} for i,(file,name) in enumerate(m.REQUIRED.items())],
   'Vulnerabilities':[],'Secrets':[]}
@@ -494,7 +530,7 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  scan['scanner']['databaseMetadata']={'raw':raw_metadata.decode(),'sha256':m.sha(raw_metadata)}
  if scenario=='database-metadata-hash':scan['scanner']['databaseMetadata']['sha256']='0'*64
  ledger={'schemaVersion':1,'sourceSha':source,'manifestDigest':manifest_digest,'releaseApproved':False,
-  'entries':[{'target':os_result['Target'],'package':'fixture-os','version':'1.0','advisory':'CVE-fixture','disposition':'unwaived'}]}
+  'entries':[{'target':os_result['Target'],'package':'fixture-os','version':os_version,'advisory':'CVE-fixture','disposition':'unwaived'}]}
  if scenario=='stale-native':container['completedAt']='2000-01-01T00:00:00Z'
  if scenario=='stale-scan':scan['completedAt']='2000-01-01T00:00:00Z'
  if scenario=='incomplete-native':container['checks']['migrationReplay']=False
@@ -558,7 +594,9 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
    return response(out=encoded(config)+(b' ' if scenario=='config-readback' else b''))
   raise AssertionError('unexpected command')
  positive=scenario in ['admit','publish','idempotent','gzip','nested-copy-included','removed-copy','opaque-copy','replaced-copy','same-layer-opaque-replacement','fetch','safe-redirect','module-marker','source-revision','database-nanoseconds','created-annotation','created-nanoseconds',
-  'package-alias','alias-next-hashed','alias-absolute','alias-chain','alias-depth40','alias-removed','alias-whiteout-replacement']
+   'package-alias','alias-next-hashed','alias-absolute','alias-chain','alias-depth40','alias-removed','alias-whiteout-replacement',
+   'distroless-home','status-d-basic','status-d-explicit','status-d-md5sums','status-d-epoch','status-d-replaced','status-d-whiteout-replacement',
+   'status-d-uninstalled-record','status-d-transition']
  try:
   if scenario=='cli-redaction':
    receipt['unexpected']='fixture-only-sensitive-provider-body';(d/'publication.json').write_bytes(encoded(receipt));receipt_hash=m.file_hash(d/'publication.json')
@@ -622,6 +660,32 @@ for (const scenario of [
   "wrong-entrypoint",
   "wrong-label",
   "secret-env",
+  "distroless-home",
+  "wrong-home",
+  "duplicate-home",
+  "status-d-basic",
+  "status-d-explicit",
+  "status-d-md5sums",
+  "status-d-only-md5sums",
+  "status-d-multiple-records",
+  "status-d-uninstalled-record",
+  "status-d-transition",
+  "status-d-epoch",
+  "status-d-replaced",
+  "status-d-whiteout-replacement",
+  "status-d-duplicate-field",
+  "status-d-case-duplicate-field",
+  "status-d-duplicate-package",
+  "status-d-missing-version",
+  "status-d-identity-continuation",
+  "status-d-mixed",
+  "combined-missing-status",
+  "status-d-whiteout",
+  "status-d-opaque",
+  "status-d-nondirectory",
+  "status-d-alias",
+  "status-d-hardlink",
+  "status-d-alias-ancestor",
   "wrong-shipped-build",
   "wrong-shipped-recipe",
   "missing-shipped-manifest",

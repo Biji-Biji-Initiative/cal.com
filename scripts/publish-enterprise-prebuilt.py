@@ -173,7 +173,8 @@ def config_schema(config, build):
     need(c.get("Labels") == labels, "Image labels differ from source-bound build")
     allowed = {"PATH": r"[/A-Za-z0-9_:.-]+", "NODE_VERSION": r"22\.\d+\.\d+", "YARN_VERSION": r"\d+\.\d+\.\d+",
                "NODE_ENV": "production", "NEXT_TELEMETRY_DISABLED": "1", "CHECKPOINT_DISABLE": "1",
-               "PRISMA_HIDE_UPDATE_MESSAGE": "1", "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true", "HOSTNAME": "0.0.0.0", "PORT": "3000"}
+               "PRISMA_HIDE_UPDATE_MESSAGE": "1", "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true", "HOSTNAME": "0.0.0.0", "PORT": "3000",
+               "HOME": "/home/node"}
     need(type(c.get("Env")) is list, "Missing runtime environment inventory")
     names = set()
     for entry in c["Env"]:
@@ -236,6 +237,50 @@ def installed_aliases(aliases, tree, packages, protected, deadline):
              "Installed alias target lacks complete identity")
         pattern(metadata["name"], r"[A-Za-z0-9_@./-]{1,300}")
         pattern(metadata["version"], r"[A-Za-z0-9_.+~-]{1,300}")
+
+
+def dpkg_inventory(files):
+    """Read final regular control records, without merging or fabricating files."""
+    combined = "var/lib/dpkg/status"
+    need(files and not (combined in files and len(files) > 1), "Missing or mixed dpkg inventory formats")
+    need(all(name == combined or re.fullmatch(r"var/lib/dpkg/status\.d/[^/]+", name)
+             and not name.endswith(".md5sums") for name in files), "Invalid dpkg control record path")
+    installed, occurrences = [], set()
+    for name, data in files.items():
+        status_d = name != combined
+        text = data.decode("utf-8")
+        need("\r" not in text and "\x00" not in text, "Invalid dpkg control encoding")
+        paragraphs, fields, previous = [], {}, None
+        for line in [*text.split("\n"), ""]:
+            if not line:
+                if fields:
+                    paragraphs.append(fields)
+                    need(len(paragraphs) <= 20000, "Excessive dpkg control paragraphs")
+                fields, previous = {}, None
+                continue
+            need(all(ord(char) >= 32 or char == "\t" for char in line), "Invalid dpkg control character")
+            if line[0] in " \t":
+                need(previous is not None and previous not in {"package", "version", "status", "architecture"},
+                     "Invalid dpkg identity continuation")
+                continue
+            match = re.fullmatch(r"([A-Za-z0-9][A-Za-z0-9-]*):[ \t]*(.*)", line)
+            need(match is not None, "Invalid dpkg control field")
+            key, value = match.group(1).lower(), match.group(2)
+            need(key not in fields and len(fields) < 1000, "Duplicate or excessive dpkg control fields")
+            fields[key], previous = value, key
+        need(paragraphs and (not status_d or len(paragraphs) == 1), "Invalid dpkg control record count")
+        for fields in paragraphs:
+            package = pattern(fields.get("package"), r"[a-z0-9][a-z0-9+.-]{0,254}(?::[a-z0-9][a-z0-9-]{0,31})?")
+            version = pattern(fields.get("version"), r"(?:[0-9]+:)?[0-9][A-Za-z0-9.+:~-]{0,298}")
+            need(package not in occurrences and len(occurrences) < 20000, "Duplicate or excessive OS package occurrences")
+            occurrences.add(package)
+            need(status_d or "status" in fields, "Missing combined dpkg status")
+            status = fields.get("status", "install ok installed")
+            pattern(status, r"(?:unknown|install|hold|deinstall|purge) (?:ok|reinstreq) (?:not-installed|config-files|half-installed|unpacked|half-configured|triggers-awaited|triggers-pending|installed)")
+            if status == "install ok installed":
+                installed.append((package, version))
+    need(installed, "Empty installed OS package inventory")
+    return installed
 
 
 def image_archive(file, build, layout=None):
@@ -321,7 +366,7 @@ def image_archive(file, build, layout=None):
         package_files = {}
         aliases = {}
         final_tree = {}
-        os_status = None
+        os_files = {}
         expanded = 0
         deadline = time.monotonic() + READ_SECONDS
         for number, layer in enumerate(manifest["layers"]):
@@ -362,9 +407,13 @@ def image_archive(file, build, layout=None):
                     else:
                         layer_tree[name] = ("dir" if entry.isdir() else "file" if entry.isfile() else
                                             "symlink" if entry.issym() else "hardlink" if entry.islnk() else "special")
-                    if name == "var/lib/dpkg/status":
-                        need(entry.isfile() and entry.size <= MAX_JSON, "Invalid dpkg inventory file")
+                    if name == "var/lib/dpkg/status" or (parent == "var/lib/dpkg/status.d"
+                            and not base.startswith(".wh.") and not base.endswith(".md5sums")):
+                        need(entry.type in {tarfile.REGTYPE, tarfile.AREGTYPE} and not entry.sparse
+                             and entry.size <= MAX_JSON, "Invalid dpkg inventory file")
                         layer_values[name] = filesystem.extractfile(entry).read()
+                        need(len(layer_values) <= 20000 and sum(len(v) for v in layer_values.values()) <= 2 * MAX_JSON,
+                             "Installed-component inventory exceeds bound")
                     if "node_modules/" in name and name.endswith("/package.json"):
                         need(entry.isfile() and entry.size <= MAX_JSON, "Unsupported package-copy alias or file type")
                         layer_values[name] = filesystem.extractfile(entry).read()
@@ -377,20 +426,18 @@ def image_archive(file, build, layout=None):
                             layer_values[key] = filesystem.extractfile(entry).read()
                         elif key.startswith(name + "/"):
                             need(entry.isdir(), "Runtime identity ancestor is not a directory")
-                for inventory in [shipped, package_files, aliases, final_tree]:
+                for inventory in [shipped, package_files, os_files, aliases, final_tree]:
                     for key in list(inventory):
                         if hidden_or_replaced(key, seen, non_directories, whiteouts):
                             inventory.pop(key)
-                if hidden_or_replaced("var/lib/dpkg/status", seen, non_directories, whiteouts):
-                    os_status = None
                 # OCI whiteouts affect lower layers even if their markers follow
                 # replacement entries in the same tar stream.
                 for key, value in layer_values.items():
                     need(not any(str(parent) in non_directories for parent in Path(key).parents if str(parent) != "."), "Ambiguous layer ancestor replacement")
                     if key in expected:
                         shipped[key] = value
-                    elif key == "var/lib/dpkg/status":
-                        os_status = value
+                    elif key == "var/lib/dpkg/status" or key.startswith("var/lib/dpkg/status.d/"):
+                        os_files[key] = value
                     else:
                         package_files[key] = value
                 aliases.update(layer_aliases)
@@ -401,7 +448,8 @@ def image_archive(file, build, layout=None):
                             final_tree.setdefault(str(parent), "dir")
                 need(len(final_tree) <= 500000, "Final filesystem inventory exceeds bound")
                 need(len(package_files) <= 20000 and sum(len(v) for v in package_files.values()) <= 2 * MAX_JSON, "Installed-component inventory exceeds bound")
-        identity_paths = {*expected, *package_files, "var/lib/dpkg/status"}
+                need(len(os_files) <= 20000 and sum(len(v) for v in os_files.values()) <= 2 * MAX_JSON, "OS inventory exceeds bound")
+        identity_paths = {*expected, *package_files, *os_files, "var/lib/dpkg/status", "var/lib/dpkg/status.d"}
         installed_aliases(aliases, final_tree, package_files, identity_paths, deadline)
         need(set(shipped) == set(expected), "Missing shipped runtime identity files")
         need(strict_json(shipped["calcom/enterprise-build.json"]) == build
@@ -418,13 +466,8 @@ def image_archive(file, build, layout=None):
                                    pattern(package["version"], r"[A-Za-z0-9_.+~-]{1,300}"))
             else:
                 need(package in [{"type": "module"}, {"type": "commonjs"}], "Ambiguous installed package identity")
-        need(os_status is not None, "Missing installed OS package inventory")
-        os_packages = []
-        for paragraph in os_status.decode().strip().split("\n\n"):
-            fields = dict(line.split(": ", 1) for line in paragraph.splitlines() if ": " in line and not line.startswith(" "))
-            if fields.get("Status") == "install ok installed":
-                need("Package" in fields and "Version" in fields, "Incomplete installed OS occurrence")
-                os_packages.append((fields["Package"], fields["Version"]))
+        need(final_tree.get("var/lib/dpkg/status.d") in {None, "dir"}, "Invalid dpkg inventory directory")
+        os_packages = dpkg_inventory(os_files)
         need(installed and os_packages, "Empty installed-component inventory")
         if layout:
             for name in ["index.json", "oci-layout"]:
