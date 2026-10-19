@@ -106,3 +106,33 @@ test("preview mode refuses unsafe configuration before reading input or connecti
     await assert.rejects(main(args, { ...base, ...changed }), /native-only configuration/);
   await assert.rejects(main([...args.slice(0, -1), "calcom"], base), /separate preview database/);
 });
+
+test("existing operator self-link has explicit modes and refuses unsafe configuration before IO", async () => {
+  const { main } = require("../../scripts/link-enterprise-identity.cjs");
+  const base = {
+    CAL_AUTHENTIK_ENABLED: "true",
+    CAL_AUTHENTIK_ONLY: "true",
+    NEXT_PUBLIC_WEBAPP_URL: "https://cal.mereka.dev",
+  };
+  for (const mode of ["self-plan", "self-apply"]) {
+    const args = [
+      mode,
+      "--request",
+      "/nonexistent-self-request.json",
+      mode.endsWith("plan") ? "--out" : "--plan",
+      "/nonexistent-self-plan.json",
+      "--database",
+      "calcom",
+    ];
+    assert.equal(parseArguments(args).mode, mode);
+    assert.throws(() => parseArguments([...args, "--force", "true"]));
+    assert.throws(() => parseArguments(args.slice(0, -2)));
+    for (const changed of [
+      { CAL_AUTHENTIK_ENABLED: "false" },
+      { CAL_AUTHENTIK_ONLY: "false" },
+      { NEXT_PUBLIC_WEBAPP_URL: "https://cal.mereka.io" },
+      { NEXT_PUBLIC_WEBAPP_URL: "http://cal.mereka.dev" },
+    ])
+      await assert.rejects(main(args, { ...base, ...changed }), /canonical dev native-only/);
+  }
+});

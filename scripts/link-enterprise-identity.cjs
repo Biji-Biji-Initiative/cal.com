@@ -6,7 +6,10 @@ const { Pool } = require("pg");
 
 function parseArguments(args) {
   const [mode, ...flags] = args;
-  if (!["plan", "apply", "bootstrap-plan", "bootstrap-apply"].includes(mode) || flags.length % 2)
+  if (
+    !["plan", "apply", "bootstrap-plan", "bootstrap-apply", "self-plan", "self-apply"].includes(mode) ||
+    flags.length % 2
+  )
     throw new Error("Use plan or apply with explicit named paths and database");
   const result = { mode };
   const allowed = mode.endsWith("plan")
@@ -53,6 +56,7 @@ function databaseFingerprint(url, identity) {
 async function main(args = process.argv.slice(2), env = process.env) {
   const options = parseArguments(args);
   const bootstrap = options.mode.startsWith("bootstrap-");
+  const self = options.mode.startsWith("self-");
   const planning = options.mode.endsWith("plan");
   if (
     bootstrap &&
@@ -62,6 +66,13 @@ async function main(args = process.argv.slice(2), env = process.env) {
       !/^cal_enterprise_preview(?:_[a-z0-9]+)*$/.test(options["--database"]))
   )
     throw new Error("Preview bootstrap requires native-only configuration and a separate preview database");
+  if (
+    self &&
+    (env.CAL_AUTHENTIK_ENABLED !== "true" ||
+      env.CAL_AUTHENTIK_ONLY !== "true" ||
+      env.NEXT_PUBLIC_WEBAPP_URL !== "https://cal.mereka.dev")
+  )
+    throw new Error("Existing operator self-link requires canonical dev native-only configuration");
   const input = readJson(options["--request"]);
   const reviewed = planning ? null : readJson(options["--plan"]);
   if (!env.DATABASE_URL || !env.CAL_AUTHENTIK_ISSUER || !env.NEXT_PUBLIC_WEBAPP_URL)
@@ -83,6 +94,8 @@ async function main(args = process.argv.slice(2), env = process.env) {
   const {
     AuditedIdentityLinkService,
   } = require("../packages/features/community-enterprise/identity/AuditedIdentityLinkService");
+  const { ExistingOperatorSelfLinkService, existingOperatorDatabaseIdentity } =
+    require("../packages/features/community-enterprise/identity/ExistingOperatorSelfLinkService");
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
     max: 2,
@@ -98,17 +111,26 @@ async function main(args = process.argv.slice(2), env = process.env) {
     ).rows[0];
     if (identity.database !== options["--database"])
       throw new Error("Connected database does not match the operator's expected database");
+    const selfIdentity = self ? await existingOperatorDatabaseIdentity(prisma) : null;
+    if (selfIdentity && selfIdentity.database !== options["--database"])
+      throw new Error("Connected database does not match the reviewed operator target");
     const target = {
       issuer: env.CAL_AUTHENTIK_ISSUER,
       webOrigin: env.NEXT_PUBLIC_WEBAPP_URL,
-      databaseFingerprint: databaseFingerprint(env.DATABASE_URL, identity),
+      databaseFingerprint: selfIdentity?.fingerprint ?? databaseFingerprint(env.DATABASE_URL, identity),
     };
     const service = bootstrap
       ? new (require("../packages/features/community-enterprise/identity/PreviewOperatorBootstrap").PreviewOperatorBootstrap)(
           prisma,
           { ...target, databaseName: identity.database, nativeOnly: true }
         )
-      : new AuditedIdentityLinkService(prisma, target);
+      : self
+        ? new ExistingOperatorSelfLinkService(prisma, {
+            ...target,
+            databaseName: identity.database,
+            nativeOnly: true,
+          })
+        : new AuditedIdentityLinkService(prisma, target);
     if (planning) {
       const plan = await service.plan(input);
       fs.writeFileSync(path.resolve(options["--out"]), JSON.stringify(plan, null, 2) + "\n", {

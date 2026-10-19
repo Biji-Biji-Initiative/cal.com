@@ -327,3 +327,65 @@ Authentik's SCIM documentation matters for the next slice: user/group updates
 and periodic reconciliation are separate from immediate access revocation, and
 changing a group-sync filter does not retract already synchronized membership.
 Do not treat an hourly reconciliation as proof of the required 60-second bound.
+
+## Existing dev instance operator before organization admission — source candidate
+
+A read-only repeatable-read observation at 2026-10-19T09:19:41Z found three
+users, no bookings, no root organizations and no native Authentik binding for
+the existing unlocked instance ADMIN. The normal audited organization linker
+requires an existing root organization and accepted memberships. The isolated
+preview bootstrap correctly refuses this occupied database. Neither workflow's
+admission rules are relaxed to bridge that gap.
+
+`ExistingOperatorSelfLinkService` supplies a separate privileged database-operator
+workflow. Its only target is the same pre-existing ADMIN identified by the
+request's exact numeric ID and UUID; it rejects locked or platform-managed users,
+any existing organization, a conflicting subject or another Authentik identity.
+It creates no user, organization, membership, password or privilege and changes
+no username, onboarding state, licence or existing calendar credential. Its
+service and CLI require native-only mode at the canonical dev origin. Staging
+and production are not admitted by this workflow.
+
+The modes are explicit: `self-plan` writes a private, exclusive-created plan;
+`self-apply` requires that reviewed plan and the expected database name. The
+private request contains only `operationId`, `actorUserId`, `actorUuid` and
+`subject`. The subject must first be verified out of band for the selected
+issuer. A numeric ID, UUID or plan checksum does not authenticate a person or
+prove ownership of an IdP subject. Already-authorized database execution remains
+the operator authority; this is no login, signup, web or API endpoint.
+
+The service itself recomputes the actual PostgreSQL database/OID, role, server
+address/port and postmaster-start fingerprint on plan and apply. A different
+database or server epoch invalidates review. The 15-minute plan binds the
+request, canonical dev target, current actor safety fields and exact Account
+binding. Apply takes a bounded NOWAIT Team table lock before actor/binding locks,
+then checks the no-organization condition, actor, binding and expiry again.
+It commits the Account and versioned global audit event together. Audit
+`organizationId=0` is the existing global-operator convention, not a fabricated
+organization. Replay checks the exact reviewed audit schema and binding; a
+revoked, rebound, locked, demoted or incompatible operation is never repaired.
+Subjects, emails, provider credentials and database URLs are not emitted.
+
+This requires the candidate audit schema and separately qualified real
+issuer/subject/client configuration. The source workflow is not authorization
+to migrate the serving database, bypass backup/recovery gates or apply an
+unreviewed identity link. No live account linkage, role, organization, setup or
+credential mutation was performed for this source change.
+
+
+Focused source qualification runs the real installed Prisma client and services
+against a newly initialized private PostgreSQL 18 fixture with no TCP listener:
+`python3 scripts/run-community-enterprise-postgres.py --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp/cal-existing-self-link-ZPtIYF --suite identity-link`
+passes all **87 tests**. This includes existing organization/preview admission,
+occupied-account and calendar-credential preservation, native sign-in/token
+admission, real CLI round trips, audit rollback, no-organization contention,
+distinct-operation subject races and incompatible/revoked replay denials.
+The **7 CLI tests** also pass. A genuine inherited strict TypeScript closure
+covering **827 files** passes without stubs or fake declarations; library checking
+retains its inherited setting. The initial PostgreSQL run's 15 new-path failures
+are preserved: unsigned plan construction placed purpose before the other fields,
+while the strict schema parsed it last. Construction now follows the schema's
+field order; digest validation and all admission gates remain enabled. The full
+87-case rerun passes, and the private database/socket/fixture is removed.
+These are isolated source/runtime tests, not an IdP authentication, existing-data
+migration, live operator link or serving-image acceptance.

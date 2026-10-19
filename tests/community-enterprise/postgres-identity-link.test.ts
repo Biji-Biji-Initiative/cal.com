@@ -13,6 +13,10 @@ import {
   authorizeAuthentikSignIn,
   refreshAuthentikToken,
 } from "@calcom/features/community-enterprise/identity/AuthentikIdentity";
+import {
+  ExistingOperatorSelfLinkService,
+  existingOperatorDatabaseIdentity,
+} from "@calcom/features/community-enterprise/identity/ExistingOperatorSelfLinkService";
 import { PreviewOperatorBootstrap } from "@calcom/features/community-enterprise/identity/PreviewOperatorBootstrap";
 import { OrganizationProvisioningService } from "@calcom/features/community-enterprise/organizations/OrganizationProvisioningService";
 import { PrismaClient } from "@calcom/prisma/client";
@@ -791,3 +795,300 @@ test("a plausible preview name cannot mislabel the actual database connection", 
   );
   assert.deepEqual(await initialCounts(), { users: 0, accounts: 0, teams: 0, audit: 0 });
 });
+
+const selfRequest = () => ({
+  operationId: randomUUID(),
+  actorUserId: 1,
+  actorUuid: uuids[0],
+  subject: "self-operator-subject",
+});
+const selfTarget = async () => ({
+  issuer: target.issuer,
+  webOrigin: "https://cal.mereka.dev",
+  databaseName: database,
+  nativeOnly: true,
+  databaseFingerprint: (await existingOperatorDatabaseIdentity(prisma)).fingerprint,
+});
+const selfFixture = async () => {
+  await pool.query('DELETE FROM "Team"');
+  await pool.query('UPDATE "users" SET username=NULL,"completedOnboarding"=false WHERE id=1');
+  return new ExistingOperatorSelfLinkService(prisma, await selfTarget(), () => clock);
+};
+
+test("existing admin self-link preserves occupied personal accounts, calendar OAuth and incomplete setup", async () => {
+  const self = await selfFixture(),
+    input = selfRequest();
+  await prisma.account.create({
+    data: {
+      id: "prior-google-binding",
+      userId: 1,
+      type: "oauth",
+      provider: "google",
+      providerAccountId: "synthetic-google-id",
+    },
+  });
+  await prisma.credential.create({ data: { userId: 1, type: "google_calendar", key: { synthetic: true } } });
+  const before = {
+    users: await prisma.user.findMany({ orderBy: { id: "asc" } }),
+    credentials: await prisma.credential.findMany(),
+    google: await prisma.account.findUnique({ where: { id: "prior-google-binding" } }),
+  };
+  const plan = await self.plan(input);
+  assert.deepEqual(await counts(), { accounts: 1, audit: 0 });
+  assert.ok(!JSON.stringify(plan).includes(input.subject));
+  const result = await self.apply(input, plan);
+  assert.equal(result.status, "applied");
+  assert.equal((await self.apply(input, plan)).status, "replayed");
+  assert.deepEqual(await counts(), { accounts: 2, audit: 1 });
+  assert.deepEqual(await prisma.user.findMany({ orderBy: { id: "asc" } }), before.users);
+  assert.deepEqual(await prisma.credential.findMany(), before.credentials);
+  assert.deepEqual(await prisma.account.findUnique({ where: { id: "prior-google-binding" } }), before.google);
+  assert.equal(await prisma.team.count(), 0);
+  assert.equal(await prisma.membership.count(), 0);
+  assert.equal(await prisma.userPassword.count(), 0);
+  const config = { issuer: target.issuer, clientId: "fixture", clientSecret: "fixture-not-live" };
+  const identity = {
+    user: { id: 1 },
+    account: {
+      provider: "authentik",
+      type: "oauth" as const,
+      providerAccountId: authentikAccountId(target.issuer, input.subject),
+    },
+    profile: { sub: input.subject, iss: target.issuer },
+  };
+  assert.equal(await authorizeAuthentikSignIn(prisma, config, identity), true);
+  assert.equal(
+    (await refreshAuthentikToken(prisma, config, { token: {}, ...identity }, "https://cal.mereka.dev")).role,
+    "ADMIN"
+  );
+});
+
+for (const change of [
+  "missing-user",
+  "non-admin",
+  "locked",
+  "wrong-uuid",
+  "platform-managed",
+  "organization",
+  "child-organization",
+  "foreign-subject",
+  "other-binding",
+  "extra-target",
+] as const) {
+  test(`existing self-link refuses ${change} without linking or promoting anybody`, async () => {
+    const self = await selfFixture(),
+      input = selfRequest();
+    if (change === "missing-user") input.actorUserId = 9999;
+    if (change === "non-admin") await prisma.user.update({ where: { id: 1 }, data: { role: "USER" } });
+    if (change === "locked") await prisma.user.update({ where: { id: 1 }, data: { locked: true } });
+    if (change === "wrong-uuid") input.actorUuid = randomUUID();
+    if (change === "platform-managed")
+      await prisma.user.update({ where: { id: 1 }, data: { isPlatformManaged: true } });
+    if (change === "organization")
+      await prisma.team.create({ data: { name: "Fixture", slug: "fixture", isOrganization: true } });
+    if (change === "child-organization") {
+      const parent = await prisma.team.create({ data: { name: "Personal", slug: "personal" } });
+      await prisma.team.create({
+        data: { name: "Child", slug: "child", isOrganization: true, parentId: parent.id },
+      });
+    }
+    if (change === "foreign-subject" || change === "other-binding")
+      await prisma.account.create({
+        data: {
+          userId: change === "foreign-subject" ? 2 : 1,
+          type: "oauth",
+          provider: "authentik",
+          providerAccountId: authentikAccountId(
+            target.issuer,
+            change === "foreign-subject" ? input.subject : "other-subject"
+          ),
+          id: randomUUID(),
+        },
+      });
+    const before = await counts();
+    await assert.rejects(self.plan(change === "extra-target" ? { ...input, targetUserId: 2 } : input));
+    assert.deepEqual(await counts(), before);
+  });
+}
+
+test("self-link actual database identity and reviewed target are enforced by the service", async () => {
+  const self = await selfFixture(),
+    input = selfRequest(),
+    good = await selfTarget();
+  const plan = await self.plan(input);
+  for (const changed of [{ databaseName: "other_database" }, { databaseFingerprint: "b".repeat(64) }]) {
+    const other = new ExistingOperatorSelfLinkService(prisma, { ...good, ...changed }, () => clock);
+    await assert.rejects(other.plan(input));
+    await assert.rejects(other.apply(input, plan));
+  }
+  for (const changed of [
+    { webOrigin: "https://cal.mereka.io" },
+    { nativeOnly: false },
+    { issuer: "https://identity.example.test" },
+    { issuer: "http://identity.example.test/o/cal" },
+  ])
+    assert.throws(() => new ExistingOperatorSelfLinkService(prisma, { ...good, ...changed }));
+  await assert.rejects(self.apply({ ...input, subject: "changed-subject" }, plan));
+  await assert.rejects(self.apply(input, { ...plan, expiresAt: plan.expiresAt + 1 }));
+  clock = plan.expiresAt;
+  await assert.rejects(self.apply(input, plan));
+  assert.deepEqual(await counts(), { accounts: 0, audit: 0 });
+});
+
+test("self-link rechecks post-review actor and organization state and refuses a Team writer", async () => {
+  const self = await selfFixture(),
+    input = selfRequest(),
+    plan = await self.plan(input);
+  await prisma.user.update({ where: { id: 1 }, data: { locked: true } });
+  await assert.rejects(self.apply(input, plan));
+  await prisma.user.update({ where: { id: 1 }, data: { locked: false } });
+  const organization = await prisma.team.create({ data: { name: "New", slug: "new", isOrganization: true } });
+  await assert.rejects(self.apply(input, plan));
+  await prisma.team.delete({ where: { id: organization.id } });
+  const blocker = await pool.connect();
+  try {
+    await blocker.query("BEGIN");
+    await blocker.query('LOCK TABLE "Team" IN ROW EXCLUSIVE MODE');
+    await assert.rejects(self.apply(input, plan));
+  } finally {
+    await blocker.query("ROLLBACK");
+    blocker.release();
+  }
+  assert.deepEqual(await counts(), { accounts: 0, audit: 0 });
+});
+
+test("self-link audit failure rolls back the Account binding", async () => {
+  const self = await selfFixture(),
+    input = selfRequest(),
+    plan = await self.plan(input);
+  await pool.query(`CREATE OR REPLACE FUNCTION refuse_self_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture audit refused'; END $$;
+    CREATE TRIGGER refuse_identity_audit BEFORE INSERT ON "EnterpriseAuditEvent" FOR EACH ROW EXECUTE FUNCTION refuse_self_audit();`);
+  await assert.rejects(self.apply(input, plan));
+  assert.deepEqual(await counts(), { accounts: 0, audit: 0 });
+});
+
+test("concurrent self-link operations are idempotent and a second subject cannot replace the first", async () => {
+  const self = await selfFixture(),
+    input = selfRequest(),
+    plan = await self.plan(input);
+  const results = await Promise.all([self.apply(input, plan), self.apply(input, plan)]);
+  assert.deepEqual(results.map((x) => x.status).sort(), ["applied", "replayed"]);
+  await assert.rejects(self.plan({ ...input, operationId: randomUUID(), subject: "second-subject" }));
+  assert.deepEqual(await counts(), { accounts: 1, audit: 1 });
+});
+
+for (const change of ["unlinked", "rebound", "demoted", "locked", "platform-managed"] as const) {
+  test(`self-link replay refuses ${change} authority without repairing it`, async () => {
+    const self = await selfFixture(),
+      input = selfRequest(),
+      plan = await self.plan(input);
+    const applied = await self.apply(input, plan);
+    if (change === "unlinked" || change === "rebound") await prisma.account.deleteMany();
+    if (change === "rebound")
+      await prisma.account.create({
+        data: {
+          id: randomUUID(),
+          userId: 1,
+          type: "oauth",
+          provider: "authentik",
+          providerAccountId: applied.bindings[0].accountId,
+        },
+      });
+    if (change === "demoted") await prisma.user.update({ where: { id: 1 }, data: { role: "USER" } });
+    if (change === "locked") await prisma.user.update({ where: { id: 1 }, data: { locked: true } });
+    if (change === "platform-managed")
+      await prisma.user.update({ where: { id: 1 }, data: { isPlatformManaged: true } });
+    const before = await counts();
+    await assert.rejects(self.apply(input, plan));
+    assert.deepEqual(await counts(), before);
+  });
+}
+
+test("actual self-link CLI plans and applies an existing admin without organization bootstrap", async () => {
+  await selfFixture();
+  const input = selfRequest(),
+    directory = fs.mkdtempSync(path.join(os.tmpdir(), "cal-self-cli-"));
+  const requestFile = path.join(directory, "request.json"),
+    planFile = path.join(directory, "plan.json");
+  const environment = Object.fromEntries(
+    ["PATH", "HOME", "USER", "LANG"].filter((k) => process.env[k]).map((k) => [k, process.env[k]])
+  );
+  const databaseUrl = `postgresql://cal_enterprise_test@localhost:55439/${database}?host=${encodeURIComponent(connection.host)}`;
+  Object.assign(environment, {
+    DATABASE_URL: databaseUrl,
+    CAL_AUTHENTIK_ISSUER: target.issuer,
+    NEXT_PUBLIC_WEBAPP_URL: "https://cal.mereka.dev",
+    CAL_AUTHENTIK_ENABLED: "true",
+    CAL_AUTHENTIK_ONLY: "true",
+  });
+  const invoke = (args: string[]) =>
+    promisify(execFile)(process.execPath, ["scripts/link-enterprise-identity.cjs", ...args], {
+      cwd: root,
+      env: environment as NodeJS.ProcessEnv,
+      encoding: "utf8",
+      timeout: 30000,
+    });
+  try {
+    fs.writeFileSync(requestFile, JSON.stringify(input), { mode: 0o600 });
+    assert.equal(
+      JSON.parse(
+        (await invoke(["self-plan", "--request", requestFile, "--out", planFile, "--database", database]))
+          .stdout
+      ).status,
+      "planned"
+    );
+    assert.equal(fs.statSync(planFile).mode & 0o777, 0o600);
+    assert.deepEqual(await counts(), { accounts: 0, audit: 0 });
+    const args = ["self-apply", "--request", requestFile, "--plan", planFile, "--database", database];
+    const applied = await invoke(args);
+    assert.equal(JSON.parse(applied.stdout).status, "applied");
+    assert.equal(JSON.parse((await invoke(args)).stdout).status, "replayed");
+    assert.ok(!applied.stdout.includes(input.subject) && !applied.stdout.includes(databaseUrl));
+    assert.deepEqual(await counts(), { accounts: 1, audit: 1 });
+    assert.equal(await prisma.user.count(), 4);
+    assert.equal(await prisma.team.count(), 0);
+  } finally {
+    fs.rmSync(directory, { recursive: true });
+  }
+}, 150000);
+
+test("different self-link operations and subjects serialize on the actor row", async () => {
+  const self = await selfFixture(),
+    first = selfRequest();
+  const second = { ...selfRequest(), subject: "different-reviewed-subject" };
+  const plans = await Promise.all([self.plan(first), self.plan(second)]);
+  const results = await Promise.allSettled([self.apply(first, plans[0]), self.apply(second, plans[1])]);
+  assert.equal(results.filter((x) => x.status === "fulfilled").length, 1);
+  assert.equal(results.filter((x) => x.status === "rejected").length, 1);
+  assert.deepEqual(await counts(), { accounts: 1, audit: 1 });
+});
+
+for (const field of ["version", "purpose", "authority", "planHash", "requestHash", "targetHash"] as const) {
+  test(`self-link replay rejects incompatible audit ${field}`, async () => {
+    const self = await selfFixture(),
+      input = selfRequest(),
+      plan = await self.plan(input);
+    await self.apply(input, plan);
+    const prior = await prisma.enterpriseAuditEvent.findUniqueOrThrow({
+      where: { operationId: input.operationId },
+    });
+    assert.ok(prior.details && typeof prior.details === "object" && !Array.isArray(prior.details));
+    await prisma.enterpriseAuditEvent.update({
+      where: { operationId: input.operationId },
+      data: {
+        details: {
+          ...prior.details,
+          [field]:
+            field === "version"
+              ? 2
+              : field === "planHash"
+                ? (plan.planHash === "b".repeat(64) ? "a" : "b").repeat(64)
+                : "changed",
+        },
+      },
+    });
+    const before = await counts();
+    await assert.rejects(self.apply(input, plan));
+    assert.deepEqual(await counts(), before);
+  });
+}
