@@ -127,10 +127,16 @@
     "includedInThisImage": false
   },
   "liveGoogle": {
-    "observedAt": "2026-10-19T06:45:43.727412Z",
+    "observedAt": "2026-10-19T08:04:37.168001+00:00",
     "callback": "https://cal.mereka.dev/api/integrations/googlecalendar/callback",
     "providerError": "redirect_uri_mismatch",
-    "configurationWritesPerformed": false
+    "configurationWritesPerformed": false,
+    "receiptPath": "g:/data/tmp/cal-google-recheck-_jjr79vj/execution-receipt.json",
+    "receiptSha256": "e29764fc5f8a0776503c500e0478f1e8ff0742b0b7375c7f062761195b31bad1",
+    "httpStatus": 302,
+    "acceptedRedirect": false,
+    "temporaryAuthMaterialAbsent": true,
+    "consentOrCodeExchangePerformed": false
   },
   "limitations": [
     "No real staff identity, account linkage, browser loop, Google consent or booking journey acceptance.",
@@ -186,5 +192,288 @@
       },
       "realIdpUserGoogleBrowserAcceptance": false
     }
-  ]
+  ],
+  "newerNativeQualification": {
+    "status": "complete-isolated-native-http-ssr-only",
+    "applicationSource": "69d8ad8d40095ce0847377e90414173a71692727",
+    "publicOrigin": "https://cal.mereka.dev",
+    "buildId": "G411IOJbMbx1Q-GJY6ROX",
+    "buildReceipt": {
+      "path": "g2:/data/tmp/cal-web-release-20261019-native-entry-69d8/build-receipt.json",
+      "sha256": "0e57f4536a9fa7246d16272e99a4c0cb9a4dbd8b8b8efdf4152e8db691f130db"
+    },
+    "image": {
+      "manifestDigest": "sha256:c0276a2f896560ba4a29039c211270ab24af6b0f310c4fcd0ad83b947aa3dd27",
+      "configDigest": "sha256:38aa7e3e2acb226a7674d07861b96a1fd91f134ac87ada34639cbd6b2e915730",
+      "archiveSha256": "c5ad7d173ef8ecf62fa0b926e49a70f9564c6a3ee54c784eead3870af4fbe296",
+      "archiveBytes": 373221376,
+      "packagingReceiptSha256": "e38da5f8a305fb833c366c82660be858ca4ed23324c13cb9c48be96365c3895f",
+      "platform": "linux/amd64",
+      "registryPublished": false,
+      "deployed": false
+    },
+    "nativeReceipt": {
+      "path": "g2:/data/tmp/cal-native-qual-q69d8a01/qualification-receipt.json",
+      "sha256": "3a1e66bd5aaf2c999e8533a46435b769bd11978d182e936c9ee30f018c3b80a8"
+    },
+    "terminalVerification": {
+      "path": "g2:/data/tmp/cal-native-69d8-9ubd6aut/terminal-verification.json",
+      "sha256": "5a49e212d81212e975477119c559fe342d7944620aae0e9f572aa8ca7c81709b",
+      "unit": {
+        "LoadState": "not-found",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "MainPID": "0"
+      },
+      "ownCgroupAbsent": true
+    },
+    "supervisorSha256": "46db891ed98a6abda3636fd9fed72b544d91e1ed171230616d7bbe30f6512ff9",
+    "probeSha256": "345a7bef00f80fc9991fdb19b16877925a6b9414d6979559ade755b0632a492a",
+    "durationSeconds": 53.399,
+    "migration": {
+      "migrationCount": 596,
+      "migrationSetSHA256": "91b2226ccea886ab65e8ab5a0454220f96ba709dff2028f9bc3da661882c3e23",
+      "migrationRowsSHA256": "099194b738d3c5b5b2bd58eb62bbeb68f5bfd646eee13b174e647fd0d3dbd745",
+      "catalogSHA256": "18693ddff337b44ef950b74383d5eb8527f49f9ff8694c9710f5c97e15017682",
+      "coreCounts": {
+        "users": 0,
+        "accounts": 0,
+        "bookings": 0
+      }
+    },
+    "migrationAndReplayExitCodes": {
+      "cal-native-q69d8a01-migrate": 0,
+      "cal-native-q69d8a01-replay": 0
+    },
+    "httpProbeExitCode": 0,
+    "postHttpDatabaseInvariantExitCode": 0,
+    "http": {
+      "status": "pass",
+      "providerStatus": 200,
+      "loginStatus": 200,
+      "callbackStatus": 302,
+      "sessionStatus": 200,
+      "anonymousSessionEmpty": true,
+      "publicCallbackExact": true,
+      "staffLoginMarkup": true,
+      "rejectedCallbackSameOrigin": true,
+      "callbackRedirectEvidence": [
+        {
+          "status": 302,
+          "sameOrigin": true,
+          "safeAuthority": true,
+          "pathClass": "nativeError"
+        },
+        {
+          "status": 302,
+          "sameOrigin": true,
+          "safeAuthority": true,
+          "pathClass": "nativeSignin"
+        },
+        {
+          "status": 302,
+          "sameOrigin": true,
+          "safeAuthority": true,
+          "pathClass": "authLogin"
+        }
+      ],
+      "callbackIntermediateFetches": 2,
+      "entryEvidence": {
+        "ready": {
+          "status": 200,
+          "propsState": "ready",
+          "exactPublicProps": true
+        },
+        "foreignReturnRejected": {
+          "status": 200,
+          "propsState": "invalid-callback",
+          "exactPublicProps": true
+        },
+        "authReturnRejected": {
+          "status": 200,
+          "propsState": "invalid-callback",
+          "exactPublicProps": true
+        },
+        "boundary": {
+          "ready": {
+            "fixtureSecretPresent": false,
+            "fixtureClientIdPresent": false,
+            "loopbackOccurrenceCount": 1,
+            "pinnedTooltipSerializedOccurrences": 1,
+            "loopbacksInsidePinnedTooltipCount": 1,
+            "loopbacksOutsidePinnedTooltipCount": 0,
+            "everyLoopbackInsidePinnedTooltip": true,
+            "recognizedNextFlightFrames": 1,
+            "tooltipValueSHA256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8",
+            "publicStaticTooltipExceptionApplied": true
+          },
+          "foreign": {
+            "fixtureSecretPresent": false,
+            "fixtureClientIdPresent": false,
+            "loopbackOccurrenceCount": 1,
+            "pinnedTooltipSerializedOccurrences": 1,
+            "loopbacksInsidePinnedTooltipCount": 1,
+            "loopbacksOutsidePinnedTooltipCount": 0,
+            "everyLoopbackInsidePinnedTooltip": true,
+            "recognizedNextFlightFrames": 1,
+            "tooltipValueSHA256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8",
+            "publicStaticTooltipExceptionApplied": true
+          },
+          "auth": {
+            "fixtureSecretPresent": false,
+            "fixtureClientIdPresent": false,
+            "loopbackOccurrenceCount": 1,
+            "pinnedTooltipSerializedOccurrences": 1,
+            "loopbacksInsidePinnedTooltipCount": 1,
+            "loopbacksOutsidePinnedTooltipCount": 0,
+            "everyLoopbackInsidePinnedTooltip": true,
+            "recognizedNextFlightFrames": 1,
+            "tooltipValueSHA256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8",
+            "publicStaticTooltipExceptionApplied": true
+          }
+        },
+        "clientJavaScriptExecuted": false
+      },
+      "manifestSHA256": "dfe75eb20d896bb0e193ab1c234a1a31b235d9c29b571a13baef517ee7384db8",
+      "publicStaticTooltipException": {
+        "applied": true,
+        "literalLoopbackOccurrences": 1,
+        "serializedOccurrences": 1,
+        "valueSHA256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8"
+      },
+      "bodyBoundaryEvidence": {
+        "providers": {
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0,
+          "pinnedTooltipSerializedOccurrences": 0,
+          "loopbacksInsidePinnedTooltipCount": 0,
+          "loopbacksOutsidePinnedTooltipCount": 0,
+          "everyLoopbackInsidePinnedTooltip": false,
+          "recognizedNextFlightFrames": 0,
+          "tooltipValueSHA256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8",
+          "publicStaticTooltipExceptionApplied": false
+        },
+        "login": {
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 1,
+          "pinnedTooltipSerializedOccurrences": 1,
+          "loopbacksInsidePinnedTooltipCount": 1,
+          "loopbacksOutsidePinnedTooltipCount": 0,
+          "everyLoopbackInsidePinnedTooltip": true,
+          "recognizedNextFlightFrames": 1,
+          "tooltipValueSHA256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8",
+          "publicStaticTooltipExceptionApplied": true
+        }
+      },
+      "headerBoundaryEvidence": {
+        "providersHeaderBoundary": {
+          "headerCount": 9,
+          "headerBytes": 245,
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0
+        },
+        "loginHeaderBoundary": {
+          "headerCount": 14,
+          "headerBytes": 839,
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0
+        },
+        "entry-readyHeaderBoundary": {
+          "headerCount": 13,
+          "headerBytes": 719,
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0
+        },
+        "entry-foreignHeaderBoundary": {
+          "headerCount": 13,
+          "headerBytes": 719,
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0
+        },
+        "entry-authHeaderBoundary": {
+          "headerCount": 13,
+          "headerBytes": 719,
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0
+        },
+        "callbackHeaderBoundary": {
+          "headerCount": 9,
+          "headerBytes": 544,
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0
+        },
+        "callback-errorHeaderBoundary": {
+          "headerCount": 9,
+          "headerBytes": 545,
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0
+        },
+        "callback-signinHeaderBoundary": {
+          "headerCount": 9,
+          "headerBytes": 559,
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0
+        },
+        "sessionHeaderBoundary": {
+          "headerCount": 14,
+          "headerBytes": 616,
+          "fixtureSecretPresent": false,
+          "fixtureClientIdPresent": false,
+          "loopbackOccurrenceCount": 0
+        }
+      },
+      "realIdpUserGoogleBrowserAcceptance": false
+    },
+    "preExecutionReview": {
+      "independentReviewer": "WhiteGlen",
+      "mockControlsPassed": 75,
+      "inheritedBodyOnlyHeaderLeakGapCorrectedBeforeExecution": true,
+      "responseHeaderLimits": {
+        "maximumHeaders": 128,
+        "maximumTotalBytes": 65536,
+        "maximumBytesPerHeader": 8192
+      },
+      "responseHeaderTooltipException": false,
+      "secretWaiver": false
+    },
+    "cleanup": {
+      "ownContainersAbsent": true,
+      "ownPostgresExited": true,
+      "ownSocketAbsent": true,
+      "ownFixtureWorkdirAbsent": true,
+      "candidateImageRetained": true
+    },
+    "slotReleasedAt": "2026-10-19T08:34:34.620447569Z",
+    "laterChangesAbsent": {
+      "verificationMailFixSource": "0e6c271f237c4c54f182c50aa0e76cf1f3b0f6a0",
+      "pendingNodemailerUpgrade": true
+    },
+    "security": {
+      "qualifiedForThisImage": false,
+      "olderD8ScanReusedForThisImage": false,
+      "olderD8HighOccurrences": 56,
+      "olderD8UnwaivedSecretCandidates": 107,
+      "releaseApproved": false
+    },
+    "acceptanceNotProven": [
+      "actual client JavaScript",
+      "real IdP or staff identity/account linkage",
+      "Google consent or calendar connection",
+      "live browser loop or staff-to-guest booking journey",
+      "existing-data migration/restore",
+      "image security",
+      "registry publication",
+      "deployment"
+    ]
+  }
 }

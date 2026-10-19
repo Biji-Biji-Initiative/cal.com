@@ -2281,6 +2281,16 @@
       "production_changed": false,
       "evidence": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-2026-10-19.md",
       "notes": "Attempt6 actual native fixture passes: 596 exact migrations/replay, providers/login200, exact ordered same-origin callback denial, strict anonymous session {}, and embedded manifest binding. Earlier callback/probe failures remain preserved. No real IdP, user, Google, browser, publication, deployment, existing-data restore/migration or release acceptance; all task states unchanged."
+    },
+    {
+      "date": "2026-10-19",
+      "application_source": "69d8ad8d40095ce0847377e90414173a71692727",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-02.PREVIEW",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-2026-10-19.md",
+      "receipt": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-RECEIPT-2026-10-19.json",
+      "notes": "The actual newer 69d8 local OCI passes isolated native HTTP/SSR qualification in 53.399 seconds: all 596 migrations, replay and the post-HTTP database invariant; providers/login/session HTTP 200; exact callback denial; and ready, rejected foreign and rejected auth return entry props. All nine response-header checks and strict body checks pass after the independently reviewed header-gap correction; 75 mock controls passed. Raw receipt 3a1e66bd and terminal receipt 5a49e212 bind the exact source, build, image and verified cleanup; the slot was released at 08:34:34.620447569Z. Earlier d8 attempts remain preserved. The d8-only 56 HIGH and 107 unwaived secret candidates are not scans of the newer image. The later 0e6c verification-mail fix and pending Nodemailer upgrade are absent. Client JavaScript, real IdP/user/Google/browser/data journeys, security, publication and deployment acceptance remain unproved; every task state is unchanged."
     }
   ]
 }
