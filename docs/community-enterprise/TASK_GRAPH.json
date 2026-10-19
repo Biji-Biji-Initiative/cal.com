@@ -675,6 +675,13 @@
           "command": "node --test --test-reporter=spec tests/community-enterprise/api-route-inventory.test.cjs",
           "exit_code": 0,
           "summary": "Pinned TypeScript AST inventory passes: 38 controller files/classes, 175 routes, 89 mutations, 54 permission-decorated routes, zero missing method or class-level PermissionsGuard bindings, and 13 direct JWT or authorization-token reader files. Runtime HTTP/PostgreSQL and complete dynamic reachability remain separately bounded."
+        },
+        {
+          "file": "docs/community-enterprise/API-ROUTE-INVENTORY-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/calendar-cron-authorization.test.cjs",
+          "exit_code": 0,
+          "summary": "2026-10-19: 48 actual-handler source cases pass for three calendar cron guards after 15 discriminating pre-fix failures. Absent/blank configuration and literal undefined/null credentials are denied before dependency, repository or provider work; configured raw/bearer header/query forms, header precedence and current-configuration checks remain intact. Repository/provider/framework boundaries are explicit doubles; real Node crypto is retained. No deployed, database or provider acceptance is claimed."
         }
       ],
       "required_for_team_release": true,
@@ -687,7 +694,7 @@
         "docs/community-enterprise/API-PERMISSION-BINDING-2026-10-17.md",
         "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json"
       ],
-      "progress": "Pinned AST inventory now covers all retained API v2 controller files and direct token-reader patterns. Existing native PostgreSQL/HTTP authorization evidence remains attached; live IdP, complete resource matrix and serving-image acceptance remain open.",
+      "progress": "Pinned AST inventory now covers all retained API v2 controller files and direct token-reader patterns. The 2026-10-19 source correction rejects unconfigured or blank credentials in three retained calendar cron guards, with actual-handler negative and transport-preservation controls. Existing native PostgreSQL/HTTP authorization evidence remains attached; live IdP, complete resource matrix and serving-image acceptance remain open.",
       "progress_reference": "docs/community-enterprise/API-ROUTE-INVENTORY-2026-10-17.md",
       "progress_summary": "AST route inventory is source-proven; dynamic runtime reachability and deployment acceptance remain open."
     },

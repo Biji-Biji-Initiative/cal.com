@@ -9,6 +9,7 @@ import { getFeatureRepository } from "@calcom/features/di/containers/FeatureRepo
 import { getTeamFeatureRepository } from "@calcom/features/di/containers/TeamFeatureRepository";
 import { getUserFeatureRepository } from "@calcom/features/di/containers/UserFeatureRepository";
 import { SelectedCalendarRepository } from "@calcom/features/selectedCalendar/repositories/SelectedCalendarRepository";
+import { isTaskCronAuthorized } from "@calcom/features/tasker/api/authorization";
 import { prisma } from "@calcom/prisma";
 import { defaultResponderForAppDir } from "@calcom/web/app/api/defaultResponderForAppDir";
 import type { NextRequest } from "next/server";
@@ -24,7 +25,9 @@ import { NextResponse } from "next/server";
 async function getHandler(request: NextRequest) {
   const apiKey = request.headers.get("authorization") || request.nextUrl.searchParams.get("apiKey");
 
-  if (![process.env.CRON_API_KEY, `Bearer ${process.env.CRON_SECRET}`].includes(`${apiKey}`)) {
+  const hasValidApiKey =
+    apiKey !== null && isTaskCronAuthorized(`Bearer ${apiKey}`, process.env.CRON_API_KEY);
+  if (!hasValidApiKey && !isTaskCronAuthorized(apiKey, process.env.CRON_SECRET)) {
     return NextResponse.json({ message: "Forbiden" }, { status: 403 });
   }
 
