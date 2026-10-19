@@ -1,6 +1,6 @@
 # Current native image qualification
 
-The newer source `69d8ad8d` local image now passes the isolated native HTTP/SSR fixture. The appended result below binds its own build, image and receipts; the original d8 checkpoint and failed attempts remain preserved. Neither candidate establishes live browser or release acceptance.
+The latest frozen mail source `0aaaa24` local image passes the isolated native HTTP/SSR fixture. Its appended result binds its own build, image and receipts; the earlier 69d8 and d8 checkpoints and failed attempts remain preserved. These candidates establish no live browser, image-security or release acceptance.
 
 ## Original d8 checkpoint
 
@@ -48,3 +48,17 @@ Independent source review caught an inherited body-only test gap: a same-origin 
 The actual root build slot was released at `2026-10-19T08:34:34.620447569Z`. This image predates verification-mail fix `0e6c271f` and the pending Nodemailer upgrade. Its HTTP/SSR pass executes no client JavaScript and proves no real IdP, staff identity/account linkage, Google consent/calendar connection, live browser loop, booking journey or existing-data migration/restore. The older d8 diagnostic's 56 HIGH occurrences and 107 unwaived all-layer secret candidates are not scan results for this newer image. Newer image security, publication and deployment remain unproved; no programme task state changes.
 
 The latest Google Calendar provider-only recheck at `2026-10-19T08:04:37.168001Z` still returns HTTP 302 `redirect_uri_mismatch`, accepted=false, for the exact dev Calendar callback. Its separate receipt is referenced under liveGoogle; temporary auth material is absent, with no consent, code exchange or configuration write. This Google observation does not qualify the native OIDC callback flow.
+
+## Mail source 0aaaa24 native pass
+
+The frozen mail source `0aaaa24ab167a3f3a58b4ea940b176cac62ee6f6`, build `baoWlCRAukSe2TNQJOAHj`, passes the isolated native fixture in 66.31 seconds. The latest receipt object binds native receipt `acdf8737…`, packaging receipt `4fdf21c0…`, OCI archive `dfdf02ad…`, manifest `9d710251…` and config `0e29f504…` with their full hashes and private paths. This image includes the verification-mail and Nodemailer source changes; later Sharp, self-link and Trigger changes are outside this artifact's evidence.
+
+Both migration containers exit zero, applying all 596 exact-source migrations and preserving the actual database snapshot after replay and HTTP. Users, accounts and bookings remain zero. Providers, login and anonymous session return HTTP 200; callback denial follows the exact same-origin native-error → native-signin → auth-login sequence. All three explicit-entry SSR states and nine bounded response-header checks pass. The unchanged strict body checks permit only the same SHA-pinned public tooltip on four HTML pages; this is no secret waiver. The 75 mock probe controls also passed before execution.
+
+The original terminal receipt `ff1d36cc…` is preserved with correction receipt `1052894e…`: its `migrationReplayPostHttpReadbackSha256` hashes a redacted-log marker, not SQL results. Actual equality is enforced by the supervisor's in-memory database-snapshot comparisons. The authoritative native receipt records migration-row hash `2bda2677…` and catalog hash `18693ddf…`; marker-log hashes are not database-content evidence.
+
+Independent cleanup verifies all three owned containers, PostgreSQL, socket, fixture, unit, supervisor PID and cgroups are absent; the immutable image is retained. The actual slot was released at `2026-10-19T10:50:16.441233746Z`. The first preparation dry run's stale context-size refusal remains preserved; correcting the exact byte pin did not relax admission or rerun a failed native attempt.
+
+No client JavaScript, real IdP/staff identity, Google consent, live browser or booking journey, SMTP delivery, existing-data migration/restore, image security, registry publication or deployment is established. The older d8 scans are not reused for this image. Historical attempts and all programme task states remain unchanged.
+
+A separate current Google provider-only recheck at `2026-10-19T10:54:48.458808Z` still returns HTTP 302 `redirect_uri_mismatch`, accepted=false, for `https://cal.mereka.dev/api/integrations/googlecalendar/callback`. Receipt `e26eba39…` binds this observation; temporary auth material is absent, with no consent, code exchange or configuration write. This is not native OIDC or calendar-connection acceptance; the historical observations above remain preserved.

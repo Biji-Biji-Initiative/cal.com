@@ -2291,6 +2291,16 @@
       "evidence": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-2026-10-19.md",
       "receipt": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-RECEIPT-2026-10-19.json",
       "notes": "The actual newer 69d8 local OCI passes isolated native HTTP/SSR qualification in 53.399 seconds: all 596 migrations, replay and the post-HTTP database invariant; providers/login/session HTTP 200; exact callback denial; and ready, rejected foreign and rejected auth return entry props. All nine response-header checks and strict body checks pass after the independently reviewed header-gap correction; 75 mock controls passed. Raw receipt 3a1e66bd and terminal receipt 5a49e212 bind the exact source, build, image and verified cleanup; the slot was released at 08:34:34.620447569Z. Earlier d8 attempts remain preserved. The d8-only 56 HIGH and 107 unwaived secret candidates are not scans of the newer image. The later 0e6c verification-mail fix and pending Nodemailer upgrade are absent. Client JavaScript, real IdP/user/Google/browser/data journeys, security, publication and deployment acceptance remain unproved; every task state is unchanged."
+    },
+    {
+      "date": "2026-10-19",
+      "application_source": "0aaaa24ab167a3f3a58b4ea940b176cac62ee6f6",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-02.PREVIEW",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-2026-10-19.md",
+      "receipt": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-RECEIPT-2026-10-19.json",
+      "notes": "Frozen mail source 0aaaa local OCI passes isolated native qualification in 66.31 seconds: 596 exact migrations, replay and actual post-HTTP database-snapshot equality, core counts zero; provider/login/session HTTP 200, exact callback denial, three entry SSR states and nine header guards. Native receipt acdf8737 and terminal ff1d36cc bind the actual image; correction 1052894e identifies the terminal redacted-log marker hash as not SQL content evidence. All owned containers, PostgreSQL, socket, fixture, unit, PID and cgroups are absent; the actual slot was released at 10:50:16.441233746Z. Earlier attempts remain preserved. Later Sharp/self-link/Trigger source, client JavaScript, real IdP/user/Google/browser/SMTP/data journeys, image security, publication and deployment remain outside this proof; task states are unchanged."
     }
   ]
 }

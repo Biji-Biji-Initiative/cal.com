@@ -475,5 +475,146 @@
       "registry publication",
       "deployment"
     ]
+  },
+  "mailNativeQualification": {
+    "status": "complete-isolated-native-http-ssr-only",
+    "applicationSource": "0aaaa24ab167a3f3a58b4ea940b176cac62ee6f6",
+    "publicOrigin": "https://cal.mereka.dev",
+    "buildId": "baoWlCRAukSe2TNQJOAHj",
+    "buildReceipt": {
+      "path": "g2:/data/tmp/cal-web-release-20261019-mail-0aaaa24ab167/build-receipt.json",
+      "sha256": "41b423a95e49aeb7f552a61d319943e5ad5a781d3b4f2f5f60e018b40d2b8996"
+    },
+    "image": {
+      "manifestDigest": "sha256:9d71025177f60d94cf1480428d7bd0ba638187aaeb9c028b65d9753e5db9b907",
+      "configDigest": "sha256:0e29f50491194e251fad26ed238b71f59c25cda7ea2f40c1bc1c9ca506b4b276",
+      "archiveSha256": "dfdf02addbed6cf4b2d12011b9422766aa8c1e17f1a0b2db278182b6c32c2997",
+      "archiveBytes": 373477376,
+      "packagingReceiptSha256": "4fdf21c083f30f0592a3db69e96d7b9c8dd2ce1e71a6db99f4133865a209e37f",
+      "platform": "linux/amd64",
+      "registryPublished": false,
+      "deployed": false
+    },
+    "nativeReceipt": {
+      "path": "g2:/data/tmp/cal-native-qual-qmail0aa01/qualification-receipt.json",
+      "sha256": "acdf8737dadc2524738404ca5aefe9776228fd65a543fe72dbc5fea6fe8451f8"
+    },
+    "terminalVerification": {
+      "path": "g2:/data/tmp/cal-native-mail-255giy8_/terminal-verification.json",
+      "sha256": "ff1d36cc0be7b9d8b7d48ff42a2337a807b02c278e5965e7d81c6e1fd723c752",
+      "evidenceAnnotation": {
+        "path": "g2:/data/tmp/cal-native-mail-255giy8_/terminal-evidence-correction.json",
+        "sha256": "1052894e83cbabe59d2c215e44d2e42034b713a2c0b8a6a968dd416c14ea413c",
+        "correctedField": "migrationReplayPostHttpReadbackSha256",
+        "correction": "That field hashes the redacted-log marker, not SQL output. Actual invariant evidence is the supervisor in-memory db_snapshot comparison plus the native receipt migration-row/catalog hashes."
+      },
+      "ownUnitPidCgroupsAbsent": true
+    },
+    "supervisorSha256": "1122e383a7816d1e4ea8ee485c078f2bf531f8c032e392f7ce9d26ecf8ae0560",
+    "probeSha256": "78104e2941a319ede82c26fe89f9d479bafc75e678e3a2c1effd1b16040828a0",
+    "durationSeconds": 66.31,
+    "migration": {
+      "migrationCount": 596,
+      "migrationSetSHA256": "91b2226ccea886ab65e8ab5a0454220f96ba709dff2028f9bc3da661882c3e23",
+      "migrationRowsSHA256": "2bda26776d67db2cc361cde891c9ee7402b06ebec6d377cdd2dee46a88f9d7fa",
+      "catalogSHA256": "18693ddff337b44ef950b74383d5eb8527f49f9ff8694c9710f5c97e15017682",
+      "coreCounts": {
+        "users": 0,
+        "accounts": 0,
+        "bookings": 0
+      }
+    },
+    "migrationAndReplayExitCodes": {
+      "cal-native-qmail0aa01-migrate": 0,
+      "cal-native-qmail0aa01-replay": 0
+    },
+    "postHttpDatabaseInvariantExitCode": 0,
+    "databaseInvariantEvidence": "The supervisor compares actual in-memory database snapshots after replay and after HTTP; marker-log hashes are not content evidence.",
+    "http": {
+      "status": "pass",
+      "providerStatus": 200,
+      "loginStatus": 200,
+      "sessionStatus": 200,
+      "anonymousSessionEmpty": true,
+      "publicCallbackExact": true,
+      "staffLoginMarkup": true,
+      "callbackPathClasses": [
+        "nativeError",
+        "nativeSignin",
+        "authLogin"
+      ],
+      "callbackAllOriginsAndAuthoritiesExact": true,
+      "callbackIntermediateFetches": 2,
+      "entryStates": {
+        "ready": {
+          "status": 200,
+          "propsState": "ready",
+          "exactPublicProps": true
+        },
+        "foreignReturnRejected": {
+          "status": 200,
+          "propsState": "invalid-callback",
+          "exactPublicProps": true
+        },
+        "authReturnRejected": {
+          "status": 200,
+          "propsState": "invalid-callback",
+          "exactPublicProps": true
+        }
+      },
+      "headerBoundaryChecks": 9,
+      "headerFixtureClientIdSecretAndLoopbackAbsent": true,
+      "manifestSha256": "85b047e9d7d69c4ef60700db68c14fe1b1b453821e9c085dd1bb563c2eee928e",
+      "publicTooltipExceptionHtmlPages": 4,
+      "publicTooltipValueSha256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8",
+      "clientJavaScriptExecuted": false
+    },
+    "mockProbeControlsPassed": 75,
+    "cleanup": {
+      "ownContainersAbsent": true,
+      "ownPostgresExited": true,
+      "ownSocketAbsent": true,
+      "ownFixtureWorkdirAbsent": true,
+      "candidateImageRetained": true
+    },
+    "slotReleasedAt": "2026-10-19T10:50:16.441233746Z",
+    "preservedPreparationFailure": {
+      "failureCode": "native-web-evidence-binding-mismatch",
+      "exitCode": 2,
+      "reason": "Inherited exact context byte count was not yet adapted; the final constant correction from 316119806 to 316419058 preserved the equality guard. No native execution occurred in that failed dry-run."
+    },
+    "sourceBoundary": {
+      "verificationMailAndNodemailerSourceIncluded": true,
+      "laterSharpSelfLinkOrTriggerSourceQualifiedByThisImage": false
+    },
+    "security": {
+      "qualifiedForThisImage": false,
+      "olderD8ScanReusedForThisImage": false,
+      "releaseApproved": false
+    },
+    "acceptanceNotProven": [
+      "actual client JavaScript",
+      "real IdP or staff identity/account linkage",
+      "Google consent or calendar connection",
+      "live browser loop or staff-to-guest booking journey",
+      "actual SMTP delivery",
+      "existing-data migration/restore",
+      "image security",
+      "registry publication",
+      "deployment"
+    ],
+    "currentGoogle": {
+      "observedAt": "2026-10-19T10:54:48.458808Z",
+      "scope": "separate provider-only callback check; not native OIDC acceptance",
+      "callback": "https://cal.mereka.dev/api/integrations/googlecalendar/callback",
+      "httpStatus": 302,
+      "providerError": "redirect_uri_mismatch",
+      "acceptedRedirect": false,
+      "receiptPath": "g:/data/tmp/cal-google-recheck-B262A1oW/execution-receipt.json",
+      "receiptSha256": "e26eba39b731d73779437de44d914009c3abf09a3f625da203c80605295a2703",
+      "temporaryAuthMaterialAbsent": true,
+      "consentOrCodeExchangePerformed": false,
+      "configurationWritesPerformed": false
+    }
   }
 }
