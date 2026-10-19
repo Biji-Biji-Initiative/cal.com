@@ -752,3 +752,115 @@ test("existing publisher workflow keeps authority and prebuilt publication canno
   }
   assert.doesNotMatch(workflow, /\$\{\{ inputs.tag_override \}\}"/);
 });
+
+function accountSetupSource() {
+  const syncFs = require("node:fs");
+  const recipe = syncFs.readFileSync(path.resolve(__dirname, "../../Dockerfile.enterprise-preview"), "utf8");
+  const commands = recipe
+    .split("\n")
+    .filter((line) => line.startsWith("RUN ["))
+    .map((line) => JSON.parse(line.slice(4)));
+  assert.equal(commands.length, 1);
+  assert.deepEqual(commands[0].slice(0, 2), ["/nodejs/bin/node", "-e"]);
+  return require("node:vm").compileFunction(commands[0][2], ["require", "process"], {
+    filename: "Dockerfile.enterprise-preview:account-setup",
+  });
+}
+
+test("packaged account setup preserves base accounts and creates the existing UID's home", () => {
+  const setup = accountSetupSource();
+  const passwd =
+    "root:x:0:0:root:/root:/sbin/nologin\nnonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin\n";
+  const group = "root:x:0:\nnonroot:x:65532:\n";
+  const files = new Map([
+    ["/etc/passwd", passwd],
+    ["/etc/group", group],
+  ]);
+  const writes = [];
+  // These explicit filesystem/privilege doubles exercise the shipped RUN source, not host account files.
+  const filesystem = {
+    readFileSync: (name, encoding) => {
+      assert.equal(encoding, "utf8");
+      assert.ok(files.has(name));
+      return files.get(name);
+    },
+    existsSync: (name) => {
+      assert.equal(name, "/home/node");
+      return false;
+    },
+    appendFileSync: (name, text) => {
+      assert.ok(files.has(name));
+      files.set(name, files.get(name) + text);
+      writes.push(["append", name]);
+    },
+    mkdirSync: (name, options) => writes.push(["mkdir", name, options]),
+    chownSync: (...args) => writes.push(["chown", ...args]),
+    chmodSync: (...args) => writes.push(["chmod", ...args]),
+  };
+  setup(
+    (name) => {
+      assert.equal(name, "node:fs");
+      return filesystem;
+    },
+    { getuid: () => 0, getgid: () => 0 }
+  );
+  assert.equal(files.get("/etc/passwd"), passwd + "node:x:1000:1000:Node:/home/node:/sbin/nologin\n");
+  assert.equal(files.get("/etc/group"), group + "node:x:1000:\n");
+  assert.deepEqual(writes, [
+    ["append", "/etc/passwd"],
+    ["append", "/etc/group"],
+    ["mkdir", "/home/node", { mode: 0o700 }],
+    ["chown", "/home/node", 1000, 1000],
+    ["chmod", "/home/node", 0o700],
+  ]);
+});
+
+for (const problem of [
+  "uid",
+  "primary-gid",
+  "group-gid",
+  "username",
+  "group-name",
+  "passwd-shape",
+  "group-shape",
+  "existing-home",
+  "nonroot-setup",
+]) {
+  test(`packaged account setup refuses ${problem} before any filesystem write`, () => {
+    const setup = accountSetupSource();
+    let passwd = "root:x:0:0:root:/root:/sbin/nologin\n";
+    let group = "root:x:0:\n";
+    if (problem === "uid") passwd += "other:x:1000:2000:other:/other:/sbin/nologin\n";
+    if (problem === "primary-gid") passwd += "other:x:2000:1000:other:/other:/sbin/nologin\n";
+    if (problem === "group-gid") group += "other:x:1000:\n";
+    if (problem === "username") passwd += "node:x:2000:2000:other:/other:/sbin/nologin\n";
+    if (problem === "group-name") group += "node:x:2000:\n";
+    if (problem === "passwd-shape") passwd += "broken\n";
+    if (problem === "group-shape") group += "broken\n";
+    const writes = [];
+    const filesystem = {
+      readFileSync: (name) => {
+        assert.ok(["/etc/passwd", "/etc/group"].includes(name));
+        return name === "/etc/passwd" ? passwd : group;
+      },
+      existsSync: (name) => {
+        assert.equal(name, "/home/node");
+        return problem === "existing-home";
+      },
+      appendFileSync: (...args) => writes.push(args),
+      mkdirSync: (...args) => writes.push(args),
+      chownSync: (...args) => writes.push(args),
+      chmodSync: (...args) => writes.push(args),
+    };
+    assert.throws(() =>
+      setup(
+        (name) => {
+          assert.equal(name, "node:fs");
+          return filesystem;
+        },
+        { getuid: () => (problem === "nonroot-setup" ? 1000 : 0), getgid: () => 0 }
+      )
+    );
+    assert.deepEqual(writes, []);
+  });
+}

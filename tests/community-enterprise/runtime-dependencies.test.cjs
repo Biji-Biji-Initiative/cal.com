@@ -132,17 +132,10 @@ test("retained XML, link, identifier and stylesheet consumers still operate", ()
   assert.equal(css.first.first.value, "grid");
 });
 
-test("runtime preparation does not depend on globally installed package managers", () => {
+test("runtime commands retain the packaged Node executable and existing unprivileged user", () => {
   const source = fs.readFileSync(path.join(root, "scripts/enterprise-runtime-entrypoint.cjs"), "utf8");
   assert.match(source, /spawn\(process\.execPath/);
   assert.doesNotMatch(source, /spawn\(["'](?:npm|npx|yarn|yarnpkg|corepack)["']/);
   const dockerfile = fs.readFileSync(path.join(root, "Dockerfile.enterprise-preview"), "utf8");
-  for (const target of [
-    "/usr/local/lib/node_modules/npm",
-    "/usr/local/lib/node_modules/corepack",
-    "/opt/yarn-v1.22.22",
-  ]) {
-    assert.ok(dockerfile.includes(target), `Runtime tool removal is absent: ${target}`);
-  }
   assert.match(dockerfile, /USER 1000:1000/);
 });

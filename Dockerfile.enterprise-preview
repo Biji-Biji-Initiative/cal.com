@@ -1,18 +1,9 @@
 # This context is produced by scripts/prepare-enterprise-runtime.cjs after the
 # exact public-origin build. Application dependencies are not installed here.
-FROM node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa
-# Prisma 6's schema engine needs the OS OpenSSL libraries, not Node's bundled SSL.
-# Versions below were resolved from Debian's signed trixie-security metadata.
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      openssl=3.5.7-1~deb13u3 \
-      libssl3t64=3.5.7-1~deb13u3 \
-      ca-certificates=20250419 \
- && rm -rf /var/lib/apt/lists/*
-# Runtime and migration commands use the packaged Node/Prisma binaries directly.
-# Do not ship unused network-capable installers and their vulnerable dependency trees.
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn-v1.22.22 \
- && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
+FROM --platform=linux/amd64 gcr.io/distroless/nodejs22-debian13@sha256:55e7cd155c86d8956af63fec0a9d0790dd6d0ba98c7d38e63c0866557ee7aff8
+# Keep the existing runtime UID and a real writable home without adding shell tools.
+USER 0:0
+RUN ["/nodejs/bin/node", "-e", "const fs = require('node:fs'); if (process.getuid() !== 0 || process.getgid() !== 0) throw new Error('Account setup requires root'); function readAccounts(name, width) {   const text = fs.readFileSync(name, 'utf8');   if (!text.endsWith('\\n')) throw new Error('Invalid account database');   const rows = text.trimEnd().split('\\n').map((line) => line.split(':'));   if (rows.some((row) => row.length !== width || !/^\\d+$/.test(row[2]) || (width === 7 && !/^\\d+$/.test(row[3])))) throw new Error('Invalid account database');   return rows; } const users = readAccounts('/etc/passwd', 7); const groups = readAccounts('/etc/group', 4); if (users.some((row) => row[0] === 'node' || Number(row[2]) === 1000 || Number(row[3]) === 1000) || groups.some((row) => row[0] === 'node' || Number(row[2]) === 1000)) throw new Error('Node identity collision'); if (fs.existsSync('/home/node')) throw new Error('Node home already exists'); fs.appendFileSync('/etc/passwd', 'node:x:1000:1000:Node:/home/node:/sbin/nologin\\n'); fs.appendFileSync('/etc/group', 'node:x:1000:\\n'); fs.mkdirSync('/home/node', { mode: 0o700 }); fs.chownSync('/home/node', 1000, 1000); fs.chmodSync('/home/node', 0o700);"]
 ARG SOURCE_SHA
 ARG BUILD_ID
 ARG DOCKERFILE_SHA256
@@ -23,7 +14,9 @@ LABEL org.opencontainers.image.source="https://github.com/Biji-Biji-Initiative/c
       io.mereka.cal.dockerfile-sha256="${DOCKERFILE_SHA256}" \
       io.mereka.cal.entrypoint-sha256="${ENTRYPOINT_SHA256}" \
       io.mereka.cal.distribution="community-enterprise-preview"
-ENV NODE_ENV=production \
+ENV HOME=/home/node \
+    PATH=/nodejs/bin \
+    NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     CHECKPOINT_DISABLE=1 \
     PRISMA_HIDE_UPDATE_MESSAGE=1 \
