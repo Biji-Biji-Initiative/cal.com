@@ -256,12 +256,18 @@ metadata preparation then refused with an unattributed wrapper error before
 creating a plan or downloading an archive. One separately authorized fixed
 Backup GET subsequently passed; that does not identify the failed read or
 prove a general API recovery. The next preparation completed all ten fixed
-metadata reads with native exit 0 and matched every current/historical Pod,
-image, storage, service-account, Secret-key and backup-location guard. It
-refused only the changed Argo binding before rendering or creating a plan.
-That source drift is being examined without relaxing the guard. No new archive
-acquisition, accepted archive, FSB payload, Restore, SQL or data recovery has
-occurred.
+metadata reads, but the helper omitted the retained empty `sources` field
+before comparing the Argo projection. Its refusal did not establish live Argo
+or source drift. That failed preparation and its diagnostic remain preserved.
+A helper-only correction passed eight offline identity/refusal controls;
+subsequent fresh metadata preparation passed all ten reads, all current and
+historical guards, and the exact unchanged Argo binding. The actual published
+preflight produced a dry render with the reviewed scheduling reset. Root read
+the exact five inputs, four tool hashes, plan and FileVault/private-mode
+receipts, then separately authorized one bounded metadata-only archive read.
+This authorization does not establish an accepted archive, FSB payload,
+Restore, SQL or data recovery. The source is the explicitly reviewed frozen
+commit; a local tracking reference is not proof of the latest remote head.
 
 Real staff session expiry/logout without refresh, onboarding completion and
 calendar connection remain open. The current packaged artifact requires native
