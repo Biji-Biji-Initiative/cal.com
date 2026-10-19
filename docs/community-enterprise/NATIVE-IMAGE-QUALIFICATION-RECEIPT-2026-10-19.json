@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "observedAt": "2026-10-19",
-  "status": "partial-runtime-evidence",
+  "status": "native-fixture-pass-release-open",
   "applicationSource": "d8dae0cb45af05cf14c7ba4790f0ed1e018fe39c",
   "publicOrigin": "https://cal.mereka.dev",
   "buildId": "i2uBifLE85gwaz6g2CdUe",
@@ -19,15 +19,15 @@
     "deployed": false
   },
   "native": {
-    "receiptPath": "g2:/data/tmp/cal-native-qual-q5upm105/qualification-receipt.json",
-    "receiptSha256": "a34d8ee3f3becac93c95c838797439420f2988564814d877a4b1a9bff1e2869e",
-    "supervisorSha256": "0f3c22f98269cd0abc11eba1eadb518e802ef0c06b6ec9ddae39b2ee914555e9",
-    "probeSha256": "1e119ffef1e2ca82d19feb22252699b7bd000f6fc5f78d7c4cf05925592e96f8",
-    "status": "failed",
+    "receiptPath": "g2:/data/tmp/cal-native-qual-q5upm106/qualification-receipt.json",
+    "receiptSha256": "c25cf02ff2f39e78d616587e2fe9107a0574cf718fc84f7540ba90ebcd18f9ea",
+    "supervisorSha256": "29a7ed5f5ccc36ae968ab4a10958d531833231a38d38463213e58852fb0b0187",
+    "probeSha256": "077aeed82739370bfb9ed337b18df12b0e9ba96627bdc4210adce7e6cb666b31",
+    "status": "complete",
     "migration": {
       "migrationCount": 596,
       "migrationSetSHA256": "91b2226ccea886ab65e8ab5a0454220f96ba709dff2028f9bc3da661882c3e23",
-      "migrationRowsSHA256": "78a59113e89804e9f64dfdda235ab806f2458f611509e84b41b79f796541a137",
+      "migrationRowsSHA256": "98202ca48859dd8657fe29b43d954b1a812323ebc17160d776ab1f65225db97e",
       "catalogSHA256": "18693ddff337b44ef950b74383d5eb8527f49f9ff8694c9710f5c97e15017682",
       "coreCounts": {
         "users": 0,
@@ -36,11 +36,11 @@
       }
     },
     "migrationAndReplayExitCodes": {
-      "cal-native-q5upm105-migrate": 0,
-      "cal-native-q5upm105-replay": 0
+      "cal-native-q5upm106-migrate": 0,
+      "cal-native-q5upm106-replay": 0
     },
-    "httpProbeExitCode": 1,
-    "httpFailure": "native-callback-unsafe-redirect; combined origin/path guard not yet discriminated",
+    "httpProbeExitCode": 0,
+    "httpFailure": null,
     "providerStatus": 200,
     "publicCallbackExact": true,
     "loginStatus": 200,
@@ -55,7 +55,7 @@
       "valueSha256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8"
     },
     "callbackStatus": 302,
-    "anonymousSessionAndManifestHTTPChecksReached": false,
+    "anonymousSessionAndManifestHTTPChecksReached": true,
     "cleanup": {
       "ownContainersAbsent": true,
       "ownPostgresExited": true,
@@ -63,7 +63,17 @@
       "ownFixtureWorkdirAbsent": true,
       "candidateImageRetained": true
     },
-    "realIdpUserGoogleBrowserAcceptance": false
+    "realIdpUserGoogleBrowserAcceptance": false,
+    "anonymousSessionStrictEmptyObject": true,
+    "manifestSha256": "f8ce61271c6f28562b3c746ce0095d4b4d11fa15bc035e95623c32ab454cbc1f",
+    "callbackRedirectPathClasses": [
+      "nativeError",
+      "nativeSignin",
+      "authLogin"
+    ],
+    "callbackAllOriginsAndAuthoritiesExact": true,
+    "callbackIntermediateFetches": 2,
+    "finalHTMLFetched": false
   },
   "rawScan": {
     "receiptPath": "g2:/data/tmp/cal-image-security-RzCzHd/raw-run-d8-v3/raw-diagnostic-receipt.json",
@@ -127,5 +137,54 @@
     "No existing-data migration, restore, PostgreSQL upgrade or native routing cutover acceptance.",
     "No registry publication, serving image change or release approval.",
     "Raw scanner completion and zero reported critical/secrets do not qualify full inventory or all-layer secret absence."
+  ],
+  "preservedFailedNativeAttempts": [
+    {
+      "receiptPath": "g2:/data/tmp/cal-native-qual-q5upm105/qualification-receipt.json",
+      "receiptSha256": "a34d8ee3f3becac93c95c838797439420f2988564814d877a4b1a9bff1e2869e",
+      "supervisorSha256": "0f3c22f98269cd0abc11eba1eadb518e802ef0c06b6ec9ddae39b2ee914555e9",
+      "probeSha256": "1e119ffef1e2ca82d19feb22252699b7bd000f6fc5f78d7c4cf05925592e96f8",
+      "status": "failed",
+      "migration": {
+        "migrationCount": 596,
+        "migrationSetSHA256": "91b2226ccea886ab65e8ab5a0454220f96ba709dff2028f9bc3da661882c3e23",
+        "migrationRowsSHA256": "78a59113e89804e9f64dfdda235ab806f2458f611509e84b41b79f796541a137",
+        "catalogSHA256": "18693ddff337b44ef950b74383d5eb8527f49f9ff8694c9710f5c97e15017682",
+        "coreCounts": {
+          "users": 0,
+          "accounts": 0,
+          "bookings": 0
+        }
+      },
+      "migrationAndReplayExitCodes": {
+        "cal-native-q5upm105-migrate": 0,
+        "cal-native-q5upm105-replay": 0
+      },
+      "httpProbeExitCode": 1,
+      "httpFailure": "native-callback-unsafe-redirect; combined origin/path guard not yet discriminated",
+      "providerStatus": 200,
+      "publicCallbackExact": true,
+      "loginStatus": 200,
+      "staffButtonPresent": true,
+      "credentialsFormPresent": false,
+      "fixtureSecretPresent": false,
+      "fixtureClientIdPresent": false,
+      "publicStaticTooltipException": {
+        "applied": true,
+        "occurrences": 1,
+        "outsideOccurrences": 0,
+        "valueSha256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8"
+      },
+      "callbackStatus": 302,
+      "anonymousSessionAndManifestHTTPChecksReached": false,
+      "cleanup": {
+        "ownContainersAbsent": true,
+        "ownPostgresExited": true,
+        "ownSocketAbsent": true,
+        "ownFixtureWorkdirAbsent": true,
+        "candidateImageRetained": true
+      },
+      "realIdpUserGoogleBrowserAcceptance": false
+    }
   ]
 }
