@@ -808,6 +808,7 @@ export const getOptions = ({
           ...session.user,
           id: token.id as number,
           name: token.name,
+          email: token.email,
           username: token.username as string,
           orgAwareUsername: token.orgAwareUsername,
           role: token.role as UserPermissionRole,

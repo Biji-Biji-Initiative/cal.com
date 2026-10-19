@@ -462,6 +462,40 @@ test("established legacy session refresh uses fresh DB fields and retains token 
   assert.equal(session.user.role, "USER");
   assert.equal(f.writes.length, 0);
 });
+test("session callback projects refreshed signed-subject email over the decoded-token default", async (t) => {
+  for (const trigger of [undefined, "update"]) {
+    await t.test(trigger ?? "refresh", async () => {
+      const f = legacySessionFixture();
+      f.user.email = "saved@example.test";
+      f.user.name = "Saved Name";
+      f.user.username = "saved-username";
+      const decodedToken = await legacyToken({ id: 8 });
+      const options = callbacks(f);
+      const token = await options.callbacks.jwt({
+        token: decodedToken,
+        trigger,
+        session: { sub: "8", email: "injected@example.test", name: "Injected Name", role: "ADMIN" },
+      });
+      // NextAuth builds this default from decoded claims before projecting the refreshed token.
+      const session = await options.callbacks.session({
+        session: { user: { name: decodedToken.name, email: decodedToken.email }, expires: "future" },
+        token,
+      });
+      for (const key of ["id", "name", "email", "username", "role"]) {
+        assert.equal(session.user[key], f.user[key], key);
+      }
+      assert.notEqual(session.user.email, decodedToken.email);
+      assert.notEqual(session.user.email, "injected@example.test");
+      assert.equal(token.sub, "7");
+      assert.equal(session.expires, "future");
+      assert.deepEqual(
+        f.userQueries.map((query) => query.where),
+        [{ id: 7 }]
+      );
+      assert.equal(f.writes.length, 0);
+    });
+  }
+});
 test("established legacy session cannot follow a changed or reassigned email to another user", async () => {
   const f = legacySessionFixture();
   f.user.email = "changed@example.test";
