@@ -1,17 +1,14 @@
-import { createRouterCaller } from "app/_trpc/context";
-import type { PageProps as ServerPageProps } from "app/_types";
-import { _generateMetadata } from "app/_utils";
-import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
-
 import { getServerSession } from "@calcom/features/auth/lib/getServerSession";
 import { UserRepository } from "@calcom/features/users/repositories/UserRepository";
 import { APP_NAME } from "@calcom/lib/constants";
 import prisma from "@calcom/prisma";
 import { meRouter } from "@calcom/trpc/server/routers/viewer/me/_router";
-
 import { buildLegacyRequest } from "@lib/buildLegacyCtx";
-
+import { createRouterCaller } from "app/_trpc/context";
+import type { PageProps as ServerPageProps } from "app/_types";
+import { _generateMetadata } from "app/_utils";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import Page from "~/getting-started/[[...step]]/onboarding-view";
 
 export const generateMetadata = async ({ params }: ServerPageProps) => {
@@ -26,7 +23,7 @@ export const generateMetadata = async ({ params }: ServerPageProps) => {
   );
 };
 
-const ServerPage = async ({ params, searchParams }: ServerPageProps) => {
+const ServerPage = async ({ params }: ServerPageProps) => {
   const session = await getServerSession({ req: buildLegacyRequest(await headers(), await cookies()) });
 
   if (!session?.user?.id) {
@@ -45,6 +42,25 @@ const ServerPage = async ({ params, searchParams }: ServerPageProps) => {
 
   if (!userTeams || !user) {
     return redirect("/auth/login");
+  }
+
+  const stepParam = (await params).step;
+  const steps = typeof stepParam === "string" ? [stepParam] : (stepParam ?? []);
+  if (
+    !user.username?.trim() &&
+    steps.length > 0 &&
+    steps[0] !== "user-settings" &&
+    steps.every((step) =>
+      [
+        "user-settings",
+        "connected-calendar",
+        "connected-video",
+        "setup-availability",
+        "user-profile",
+      ].includes(step)
+    )
+  ) {
+    return redirect("/getting-started/user-settings");
   }
 
   return <Page user={user} hasPendingInvites={!!userTeams.teams.find((team) => team.accepted === false)} />;

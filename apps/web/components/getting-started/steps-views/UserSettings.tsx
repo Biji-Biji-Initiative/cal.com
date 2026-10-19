@@ -1,20 +1,19 @@
 "use client";
 
+import dayjs from "@calcom/dayjs";
+import { useTimePreferences } from "@calcom/features/bookings/lib";
+import { FULL_NAME_LENGTH_MAX_LIMIT } from "@calcom/lib/constants";
+import { useLocale } from "@calcom/lib/hooks/useLocale";
+import type { RouterOutputs } from "@calcom/trpc/react";
+import { trpc } from "@calcom/trpc/react";
+import { Button } from "@calcom/ui/components/button";
+import { Input } from "@calcom/ui/components/form";
+import { showToast } from "@calcom/ui/components/toast";
+import { TimezoneSelect } from "@calcom/web/modules/timezone/components/TimezoneSelect";
+import { UsernameAvailabilityField } from "@components/ui/UsernameAvailability";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-import dayjs from "@calcom/dayjs";
-import { useTimePreferences } from "@calcom/features/bookings/lib";
-import { TimezoneSelect } from "@calcom/web/modules/timezone/components/TimezoneSelect";
-import { FULL_NAME_LENGTH_MAX_LIMIT } from "@calcom/lib/constants";
-import { useLocale } from "@calcom/lib/hooks/useLocale";
-import { trpc } from "@calcom/trpc/react";
-import type { RouterOutputs } from "@calcom/trpc/react";
-import { Button } from "@calcom/ui/components/button";
-import { Input } from "@calcom/ui/components/form";
-
-import { UsernameAvailabilityField } from "@components/ui/UsernameAvailability";
 
 interface IUserSettingsProps {
   nextStep: () => void;
@@ -25,6 +24,8 @@ interface IUserSettingsProps {
 const UserSettings = (props: IUserSettingsProps) => {
   const { nextStep, user } = props;
   const { t } = useLocale();
+  const [savedUser] = trpc.viewer.me.get.useSuspenseQuery(undefined, { initialData: user });
+  const hasSavedUsername = !!savedUser.username?.trim();
   const { setTimezone: setSelectedTimeZone, timezone: selectedTimeZone } = useTimePreferences();
   const userSettingsSchema = z.object({
     name: z
@@ -60,6 +61,9 @@ const UserSettings = (props: IUserSettingsProps) => {
   });
 
   const onSubmit = handleSubmit((data) => {
+    if (!hasSavedUsername || mutation.isPending) {
+      return;
+    }
     mutation.mutate({
       name: data.name,
       timeZone: selectedTimeZone,
@@ -69,8 +73,20 @@ const UserSettings = (props: IUserSettingsProps) => {
   return (
     <form onSubmit={onSubmit}>
       <div className="stack-y-6">
-        {/* Username textfield: when not coming from signup */}
-        {!props.hideUsername && <UsernameAvailabilityField />}
+        {(!props.hideUsername || !hasSavedUsername) && (
+          <UsernameAvailabilityField
+            onSuccessMutation={async () => {
+              await utils.viewer.me.get.invalidate();
+              await utils.viewer.me.get.fetch(undefined, { staleTime: 0 });
+            }}
+            onErrorMutation={() => showToast(t("error_updating_settings"), "error")}
+          />
+        )}
+        {!hasSavedUsername && (
+          <p className="text-sm text-subtle" role="status">
+            {t("onboarding_username_required")}
+          </p>
+        )}
 
         {/* Full name textfield */}
         <div className="w-full">
@@ -118,7 +134,7 @@ const UserSettings = (props: IUserSettingsProps) => {
         className="mt-8 flex w-full flex-row justify-center"
         loading={mutation.isPending}
         data-testid="connect-calendar-button"
-        disabled={mutation.isPending}>
+        disabled={!hasSavedUsername || mutation.isPending}>
         {t("connect_your_calendar")}
       </Button>
     </form>

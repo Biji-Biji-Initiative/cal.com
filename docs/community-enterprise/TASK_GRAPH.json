@@ -1027,7 +1027,7 @@
       "parent": "CAL-05",
       "kind": "task",
       "title": "Routine team administration through the existing UI",
-      "state": "runtime_proven",
+      "state": "in_progress",
       "requires": [
         "CAL-05.CORE",
         "CAL-04.OIDC"
@@ -1094,6 +1094,13 @@
           "application_source": "167f457dfe1004d897144c2c6323c23df240a8c7",
           "test_source": "fc02e571df63ee3278680bff340f47a1e1d628e2",
           "summary": "Nine retained native journeys and four extended UI cases pass on one exact local build; current 570 source/53 role-DB cases pass. Operator-service admitted fresh member setup, keyboard org isolation and response-bound invitation consent are proven; optional providers skipped as allowed, never claimed connected."
+        },
+        {
+          "file": "docs/community-enterprise/ONBOARDING-2026-10-14.md",
+          "level": "source",
+          "command": "TMPDIR=/data/tmp node --test --test-concurrency=1 tests/community-enterprise/onboarding-username.test.cjs",
+          "exit_code": 0,
+          "summary": "39 actual React/form/Zod/native username-field and server-route cases pass. Fresh SSO setup requires an explicitly saved effective username before later steps; unsaved drafts, rejected saves and failed readback cannot advance. Server data seeds the initial query; existing personal/organization handles, authentication, invalid-step fallback and optional calendar/video skip remain. No live account/browser/provider/deployed candidate claim."
         }
       ],
       "required_for_team_release": true,
@@ -1102,7 +1109,7 @@
       "priority": 1,
       "progress": "Original assembled routine administration UI contract accepted on current native application. Real shared-preview/IdP/provider/revocation/migration and broader API grants remain separate requirements.",
       "progress_reference": "docs/community-enterprise/MEGA-WAVE-ACCEPTANCE-2026-10-16.md",
-      "progress_summary": "Actual browser selects successor/schedule, previews precise effects, rejects changed review, commits handoff and separately removes eligible old access. No live product/deployment acceptance implied."
+      "progress_summary": "Historical local browser administration evidence is retained. The 2026-10-19 ordinary-person source correction requires an explicitly saved effective username before setup advances; 39 actual React/form/native-field/route cases pass. Managed-platform missing personal handles and organization calendar-install acceptance remain open: me can expose an organization profile handle while installation requires a personal database username. Shared-preview/IdP/provider/deployed candidate acceptance remains separate and open."
     },
     {
       "id": "CAL-05.API",

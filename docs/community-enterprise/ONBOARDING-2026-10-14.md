@@ -159,3 +159,41 @@ and the complete staff/admin/guest journey. All 39 existing task IDs, prerequisi
 previous evidence, states and milestones remain. Acceptance is strengthened; no
 release or deployed milestone is closed. The 19 graph regression cases include
 phase-group references to the canonical task identities.
+
+## Missing username prerequisite correction — 2026-10-19
+
+The retained first-run form previously saved only name/timezone and admitted a
+fresh SSO account to calendar installation without a username. Installation then
+requires a database username and redirects to `/apps` when it is absent. This is
+an evidenced inconsistent progression path; it does not attribute a particular
+user's reported redirect loop to that path.
+
+Setup now keeps its unchanged native availability/explicit-save field visible
+when the saved effective username is missing, including the signup hide hint.
+Continue and actual form submission require the saved `viewer.me.get` username,
+not a draft, availability check or save acknowledgment. Successful explicit save
+invalidates and freshly reads that query. Native server data seeds the query so
+existing handles do not acquire an extra initial suspension. Existing personal/profile
+handles are preserved; name/timezone submission never invents or changes a handle. The server
+also redirects valid later setup steps to user settings until that prerequisite
+exists. Authentication and invalid-step fallback behavior remain intact.
+
+`TMPDIR=/data/tmp node --test --test-concurrency=1 tests/community-enterprise/onboarding-username.test.cjs`
+passes 39 source cases using actual React renders, React Hook Form, Zod, native
+username field/debounce and server-page execution. Named network/session,
+translation and presentation doubles cover rejected/unsaved/pending/read-failure
+paths, Enter/native submission, fresh saved readback before session refresh,
+existing handles and optional calendar/video skip navigation. Seventeen cases
+failed before the correction. No account, completion flag, provider, browser or
+serving-image change is included; deployed candidate acceptance remains open.
+
+Two distinct admission limits remain open. A managed platform profile can expose
+the synthetic organization `{ id: -1, isPlatform: true }` while its personal
+username is absent. The unchanged shared field disables editing for any truthy
+organization ID; this correction neither overrides that constraint nor establishes
+managed-platform setup admission. Ordinary organization profile handles remain
+usable at this step, but app installation separately reads the personal database
+username. Preserving the organization form and skip behavior does not establish
+organization calendar-install acceptance when that personal handle is missing.
+CAL-05.UI remains in progress; previous local runtime evidence retains its exact
+historical scope. No universal managed-account or deployed acceptance is claimed.
