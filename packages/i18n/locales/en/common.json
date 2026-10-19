@@ -4934,5 +4934,9 @@
   "enterprise_role_after": "Requested role",
   "enterprise_roles_catalogue_boundary": "Choose supported read-only delegations. These do not grant administration, editing, API keys or access to sibling teams. Role definitions cannot be edited in place; create a replacement and review each assignment.",
   "enterprise_role_review_boundary": "This is a local grant for the selected scope. Personal ownership and other memberships stay unchanged. Returning to standard member restores its normal rights; it does not remove membership. No directory grant is replaced.",
-  "enterprise_role_unmanaged": "Legacy or externally changed definition - not assignable here"
+  "enterprise_role_unmanaged": "Legacy or externally changed definition - not assignable here",
+  "mereka_sign_in_pending": "Opening Mereka sign-in...",
+  "mereka_sign_in_failed": "Mereka sign-in could not start. Please try again.",
+  "mereka_sign_in_unavailable": "Mereka sign-in is unavailable.",
+  "mereka_sign_in_invalid_return": "This sign-in link has an invalid return address."
 }

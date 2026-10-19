@@ -22,7 +22,9 @@ route. Use the provider's application-specific issuer, without a trailing slash.
 The exact redirect is the configured web application origin followed by
 `/api/auth/callback/authentik`. Register it exactly; do not use wildcard redirects.
 HTTPS is required in production. Loopback HTTP is allowed for development tests.
-Only the enabled boolean, never client configuration, is passed to the login UI.
+The ordinary login UI receives only the enabled boolean. The explicit entry below
+also receives the public issuer origin and validated callback; neither UI receives
+the OAuth client ID or secret as props.
 
 The native provider performs discovery, signed ID-token verification, client
 (audience) validation, authorization-code exchange and PKCE/state/nonce checks.
@@ -131,7 +133,7 @@ mint → protected-page denial → intercepted login → repeated bridge-attempt
 The explicit login page waits for another user action; this is a cutover hazard
 derived from source, not proof of the reported current user's browser loop.
 
-The candidate has no native `/auth/mereka` route or auto-login query input.
+The inspected d8 candidate has no native `/auth/mereka` route or auto-login query input.
 Its existing [login action:199](../../apps/web/modules/auth/login-view.tsx#L199)
 explicitly calls `signIn("authentik", { callbackUrl })`; `/auth/signin` also renders
 provider buttons. The installed NextAuth v4 core GET `signin` handler redirects
@@ -188,7 +190,17 @@ database handle and managed-platform limits remain in [onboarding evidence](ONBO
 4. Switch the dev Service to native port 3000, resolve ingress forward-auth and
    alias behavior, and retire/redirect the old explicit entry and legacy mint in
    the same reviewed transition. Merely replacing the backend image behind proxy
-   port 8080 does not expose the candidate's native login UI.
+   port 8080 does not expose the candidate's native login UI. Remove the stock
+   workload's command/args override atomically too: the maintained
+   [dev overlay:379](https://github.com/Biji-Biji-Initiative/bbi-infrastructure/blob/ee96e4f0861e1a40d0e734a3f861a7d51c94d161/apps/calcom/overlays/dev/kustomization.yaml#L379)
+   invokes `exec yarn start`, whereas
+   [Dockerfile.enterprise-preview:40](../../Dockerfile.enterprise-preview#L40)
+   uses the direct Node entrypoint and removes Yarn. The historical deliberate
+   old-command control exits 127; see
+   [RUNTIME-SECURITY-2026-10-16.md:93](RUNTIME-SECURITY-2026-10-16.md#L93).
+   Carrying that override into the native image prevents startup before login.
+   Repoint the maintained dev launcher catalog/blueprint from the site root to
+   the explicit native entry only after its selected artifact contains that route.
 5. Accept the actual native callback/session, linked/unlinked and revoked/locked
    principals, fresh ordinary-person setup, explicit login/logout, launcher and
    no-cookie navigation at their real runtime scope. Source/protocol fixtures and
@@ -196,11 +208,62 @@ database handle and managed-platform limits remain in [onboarding evidence](ONBO
    separate.
 
 For an auth-wiring rollback, restore the captured dev stock image, proxy carrier,
-Service targetPort 8080, ingress auth annotations and previous env references through
+Service targetPort 8080, the captured stock command/args, ingress auth annotations and previous env references through
 GitOps. Retain original session/encryption keys, proxy provider, Google credentials
 and identity/audit records. Expect explicit re-login, not session migration.
 Candidate schema changes require their own tested compatibility/recovery decision;
 an image revert alone is not database rollback proof.
+
+## Explicit native launcher entry — source candidate 2026-10-19
+
+The newer application-owned `/auth/mereka` page starts the existing native
+provider after React commits. `/auth/login` remains an explicit manual page,
+including after logout. The default return is `/event-types`; optional `rd` must
+be a single bounded relative or absolute canonical-origin URL accepted by the
+existing workspace return-path policy. Foreign origins, scheme/port changes,
+credentials, malformed/repeated inputs and auth/API/removed-commerce paths are
+explicit errors, not silent fallback sign-in attempts. Browser origin must agree
+with the canonical callback origin; aliases need qualified canonical routing.
+Disabled or malformed native configuration performs no initiation.
+
+The client uses public same-origin `GET /api/auth/csrf`, then form-encoded
+`POST /api/auth/signin/authentik` with `csrfToken`, `callbackUrl` and `json=true`.
+The installed NextAuth 4.24.15 public handler applies native cookies and returns
+JSON `{url}`; it can also return a 200 JSON local error URL. Both responses must be
+HTTP 200 with `application/json`, and their streamed bodies are capped at 4 KiB
+and 16 KiB respectively, even without Content-Length. CSRF is nonblank and at
+most 512 characters. The authorization URL is capped at 8192 characters and
+must match the origin derived from the validated issuer, with no credentials or
+fragment, the exact native callback, and unique nonblank client/state/nonce/PKCE
+code-flow fields. A cross-origin discovered authorization endpoint is refused
+until separately qualified; no client configuration is serialized or logged.
+
+One AbortController and 30-second deadline cover fetches and body consumption.
+StrictMode reuses one attempt; unmount, callback/issuer changes and manual exit
+cancel ownership, and stale results cannot redirect. Errors offer explicit retry.
+The UI reports pending/error only: navigation to authorization is not a native
+session or account-admission certificate. Once the browser leaves for the IdP,
+the application cannot cancel that external flow or certify server cancellation.
+Separate tabs may still compete for the native provider's OAuth cookies.
+No private NextAuth internals, custom identity/cookie minting, user creation,
+linking, role changes or session shortcut is introduced.
+
+`TMPDIR=/data/tmp node --test --test-concurrency=1 tests/community-enterprise/mereka-entry.test.cjs`
+passes 100 cases with zero skips. The first installed-handler positive protocol
+test passed before production edits and confirmed the actual production provider's
+nonce/state/S256 shape. Protocol controls execute the production API wrapper,
+staff dispatch, provider and public NextAuth handler against loopback discovery;
+only application option assembly is doubled, and admission/session callbacks
+throw if initiation invokes them. Other controls render the real server page and
+React/ReactDOM/JSDOM component with named transport/navigation/i18n/presentation
+boundaries, including a reader that ignores cancellation. Existing signed
+callback/linkage/revocation tests remain separate admission evidence.
+
+This source is newer than d8's completed standalone build/archive. That d8
+artifact is not deployed and does not contain this entry route; no build or
+archive is relabeled here. Live provider/client/secret alignment, reviewed exact
+issuer/subject/user-UUID linkage, startup/routing/mint retirement, ordinary-person
+and launcher acceptance remain open. Google Calendar OAuth remains independent.
 
 ## Native logout completion — 2026-10-19
 

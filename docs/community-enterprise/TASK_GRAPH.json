@@ -733,19 +733,27 @@
           "source_revision": "d8dae0cb45af05cf14c7ba4790f0ed1e018fe39c",
           "infrastructure_source": "ee96e4f0861e1a40d0e734a3f861a7d51c94d161",
           "summary": "2026-10-19 read-only dev prerequisite assessment: five CAL_AUTHENTIK runtime names are unwired, native client and issuer/subject/user-UUID Account linkage are unproven, and the current proxy mints unmarked JWTs rejected by native-only validation. Atomic dev routing/mint retirement and an explicit launcher-entry decision are required. No live native ordinary-person, launcher, callback/session or provider acceptance is certified."
+        },
+        {
+          "file": "docs/community-enterprise/AUTHENTIK.md",
+          "level": "source",
+          "command": "TMPDIR=/data/tmp node --test --test-concurrency=1 tests/community-enterprise/mereka-entry.test.cjs",
+          "exit_code": 0,
+          "summary": "100 source cases cover the explicit application-owned native entry, strict canonical rd rejection, bounded byte-capped public NextAuth initiation, actual provider/API/public-handler loopback positive and negative controls, and React StrictMode/unmount/change/retry ownership. No live IdP, Account admission, launcher/cutover or serving-image proof; d8's completed standalone artifact predates this source."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 1,
-      "progress": "Historical native provider/protocol source proof and dependent historical states are retained exactly. source_proven does not certify live native dev or launcher admission; the newly assessed deployment boundary remains open.",
+      "progress": "Historical native provider/protocol source proof and dependent historical states are retained exactly. A newer explicit native entry has bounded source/protocol/render acceptance; it is absent from d8's completed standalone artifact. source_proven does not certify live native dev or launcher admission; the deployment boundary remains open.",
       "progress_reference": "docs/community-enterprise/AUTHENTIK.md",
-      "progress_summary": "Identity owner must qualify the native dev provider/secret mirror and reviewed issuer/subject/user-UUID admission, then coordinate dev-only native routing and legacy mint retirement. Ordinary-person setup, explicit logout/login, launcher and provider acceptance remain separate runtime work; Google Calendar OAuth is independent.",
+      "progress_summary": "Identity owner must qualify the native dev provider/secret mirror and reviewed issuer/subject/user-UUID admission, then coordinate dev-only native routing, removal of the stock Yarn command override and legacy mint retirement. Launcher metadata must target an artifact containing the explicit entry. Ordinary-person setup, explicit logout/login, launcher and provider acceptance remain separate runtime work; Google Calendar OAuth is independent.",
       "blockers": [
         "Live dev still serves stock Cal with the proxy on Service targetPort 8080; Deployment/ESO/Secret key-name inspection shows no CAL_AUTHENTIK wiring.",
         "Maintained Cal declarations are proxy providers; a usable live native OIDC client, exact callback/issuer, secret alignment and user 1 Account linkage remain unqualified.",
-        "The legacy /auth/mereka mint lacks the native authentik marker and cannot front CAL_AUTHENTIK_ONLY=true. Candidate has an explicit native login button but no one-click native /auth/mereka route or auto-login input."
+        "The legacy /auth/mereka mint lacks the native authentik marker and cannot front CAL_AUTHENTIK_ONLY=true. The newer source entry is not in d8's completed standalone artifact or live dev; launcher metadata still targets the site root.",
+        "The dev stock command/args invoke exec yarn start, but the native image removes Yarn and requires its Node entrypoint. Historical old-command control exits 127; remove/restore this override atomically with native cutover/stock rollback."
       ]
     },
     {
