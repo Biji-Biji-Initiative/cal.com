@@ -768,6 +768,13 @@
           "exit_code": 0,
           "summary": "Current native marker/session callbacks, local lock/unlink/rebind, client-update and accepted-profile cases pass. Separate import-bound token-reader inventory records unresolved bearer/route boundaries; not IdP revocation or all direct JWT readers as certified authorizers.",
           "source_revision": "fd04d517c60ed3cdbcc2cb1dc040d6f85e40b8b5"
+        },
+        {
+          "file": "docs/community-enterprise/AUTHENTIK.md",
+          "level": "source",
+          "command": "node --test --test-concurrency=1 tests/community-enterprise/logout-view.test.cjs",
+          "exit_code": 0,
+          "summary": "50 actual React render cases cover post-commit native logout, strict JSON media types and bounded CSRF tokens, fresh empty-session proof, bounded failures, retry, StrictMode, unmount and delayed survey navigation. The original component failed all 31 initial regression cases. Transport/presentation are controlled; no deployed cookie, real IdP logout or serving-image acceptance is claimed."
         }
       ],
       "required_for_team_release": true,

@@ -72,6 +72,34 @@ other login-path enforcement, direct JWT consumers and API bearer revocation
 remain explicit production tasks. A failed live IdP lookup must not be silently
 substituted with stale privileges when those tasks are implemented.
 
+## Native logout completion — 2026-10-19
+
+The native logout page now starts one CSRF GET / signout POST / fresh session
+GET attempt after React commits. All three responses require HTTP 200 and an
+`application/json` media type; CSRF tokens must be nonblank and at most 512 characters.
+It requires the exact same-origin
+logout callback acknowledgement, and a plain empty JSON session object before
+showing success, enabling login or leaving for the cancellation survey. A failed
+or malformed session read, `null`, an active session or a refused signout cannot
+be mistaken for completion. NextAuth's public session helpers convert failed
+reads to `null`, so they are not used as the completion certificate.
+
+A shared attempt survives StrictMode effect replay; a real unmount aborts it and
+ignores late UI updates. The entire attempt, including JSON bodies, is bounded
+to 30 seconds and failures offer an explicit retry. Successful login/survey
+navigation reloads the destination rather than reusing stale session context.
+Password-reset/email-change copy remains visible only after verified completion.
+Existing translation keys are retained. This ends the local Cal session; it does
+not sign out the central identity provider or change proxy cookie handling.
+
+`node --test --test-concurrency=1 tests/community-enterprise/logout-view.test.cjs`
+passes 50 actual React/ReactDOM/JSDOM render cases with zero skips. The initial
+31-case regression failed all 31 against the unchanged component, which started
+signout during render and unconditionally displayed success. Transport,
+navigation, translations and presentation are controlled test boundaries; React
+hooks, effects, StrictMode, DOM events and promise timing are real. This is
+source/component acceptance, not a browser, cookie-expiry or serving-image proof.
+
 ## What has been tested
 
 The source tests execute the actual application callbacks, Cal account adapter
