@@ -2328,6 +2328,15 @@
       "production_changed": false,
       "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
       "notes": "15:12Z continuation: Deepmerge bc03 and Nanoid a5fe source publications independently verified, focused 7 and 33 cases pass; frozen native source audits286->285->281 with none introduced. Broad ToDesktop43 errors, prior full postinstall failures and unsuppressed scanner dispositions remain open; failed Nanoid comparison wrapper preserved separately from native scan success. Signed distroless metadata/design accepted, focused source work active but no layer pull/new image/runtime acceptance. Infra87b registry correction is source-only; Google redirect mismatch remains, bbi-k8 is source-corroborated project candidate without actual Console/client/admin verification. Backup reset59offlinecases pass with explicit UBS timeout/coverage limits; fresh preparation refused before archive, one fixedBackupGET then passed without attributing original cause. Correction: the second preparation helper omitted retained sources:[], so its Argo comparison refusal did not establish live source drift. Helper-only8controls pass; fresh10reads/allguards/exactArgo binding then passed and reviewed7ffpreflight produced dryrender2774. Root reviewed frozen-source plan32d0/fiveinputs/fourtools/privateFileVault custody and separately authorized one bounded metadata-only acquisition; no accepted archive/FSB/Restore/SQL/data recovery is established by that authorization. Native-only packaged artifact versus existing devSSObridge contract, publisher authority, real staff logout/onboarding/calendar and both credential incidents remain open. No deployment, task closure or production acceptance; all39 task objects and prior checkpoints unchanged."
+    },
+    {
+      "date": "2026-10-19",
+      "application_source": "e452d8ee92c60b2301be387aaae20624bed11ee3",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-02.PREVIEW",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
+      "notes": "Published explicit bridge-compatible source e452 and distroless recipe e6dc; exact remote bytes independently verified. Focused355 pass; strict actual import closure108 identical pre/post diagnostics remains FAILED/unwaived; producer full types/build and new exact-image/native/data/security qualification remain open. Packaging26 plain fixtures pass without an image action. Owner selected existing single bridge with strict native default otherwise; reported staff lifecycle awaits receipts. Backup metadata remains refused at imagePullSecrets, all raw custody disposed; isolated reset64 offline reader/focused actual-CLI controls pass while full wrapper140s timeout remains unverified. No Restore/FSB/recovery SQL/quiescence. Google redirect mismatch, Console/admin/publisher authority, actual staff onboarding/logout/calendar and both prior credential incidents remain open. No task closure or production acceptance; all39 task objects and all prior checkpoints unchanged."
     }
   ]
 }
