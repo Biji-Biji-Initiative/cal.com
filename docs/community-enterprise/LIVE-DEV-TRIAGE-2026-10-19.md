@@ -415,3 +415,125 @@ Evidence: producer `a06f3ded703c6d3a2e5a967c66f5c0341113b40d711d0224b8fea4784ad2
 native `340a9bcc3b09b2c4ea95f046f93837cb649a1ee7875cebb0e390d6adcd052f0d`;
 whole-layer scan `887aa3476077898e1b0729fab547a3c6f5bc3063794fe782d2129078821f8017`;
 restore warning projection `7d05af25a322498f986dbec4cc6eb128017a56916280049fc445313c1a77017f`.
+
+
+## Public entry and calendar connection failures (2026-10-20 reports)
+
+The owner reported an automatic IdP redirect, a second login prompt after
+passkey authentication, slow logout, missing Google Calendar and an Apple
+connection error. The requested flow is a public Cal welcome, explicit Mereka
+sign-in and then the workspace, with app logout returning to the welcome.
+
+The DEV public-entry fixes are published and adopted as infrastructure commits
+`729d3821346fcbe053190fe4be2957708b69c778` and
+`99f45a439d9aa92f6a82ec8cece188f26ac91481`. The first fixes the session-entry
+mismatch: only `/auth/mereka` mints the local Cal bridge session, while the old
+protected catch-all root started IdP authentication without that entry. Public
+root and login now render a styled welcome with a passive sign-in link. Existing
+sessions are checked through a bounded cookie-only native session request, and
+native-confirmed app logout returns to `/`. The second fixes the observed
+Traefik 3.7.15 NGINX-compatibility rule-priority failure with a DEV-only native
+exact-root route, explicit priority and the same rate limit. The initial live
+root redirect failure is retained. Stage/prod activation and logout behavior
+are unchanged.
+
+The focused source suites pass 63 entry cases and ten routing cases; the
+routing suite first reproduced the defect. Full affected-file Gitleaks, syntax
+and diff checks pass. Unsuppressed UBS results and dispositions are retained:
+22 critical, 32 warning and 355 informational findings for the first change,
+and one critical, four warning and 52 informational findings for routing. These
+are not clean UBS scans.
+
+Both DEV hosts pass 24 live HTTP checks covering public welcome, methods,
+explicit entry, spoofed-header isolation, protected routes, anonymous session
+and native CSRF denial. Two failed observers with over-specific IdP/CSRF-path
+expectations remain retained. Actual headless Chromium then passes fourteen
+browser steps across both hosts in 39.305 seconds: painted welcome, warm reload,
+login, native client CSRF/logout/session requests, same-host welcome return,
+shared-cookiejar empty-session confirmation, invalid synthetic-cookie recovery
+and an explicit click to interactive Authentik login. Anonymous logout took
+3.052 and 3.067 seconds including quiet, confirmation and screenshot. An earlier
+regular-Chromium launch failed before a host request; a later optional document
+fetch failed under the welcome's intentional restrictive CSP. Both failed runs
+remain separate from the final pass. All owned browser processes, contexts,
+profiles and cgroup are absent; the actual slot was released at 22:58:55Z.
+This proves anonymous behavior, not staff passkey/dashboard, authenticated
+logout or old-token revocation.
+
+The native application welcome counterpart is published as
+`feb0256f5e4f925496a106668902fa9063262e82`. Five focused cases, baseline/candidate
+strict types, Biome and diff checks pass. Full-source Gitleaks retains one
+unchanged baseline translation finding with zero introduced findings. UBS
+retains 12 critical, six warning and 155 informational findings; all critical
+and warning occurrences are in unchanged test fixtures. This source is not yet
+built into a new serving image.
+
+The Apple failure has an independently confirmed server cause: the running
+stock Cal 6.2 AES-256 constructor received a 64-byte Latin-1 encryption key and
+returned `ERR_CRYPTO_INVALID_KEYLEN`. A bounded read-only database snapshot
+found zero affected credential, two-factor, encrypted deployment-token or
+platform OAuth records. The DEV secret binding was proven distinct from
+staging/production. One DEV provider update created a qualified 32-byte ASCII
+key at version 2, with version 1 retained for rollback. Exact readback passed;
+temporary rollback escrow and bearer files are absent. No NextAuth key, stored
+user data or other environment was changed.
+
+ESO initially remained Ready with the old value because its refresh interval
+is one hour. One guarded DEV force-sync metadata request refreshed the owned
+Secret at 22:34Z. The sole GitOps rollout carrier,
+`d75a04050382dda8238b29b2e788b53dac538a28`, changes one DEV template annotation;
+complete rendered-object comparison confirms no other object change.
+Generation 40 became ready. A fresh exact-Pod check confirms 32 Latin-1 bytes
+and an accepted AES-256 constructor with no invalid-key-length error. The check
+performed no password attempt, encryption, decryption or database write. Apple
+provider connection is still pending. The app-specific password exposed in the
+owner's screenshot was not copied or tested; the owner was advised to revoke it.
+
+The owner signed into Google Console and enabled Safari JavaScript automation.
+The exact existing `cal-com-web-dev` Web client in BBI K8 Infrastructure,
+project `907021223244`, matches both live DEV client identifiers by SHA-256.
+One normal Save appended only
+`https://cal.mereka.dev/api/integrations/googlecalendar/callback`.
+Reload verified the original two ordered redirects and two origins unchanged,
+with the callback as the third redirect. Separate staging/production clients
+and other settings were untouched. A fresh anonymous Google challenge returned
+to the exact callback with `interaction_required`; redirect registration is
+now accepted instead of the earlier redirect mismatch. This is not consent,
+code exchange or calendar connection proof.
+
+The installed stock integration reads the App database keys without an
+environment fallback. The live `google-calendar` row was disabled with SQL-null
+keys despite complete matching credentials in the container environment. A
+reviewed one-row compare-and-swap enablement uses only those canonical runtime
+keys in container RAM, guarded by the original row version, exact DEV database
+and current source identities. The single update committed successfully at 23:23Z with exact three-field key
+readback and a closed connection; seven native calls returned zero. It created
+no credential records. Signed-in browser verification remains separate; no
+calendar connection is accepted in this checkpoint. CalDAV
+needs its own provider's server details and is not required for Google Calendar.
+
+Offline physical image inventory v3 genuinely refused contradictory module
+metadata before comparison. A subsequent bounded data-only diagnostic identified
+`next-i18next/dist/commonjs/createClient/package.json`, an internal dual-target
+marker with no version. Its bytes match the retained image metadata and
+installed package, whose own imports use that helper. The proposed correction
+is limited to that exact marker and physical parent; no parent version is
+assigned to it. Inventory remains failed pending focused source controls and a
+separately qualified comparison. All inputs remain unchanged and all owned
+processes/cgroups are absent, with the diagnostic slot released at 23:21:24Z.
+The 89 source secret-detector occurrences remain unwaived. The live DEV image
+is still the stock Cal Node-runtime rebase; functional image publication,
+priced onboarding and production acceptance remain open.
+
+Retained evidence:
+
+- Live HTTP receipt: `2cf5f9481a53510128107c601178197e4d7fe1271659d6113fcaa382e7cb6321`.
+- Final anonymous browser receipt: `c7c2fa2dbfca07ad807ca8bca41cfbdfd1ca86d66596dd68709e30ba986b4835`.
+- DEV key update: `2f81ef1ad521fd08b721ab93ad10ed958e589b99b600ea09625150ab648730f8`.
+- Fresh running-process key proof: `73d10ac0b75630fb842dc1efb16caef04dcf0f95fa514f110c5ed6c723f68110`.
+- Saved/reloaded Google callback: `6bbbef7c690d15ab6469c877c0c3936e8d2e7ab2a1d215a571d1a6b3b452e5ac`.
+- Fresh Google redirect acceptance: `4afe52f9d3fd7e98552b3c4e1460d5e2435d304f99738c7819dabbf28a448dcc`.
+- Failed physical inventory v3: `ecda36612f035f6fbab14cd228cd9c99f9f987b28f95be94cd3f5d5a98eb93f9`.
+
+All 39 task objects, previous graph checkpoints and other graph fields remain
+unchanged; this checkpoint does not close staff, calendar or release acceptance.
