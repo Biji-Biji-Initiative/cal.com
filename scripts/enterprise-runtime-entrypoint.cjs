@@ -25,7 +25,15 @@ function validateRuntime(env, receipt, mode) {
       env.CALENDSO_ENCRYPTION_KEY.length < 32
     )
       throw new Error("Runtime session and encryption keys are required");
-    if (
+    const bridge = env.CAL_AUTHENTIK_ENABLED === "false" && env.CAL_AUTHENTIK_ONLY === "false";
+    if (bridge) {
+      if (
+        env.CAL_AUTHENTIK_ISSUER !== undefined ||
+        env.CAL_AUTHENTIK_CLIENT_ID !== undefined ||
+        env.CAL_AUTHENTIK_CLIENT_SECRET !== undefined
+      )
+        throw new Error("Bridge staff identity cannot configure a native provider");
+    } else if (
       env.CAL_AUTHENTIK_ENABLED !== "true" ||
       env.CAL_AUTHENTIK_ONLY !== "true" ||
       !env.CAL_AUTHENTIK_ISSUER ||

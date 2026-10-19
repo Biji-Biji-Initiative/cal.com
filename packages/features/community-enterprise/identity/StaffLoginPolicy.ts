@@ -3,6 +3,10 @@ export type StaffLoginEnvironment = Readonly<Record<string, string | undefined>>
 type AccountContext = { account?: { provider: string; type: string } | null };
 type TokenContext = AccountContext & { token: object };
 
+export function isBridgeStaffOnly(env: StaffLoginEnvironment): boolean {
+  return env.CAL_AUTHENTIK_ENABLED === "false" && env.CAL_AUTHENTIK_ONLY === "false";
+}
+
 export function isAuthentikOnly(env: StaffLoginEnvironment): boolean {
   const value = env.CAL_AUTHENTIK_ONLY;
   if (value === undefined || value === "false") return false;
@@ -75,7 +79,8 @@ export function restrictLocalAccountRoute<Args extends unknown[]>(
   environment: () => StaffLoginEnvironment
 ) {
   return async (...args: Args): Promise<Response> => {
-    if (isAuthentikOnly(environment())) {
+    const env = environment();
+    if (isAuthentikOnly(env) || isBridgeStaffOnly(env)) {
       // Deny before parsing a body, inspecting an invite, writing a password,
       // bootstrapping an administrator, or delivering account-recovery mail.
       return Response.json(
@@ -87,5 +92,26 @@ export function restrictLocalAccountRoute<Args extends unknown[]>(
       );
     }
     return next(...args);
+  };
+}
+
+export function restrictBridgeJwt<
+  T extends TokenContext & { user?: unknown; trigger?: string },
+  Result extends object,
+>(next: (context: T) => Result | PromiseLike<Result>) {
+  return async (context: T): Promise<Result> => {
+    // Only the trusted carrier issues bridge sessions. The existing callback
+    // must still refresh the signed subject against the current database user.
+    if (
+      context.account ||
+      context.user !== undefined ||
+      (context.trigger !== undefined && context.trigger !== "update") ||
+      hasAuthentikMarker(context.token)
+    ) {
+      throw new Error("An existing bridge session is required");
+    }
+    const token = await next(context);
+    if (hasAuthentikMarker(token)) throw new Error("Unexpected native identity binding");
+    return token;
   };
 }

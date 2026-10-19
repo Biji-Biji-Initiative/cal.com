@@ -9,6 +9,7 @@ const ts = require("typescript");
 const root = path.resolve(__dirname, "../..");
 const policyPath = "@calcom/features/community-enterprise/identity/StaffLoginPolicy";
 const strict = { CAL_AUTHENTIK_ONLY: "true", CAL_AUTHENTIK_ENABLED: "true" };
+const bridge = { CAL_AUTHENTIK_ONLY: "false", CAL_AUTHENTIK_ENABLED: "false" };
 const native = { provider: "authentik", type: "oauth" };
 const marker = { authentik: { version: 1 } };
 
@@ -41,6 +42,13 @@ const policy = compile(read("packages/features/community-enterprise/identity/Sta
 test("default and explicit false preserve existing login policy", () => {
   assert.equal(policy.isAuthentikOnly({}), false);
   assert.equal(policy.isAuthentikOnly({ CAL_AUTHENTIK_ONLY: "false" }), false);
+});
+test("bridge staff restriction requires the exact explicit pair and does not become native-only", () => {
+  assert.equal(policy.isBridgeStaffOnly(bridge), true);
+  assert.equal(policy.isAuthentikOnly(bridge), false);
+  for (const env of [{}, strict, { CAL_AUTHENTIK_ONLY: "false" }, { CAL_AUTHENTIK_ENABLED: "false" }]) {
+    assert.equal(policy.isBridgeStaffOnly(env), false);
+  }
 });
 test("strict mode is explicit and requires the enabled native provider", () => {
   assert.equal(policy.isAuthentikOnly(strict), true);
@@ -229,6 +237,161 @@ test("actual auth entrypoint refuses missing native callbacks rather than accept
   }
 });
 
+test("bridge entrypoint removes all sign-in providers without rewriting cookie/session options", async () => {
+  const f = authRoute(bridge);
+  f.handler({ cookies: {}, query: {} }, {});
+  const options = f.effective();
+  assert.deepEqual(options.providers, []);
+  assert.equal(f.options.providers.length, 3);
+  assert.equal(options.session, f.options.session);
+  assert.equal(options.callbacks.session, f.options.callbacks.session);
+  for (const account of [native, { provider: "credentials", type: "credentials" }, null]) {
+    assert.equal(await options.callbacks.signIn({ account }), false);
+  }
+  assert.equal(f.calls.signIn, 0);
+});
+test("bridge JWT rejects new grants/native markers before callbacks and delegates ordinary refresh failures", async () => {
+  let calls = 0;
+  const jwt = policy.restrictBridgeJwt(({ token }) => {
+    calls++;
+    return token;
+  });
+  for (const provider of ["authentik", "credentials", "email", "google", "azure-ad", "saml-idp"]) {
+    await assert.rejects(jwt({ token: { sub: "7" }, account: { provider, type: "oauth" } }));
+  }
+  await assert.rejects(jwt({ token: { sub: "7", ...marker } }));
+  assert.equal(calls, 0);
+  const token = { sub: "7", email: "staff@example.test" };
+  assert.equal(await jwt({ token }), token);
+  assert.equal(calls, 1);
+  await assert.rejects(policy.restrictBridgeJwt(() => marker)({ token }));
+  await assert.rejects(
+    policy.restrictBridgeJwt(() => {
+      throw new Error("current user locked");
+    })({ token }),
+    /current user locked/
+  );
+});
+
+for (const [name, grant] of [
+  ["incoming user", { user: { id: 7 } }],
+  ["incoming null user", { user: null }],
+  ["signIn", { trigger: "signIn" }],
+  ["signUp", { trigger: "signUp" }],
+  ["unknown trigger", { trigger: "grant" }],
+  ["empty trigger", { trigger: "" }],
+  ["null trigger", { trigger: null }],
+  ["non-string trigger", { trigger: 42 }],
+]) {
+  test(`bridge JWT refuses non-refresh context before callbacks: ${name}`, async () => {
+    let calls = 0;
+    const jwt = policy.restrictBridgeJwt(({ token }) => {
+      calls++;
+      return token;
+    });
+    await assert.rejects(jwt({ token: { sub: "7" }, account: null, ...grant }));
+    assert.equal(calls, 0);
+  });
+}
+
+test("installed NextAuth retains real bridge-cookie refresh, CSRF signout and empty-provider denial", async () => {
+  const { AuthHandler } = require(path.resolve(path.dirname(require.resolve("next-auth/jwt")), "../core"));
+  const { encode } = require("next-auth/jwt");
+  const { randomBytes } = require("node:crypto");
+  const originalOrigin = process.env.NEXTAUTH_URL;
+  process.env.NEXTAUTH_URL = "https://calendar.example.test/api/auth";
+  let refreshes = 0;
+  const sideEffects = [];
+  const f = authRoute(bridge, {
+    secret: randomBytes(32).toString("hex"),
+    cookies: compile(read("packages/lib/default-cookies.ts")).defaultCookies(true),
+    pages: { signIn: "/auth/login", signOut: "/auth/logout" },
+    adapter: Object.fromEntries(
+      [
+        "createUser",
+        "updateUser",
+        "linkAccount",
+        "createVerificationToken",
+        "useVerificationToken",
+        "getUserByEmail",
+      ].map((name) => [
+        name,
+        () => {
+          sideEffects.push(name);
+          throw new Error("Forbidden account side effect");
+        },
+      ])
+    ),
+    callbacks: {
+      signIn: () => {
+        sideEffects.push("signIn");
+        return true;
+      },
+      jwt: ({ token }) => {
+        refreshes++;
+        return token;
+      },
+      session: ({ session, token }) => ({ ...session, user: { id: Number(token.sub) } }),
+    },
+    logger: { error() {}, warn() {}, debug() {} },
+  });
+  try {
+    f.handler({ cookies: {}, query: {} }, {});
+    const options = f.effective();
+    const sessionName = options.cookies.sessionToken.name;
+    const jar = {
+      [sessionName]: await encode({ secret: options.secret, token: { sub: "7" }, maxAge: 120 }),
+    };
+    const request = (action, method = "GET", body, providerId) =>
+      AuthHandler({
+        options,
+        req: { action, method, body, providerId, query: {}, cookies: { ...jar }, headers: {} },
+      });
+    const authenticated = await request("session");
+    assert.equal(authenticated.body.user.id, 7);
+    assert.equal(refreshes, 1);
+    assert.ok(authenticated.cookies.some((c) => c.name === sessionName && c.value.length > 0));
+    assert.deepEqual((await request("providers")).body, {});
+    const csrf = await request("csrf");
+    for (const cookie of csrf.cookies) jar[cookie.name] = cookie.value;
+    assert.ok(typeof csrf.body.csrfToken === "string" && csrf.body.csrfToken.length > 0);
+    const updated = await request("session", "POST", {
+      csrfToken: csrf.body.csrfToken,
+      data: { user: { id: 99 }, trigger: "signIn", ...marker },
+    });
+    assert.equal(updated.body.user.id, 7);
+    for (const provider of ["credentials", "email", "google", "azure-ad", "authentik", "saml-idp"]) {
+      for (const method of ["GET", "POST"]) {
+        const denied = await request("callback", method, { csrfToken: csrf.body.csrfToken }, provider);
+        assert.equal(denied.status, 400);
+        assert.ok(!denied.cookies?.some((c) => c.name === sessionName && c.value.length > 0));
+      }
+      const denied = await request("signin", "POST", { csrfToken: csrf.body.csrfToken }, provider);
+      assert.ok(denied.redirect.endsWith("/signin?csrf=true"));
+      assert.ok(!denied.cookies?.some((c) => c.name === sessionName && c.value.length > 0));
+    }
+    assert.deepEqual(sideEffects, []);
+    assert.equal(refreshes, 2);
+    const denied = await request("signout", "POST", { csrfToken: "wrong" });
+    assert.ok(denied.redirect.endsWith("/signout?csrf=true"));
+    assert.ok(!denied.cookies.some((c) => c.name === sessionName && c.options.maxAge === 0));
+    const signedOut = await request("signout", "POST", {
+      csrfToken: csrf.body.csrfToken,
+      callbackUrl: "https://calendar.example.test/auth/logout",
+    });
+    assert.equal(signedOut.redirect, "https://calendar.example.test/auth/logout");
+    assert.ok(signedOut.cookies.some((c) => c.name === sessionName && c.options.maxAge === 0));
+    for (const cookie of signedOut.cookies) {
+      if (cookie.options.maxAge === 0) delete jar[cookie.name];
+    }
+    assert.deepEqual((await request("session")).body, {});
+    assert.deepEqual(sideEffects, []);
+  } finally {
+    if (originalOrigin === undefined) delete process.env.NEXTAUTH_URL;
+    else process.env.NEXTAUTH_URL = originalOrigin;
+  }
+});
+
 for (const route of ["setup", "signup", "forgot-password", "reset-password"]) {
   const file = `apps/web/app/api/auth/${route}/route.ts`;
   const source = read(file);
@@ -272,6 +435,10 @@ for (const route of ["setup", "signup", "forgot-password", "reset-password"]) {
     assert.equal(response.headers.get("Cache-Control"), "no-store");
     assert.equal((await response.json()).code, "AUTHENTIK_ONLY");
     assert.equal(calls, 0);
+    Object.assign(env, bridge);
+    assert.equal((await POST(request, { params: Promise.resolve({}) })).status, 403);
+    assert.equal(calls, 0);
+    delete env.CAL_AUTHENTIK_ENABLED;
     env.CAL_AUTHENTIK_ONLY = "false";
     const allowed = await POST(request, { params: Promise.resolve({}) });
     assert.equal(allowed.status, 200);
@@ -355,6 +522,74 @@ test("disabled strict mode preserves existing legacy-session behavior", async ()
   assert.equal((await f.run()).user.id, 7);
   f.user.locked = true;
   assert.equal(await f.run(), null);
+});
+test("bridge server-session retains current signed-ID lookup, locked-user denial and role clamps", async () => {
+  const f = serverSession(bridge, { sub: "7", email: "old@example.test", role: "USER" });
+  assert.equal((await f.run()).user.email, f.user.email);
+  assert.equal(f.f.refreshes, 0);
+  f.user.role = "ADMIN";
+  assert.equal((await f.run()).user.role, "USER");
+  f.replaceToken({ sub: "7", email: "old@example.test", role: "INACTIVE_ADMIN" });
+  assert.equal((await f.run()).user.role, "INACTIVE_ADMIN");
+  f.user.locked = true;
+  assert.equal(await f.run(), null);
+  assert.equal(f.f.reads, 4);
+});
+test("actual bridge JWT refresh rechecks the signed subject and cannot elevate roles from an update body", async () => {
+  const file = "packages/features/auth/lib/next-auth-options.ts";
+  const ast = ts.createSourceFile(file, read(file), ts.ScriptTarget.Latest, true);
+  const methods = [];
+  const visit = (node) => {
+    if (ts.isMethodDeclaration(node) && node.name.getText(ast) === "jwt") methods.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  assert.equal(methods.length, 1);
+  let exists = true;
+  const user = { id: 7, email: "current@example.test", role: "ADMIN", locked: false, teams: [] };
+  const queries = [];
+  const dependencies = {
+    log: { debug() {} },
+    safeStringify: JSON.stringify,
+    prisma: {
+      user: {
+        findFirst: async (query) => {
+          queries.push(query);
+          return exists ? user : null;
+        },
+      },
+    },
+    checkIfUserBelongsToActiveTeam: () => false,
+    ProfileRepository: {
+      findAllProfilesForUserIncludingMovedUser: async () => [],
+      findByUpIdWithAuth: async () => ({ id: 10, organization: null }),
+    },
+    determineProfile: () => ({ upId: "usr-7" }),
+  };
+  const prelude = Object.keys(dependencies)
+    .map((key) => `const ${key}=require(${JSON.stringify(key)});`)
+    .join("\n");
+  const callbacks = compile(`${prelude}\nmodule.exports={${methods[0].getText(ast)}};`, dependencies);
+  const jwt = policy.restrictBridgeJwt(callbacks.jwt);
+  const token = { sub: "7", email: "previous@example.test", role: "USER" };
+  const result = await jwt({
+    token,
+    trigger: "update",
+    session: { sub: "99", role: "ADMIN", user: { id: 99 }, ...marker },
+  });
+  assert.deepEqual(queries[0].where, { id: 7 });
+  assert.equal(result.sub, "7");
+  assert.equal(result.email, user.email);
+  assert.equal(result.role, "USER");
+  assert.equal(policy.hasAuthentikMarker(result), false);
+  user.locked = true;
+  await assert.rejects(jwt({ token }), /Invalid session user/);
+  user.locked = false;
+  exists = false;
+  await assert.rejects(jwt({ token }), /Invalid session user/);
+  const before = queries.length;
+  await assert.rejects(jwt({ token: { ...token, sub: "7junk" } }), /Invalid session user/);
+  assert.equal(queries.length, before);
 });
 
 function loginProps(env, { hasUser = true, session = null } = {}) {

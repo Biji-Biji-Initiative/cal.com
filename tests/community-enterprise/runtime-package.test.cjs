@@ -32,6 +32,49 @@ test("web preflight accepts the exact configured artifact without returning secr
     operation: "web",
   });
 });
+function bridgeEnvironment() {
+  const env = { ...environment(), CAL_AUTHENTIK_ENABLED: "false", CAL_AUTHENTIK_ONLY: "false" };
+  delete env.CAL_AUTHENTIK_ISSUER;
+  delete env.CAL_AUTHENTIK_CLIENT_ID;
+  delete env.CAL_AUTHENTIK_CLIENT_SECRET;
+  return env;
+}
+test("only the explicit bridge pair admits web without a native provider", () => {
+  assert.deepEqual(validateRuntime(bridgeEnvironment(), receipt, "web"), {
+    sourceSha: receipt.sourceSha,
+    publicOrigin: receipt.publicOrigin,
+    operation: "web",
+  });
+  for (const enabled of [undefined, "true", "false", "", "FALSE"]) {
+    for (const only of [undefined, "true", "false", "", "FALSE"]) {
+      if (enabled === "false" && only === "false") continue;
+      assert.throws(() =>
+        validateRuntime(
+          { ...bridgeEnvironment(), CAL_AUTHENTIK_ENABLED: enabled, CAL_AUTHENTIK_ONLY: only },
+          receipt,
+          "web"
+        )
+      );
+    }
+  }
+});
+test("bridge admission refuses every present native provider field, including empty values", () => {
+  for (const field of ["CAL_AUTHENTIK_ISSUER", "CAL_AUTHENTIK_CLIENT_ID", "CAL_AUTHENTIK_CLIENT_SECRET"]) {
+    for (const value of ["", "fixture"]) {
+      assert.throws(() => validateRuntime({ ...bridgeEnvironment(), [field]: value }, receipt, "web"));
+    }
+  }
+  for (const [field, value] of [
+    ["NEXTAUTH_URL", receipt.publicOrigin],
+    ["NEXT_PUBLIC_WEBAPP_URL", "https://foreign.example.test"],
+    ["NEXTAUTH_SECRET", "short"],
+    ["CALENDSO_ENCRYPTION_KEY", ""],
+    ["DATABASE_URL", "mysql://localhost/calcom_enterprise"],
+  ]) {
+    assert.throws(() => validateRuntime({ ...bridgeEnvironment(), [field]: value }, receipt, "web"));
+  }
+  assert.equal(validateRuntime(bridgeEnvironment(), receipt, "migrate").operation, "migrate");
+});
 for (const [name, value] of [
   ["NEXT_PUBLIC_WEBAPP_URL", "http://localhost:3000"],
   ["NEXT_PUBLIC_WEBAPP_URL", `${receipt.publicOrigin}/other`],
