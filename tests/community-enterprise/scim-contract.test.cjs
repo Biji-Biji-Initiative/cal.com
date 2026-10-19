@@ -17,6 +17,7 @@ function compile(file) {
 }
 
 const contract = compile("packages/features/community-enterprise/identity/ScimProvisioningContract.ts");
+const requestContract = compile("packages/features/community-enterprise/identity/ScimRequestContract.ts");
 const {
   SCIM_LIST_SCHEMA,
   SCIM_PATCH_SCHEMA,
@@ -27,6 +28,7 @@ const {
   parseScimUserResource,
   planScimMembershipReconciliation,
 } = contract;
+const { parseScimAuthorization, parseScimRequest } = requestContract;
 
 const user = (overrides = {}) => ({
   schemas: [SCIM_USER_SCHEMA],
@@ -43,6 +45,41 @@ test("SCIM users require and preserve the exact externalId", () => {
   assert.throws(() => parseScimUserResource(user({ externalId: undefined })), /externalId/);
   assert.throws(() => parseScimUserResource(user({ externalId: " directory-user-17" })), /externalId/);
   assert.throws(() => parseScimUserResource(user({ schemas: [] })), /requires/);
+});
+
+test("SCIM transport requires a bearer credential and canonical resource route", () => {
+  assert.deepEqual(parseScimAuthorization("bearer directory-token-1234"), {
+    scheme: "Bearer",
+    credential: "directory-token-1234",
+  });
+  const request = parseScimRequest({
+    method: "PATCH",
+    path: "/scim/v2/Groups/group-7",
+    authorization: "Bearer directory-token-1234",
+  });
+  assert.equal(request.resource, "Groups");
+  assert.equal(request.resourceId, "group-7");
+  assert.throws(() => parseScimAuthorization("Basic directory-token-1234"), /Bearer scheme/);
+  assert.throws(() => parseScimAuthorization("Bearer short"), /too short/);
+  assert.throws(
+    () =>
+      parseScimRequest({
+        method: "GET",
+        path: "/scim/v2/Users?access_token=directory-token-1234",
+        authorization: "Bearer directory-token-1234",
+      }),
+    /path is outside/
+  );
+  assert.throws(
+    () =>
+      parseScimRequest({
+        method: "GET",
+        path: "/scim/v2/Users",
+        authorization: "Bearer directory-token-1234",
+        query: { token: "directory-token-1234" },
+      }),
+    /query parameters/
+  );
 });
 
 test("group PATCH admits only member add/remove operations", () => {
