@@ -191,3 +191,94 @@ Google Calendar connection remain unproved. No additional task is closed.
 | Second metadata cleanup readback | `257c9ad356c13590534271b0b8506500d42c6ed47019691b07e13229d17eb7a6` |
 | Native scheduling modifier controls | `ee7f4ba7d0bdb5c615f61825e3be1521c20b6316c12bbc2f99006b249455b26d` |
 | Scheduling reset remote source readback | `f5d12f81db806e734752606f286802fee9d564794a80068d56002679d23a48b0` |
+
+## 15:12Z continuation: source corrections published; live acceptance remains open
+
+The application programme now includes the published Deepmerge correction
+`bc03b396be3f2e1fbed4e23291669887acdc4523` and Nanoid correction
+`a5fe6bfd3f68f5b8614798d4a2310455275eb886`. Root independently read the complete
+diffs, actual focused command/results, retained failures and personal GitHub
+commit/blob readbacks. These commits are source changes; the serving dev image
+and the previously scanned `0aaaa` artifact do not contain them.
+
+Deepmerge is overridden only for `@prisma/config` to 8.0.2. Seven regressions,
+strict real caller/dependency declarations and actual Prisma CLI schema
+validation pass. Its frozen native source-lock audit removes one HIGH finding
+(286 to 285), with none introduced. Nanoid is overridden only for the actual
+ToDesktop util and Trigger core parents to 3.3.20, preserving their upstream
+metadata and every other selector. Six new cases, two established dependency
+checks and all 25 existing Trigger controls pass. Its native source-lock audit
+removes three HIGH and one MEDIUM finding (285 to 281), with none introduced.
+Root separately parsed both native reports and verified their report, lock,
+tool and database bindings. The wrapper that incorrectly expected exactly
+three removals remains failed; a separate comparison of the retained reports
+records the fourth removal without rerunning or modifying either scanner.
+
+The broader ToDesktop declaration check still fails with the same 43 exact
+diagnostics before and after the Nanoid change. Those failures are unwaived.
+Only the changed Nanoid declarations passed the permanent strict CJS/ESM check;
+no all-ToDesktop-types or actual Node 20/browser/desktop acceptance is claimed.
+Both changes retain unsuppressed UBS dispositions and the earlier full
+postinstall failures. During Deepmerge publication, a missed per-command hook
+setting ran an unplanned 35-second generation hook. It completed naturally,
+with no tracked generated effect; its output and terminal process evidence
+are preserved separately and do not count as qualification. Nanoid publication
+used per-command `HUSKY=0`; no generation hook ran.
+
+Source review has accepted the design of a pinned, signed, non-debug Node 22
+Debian 13 distroless final base. Native Crane/Cosign metadata verification
+passes for the exact index, amd64 manifest and config; no layers were pulled
+or image process executed during that metadata review. Focused source work
+must retain UID/GID 1000, explicit writable home, the existing application
+entrypoint and auth/migration denials. It still needs source checks, an actual
+new image, native Prisma/Sharp/application checks and complete security scans.
+The old image's 52 HIGH occurrences and 108 whole-layer/config detector
+matches remain unwaived. A source audit does not replace image coverage.
+
+Google Calendar remains disabled and unaccepted. The actual provider response
+at 10:54Z was `redirect_uri_mismatch` for the exact canonical dev Calendar
+callback. Infra commit `87b794e4fab2fd357fa9ca0991bd37a3033666fa` corrects the
+registry's dev callback and records that disabled state; it does not change
+Google or application credentials. The canonical dev client ID's public
+numeric prefix matches the current Mac registry's `bbi-k8` project mapping.
+This is a source-corroborated project candidate, not Cloud Console verification
+of the actual client or administrator. Owner message 147169 carries the exact
+project/client-verification route. No new consent, code exchange or enablement
+is claimed.
+
+The backup metadata reader's introduced scheduling-reset comparison passed
+59 offline cases, preserving the original generic comparison and historical
+identity checks. The native Python UBS module completed, but the aggregate
+runner timed out and optional offline analyzers could not start. Its 15
+critical, 83 warning and 143 informational results, capped samples and
+incomplete analyzer coverage remain explicit and unwaived. A fresh read-only
+metadata preparation then refused with an unattributed wrapper error before
+creating a plan or downloading an archive. One separately authorized fixed
+Backup GET subsequently passed; that does not identify the failed read or
+prove a general API recovery. The next preparation completed all ten fixed
+metadata reads with native exit 0 and matched every current/historical Pod,
+image, storage, service-account, Secret-key and backup-location guard. It
+refused only the changed Argo binding before rendering or creating a plan.
+That source drift is being examined without relaxing the guard. No new archive
+acquisition, accepted archive, FSB payload, Restore, SQL or data recovery has
+occurred.
+
+Real staff session expiry/logout without refresh, onboarding completion and
+calendar connection remain open. The current packaged artifact requires native
+SSO, while dev's maintained deployment uses the existing bridge; owner message
+147157 asks for the deployment contract decision. Read-only preparation of an
+explicit bridge-compatible artifact contract can proceed without bypassing the
+entrypoint, identity/header guards, migration boundary or existing owners.
+Package publication authority and both previously recorded credential incidents
+also remain open. Delivery receipts show the relevant owner requests persisted,
+with no signal or acknowledgment; silence is not approval or containment.
+
+Evidence remains in the private bounded review directories on g/g2:
+`/data/tmp/cal-deepmerge-qualification-d3wpnakh`,
+`/data/tmp/cal-nanoid-prepare-eSq15i`,
+`/data/tmp/cal-distroless-proposal-5PePUI`,
+`/data/tmp/cal-google-registry-ZdmTOB` (registry review is also recorded in the
+publication receipt), and `/data/tmp/cal-google-project-ybpFXZ`. The backup
+work remains under `/data/tmp/cal-dev-metadata-wJgV7E` and its private Mac
+review directory. This continuation closes no task and changes no production
+acceptance state.
