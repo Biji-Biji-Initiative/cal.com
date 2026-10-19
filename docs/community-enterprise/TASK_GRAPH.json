@@ -726,12 +726,27 @@
           "command": "node --test tests/community-enterprise/authentik.test.cjs",
           "exit_code": 0,
           "summary": "37 tests, including six real NextAuth-to-loopback-OIDC exchanges; no live Authentik or browser proof."
+        },
+        {
+          "file": "docs/community-enterprise/AUTHENTIK.md",
+          "level": "source",
+          "source_revision": "d8dae0cb45af05cf14c7ba4790f0ed1e018fe39c",
+          "infrastructure_source": "ee96e4f0861e1a40d0e734a3f861a7d51c94d161",
+          "summary": "2026-10-19 read-only dev prerequisite assessment: five CAL_AUTHENTIK runtime names are unwired, native client and issuer/subject/user-UUID Account linkage are unproven, and the current proxy mints unmarked JWTs rejected by native-only validation. Atomic dev routing/mint retirement and an explicit launcher-entry decision are required. No live native ordinary-person, launcher, callback/session or provider acceptance is certified."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
-      "priority": 1
+      "priority": 1,
+      "progress": "Historical native provider/protocol source proof and dependent historical states are retained exactly. source_proven does not certify live native dev or launcher admission; the newly assessed deployment boundary remains open.",
+      "progress_reference": "docs/community-enterprise/AUTHENTIK.md",
+      "progress_summary": "Identity owner must qualify the native dev provider/secret mirror and reviewed issuer/subject/user-UUID admission, then coordinate dev-only native routing and legacy mint retirement. Ordinary-person setup, explicit logout/login, launcher and provider acceptance remain separate runtime work; Google Calendar OAuth is independent.",
+      "blockers": [
+        "Live dev still serves stock Cal with the proxy on Service targetPort 8080; Deployment/ESO/Secret key-name inspection shows no CAL_AUTHENTIK wiring.",
+        "Maintained Cal declarations are proxy providers; a usable live native OIDC client, exact callback/issuer, secret alignment and user 1 Account linkage remain unqualified.",
+        "The legacy /auth/mereka mint lacks the native authentik marker and cannot front CAL_AUTHENTIK_ONLY=true. Candidate has an explicit native login button but no one-click native /auth/mereka route or auto-login input."
+      ]
     },
     {
       "id": "CAL-04.SESSION",
