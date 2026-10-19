@@ -2261,6 +2261,17 @@
         "CAL-08.UPDATE",
         "CAL-10.REPORTS"
       ]
+    },
+    {
+      "date": "2026-10-19",
+      "application_source": "d8dae0cb45af05cf14c7ba4790f0ed1e018fe39c",
+      "source_head": "69d8ad8d40095ce0847377e90414173a71692727",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-02.PREVIEW",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-2026-10-19.md",
+      "receipt": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-RECEIPT-2026-10-19.json",
+      "notes": "Current d8 standalone/OCI build and 596 empty-fixture migrations/replay pass. Native providers/login pass, but callback origin/path guard fails and later checks are not reached. Genuine raw scan: 56 HIGH unwaived, zero reported critical/secrets; all 785 complete dependency identities match, 82 metadata files remain unqualified. No image publication/deployment, real browser/IdP/Google/booking, existing-data migration/restore or release acceptance. All task states unchanged."
     }
   ]
 }

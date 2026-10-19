@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-19",
+  "status": "partial-runtime-evidence",
+  "applicationSource": "d8dae0cb45af05cf14c7ba4790f0ed1e018fe39c",
+  "publicOrigin": "https://cal.mereka.dev",
+  "buildId": "i2uBifLE85gwaz6g2CdUe",
+  "buildReceipt": {
+    "path": "g2:/data/tmp/cal-web-release-20261019-supervised-2/build-receipt.json",
+    "sha256": "c870e2bf29cdf261734b91206a9316a40f9a97565c30e8936bda7126124bc1de"
+  },
+  "image": {
+    "manifestDigest": "sha256:249ce59700810d06eed37f12b663fae986cf2fa2851f49e122e65a9e6aed1844",
+    "configDigest": "sha256:317a69f5ef9339b70e6124480683371c37614e28c02ba553ecfdd5060e46c5d2",
+    "archiveSha256": "6ee081703fc6fae3a41fb3c00bca906500a9ccdfa902e6d002ecdd26e63a1095",
+    "archiveBytes": 373166592,
+    "packagingReceiptSha256": "ad924ef1aa9c75b049a9022f869f55de06986e3c8f6bd5acadb18a26e2136f80",
+    "registryPublished": false,
+    "deployed": false
+  },
+  "native": {
+    "receiptPath": "g2:/data/tmp/cal-native-qual-q5upm105/qualification-receipt.json",
+    "receiptSha256": "a34d8ee3f3becac93c95c838797439420f2988564814d877a4b1a9bff1e2869e",
+    "supervisorSha256": "0f3c22f98269cd0abc11eba1eadb518e802ef0c06b6ec9ddae39b2ee914555e9",
+    "probeSha256": "1e119ffef1e2ca82d19feb22252699b7bd000f6fc5f78d7c4cf05925592e96f8",
+    "status": "failed",
+    "migration": {
+      "migrationCount": 596,
+      "migrationSetSHA256": "91b2226ccea886ab65e8ab5a0454220f96ba709dff2028f9bc3da661882c3e23",
+      "migrationRowsSHA256": "78a59113e89804e9f64dfdda235ab806f2458f611509e84b41b79f796541a137",
+      "catalogSHA256": "18693ddff337b44ef950b74383d5eb8527f49f9ff8694c9710f5c97e15017682",
+      "coreCounts": {
+        "users": 0,
+        "accounts": 0,
+        "bookings": 0
+      }
+    },
+    "migrationAndReplayExitCodes": {
+      "cal-native-q5upm105-migrate": 0,
+      "cal-native-q5upm105-replay": 0
+    },
+    "httpProbeExitCode": 1,
+    "httpFailure": "native-callback-unsafe-redirect; combined origin/path guard not yet discriminated",
+    "providerStatus": 200,
+    "publicCallbackExact": true,
+    "loginStatus": 200,
+    "staffButtonPresent": true,
+    "credentialsFormPresent": false,
+    "fixtureSecretPresent": false,
+    "fixtureClientIdPresent": false,
+    "publicStaticTooltipException": {
+      "applied": true,
+      "occurrences": 1,
+      "outsideOccurrences": 0,
+      "valueSha256": "8599e37500c722445a12356c4c2b8913b9fe162dd03d75f30d002c16522c72a8"
+    },
+    "callbackStatus": 302,
+    "anonymousSessionAndManifestHTTPChecksReached": false,
+    "cleanup": {
+      "ownContainersAbsent": true,
+      "ownPostgresExited": true,
+      "ownSocketAbsent": true,
+      "ownFixtureWorkdirAbsent": true,
+      "candidateImageRetained": true
+    },
+    "realIdpUserGoogleBrowserAcceptance": false
+  },
+  "rawScan": {
+    "receiptPath": "g2:/data/tmp/cal-image-security-RzCzHd/raw-run-d8-v3/raw-diagnostic-receipt.json",
+    "receiptSha256": "6b10baa06a46625e3390d9292f47d8e6f6be2534a97d6c39d8b6a1fad4e762f1",
+    "reportSha256": "4c43bdabb76f2674985557557295294a9a10fef048eeebdc4bdf08971b1879d0",
+    "scannerExitCode": 0,
+    "scannerVersion": "0.76.0",
+    "scannerSha256": "1f889576636db0623539cb339df7d06c40ebf39e7919489eafa1160e29808f19",
+    "databaseSha256": "f77d505dd54523c782ec55930758c3a5de9fefe03c67ccded62597df795672bb",
+    "packages": {
+      "debian": 81,
+      "node": 786
+    },
+    "findings": {
+      "HIGH": 56,
+      "MEDIUM": 103,
+      "LOW": 63,
+      "UNKNOWN": 3,
+      "CRITICAL": 0,
+      "reportedSecrets": 0
+    },
+    "ignoredOrSuppressedFindings": 0,
+    "postRunInputsUnchanged": true,
+    "highDisposition": "all 56 occurrences unresolved and unwaived",
+    "inventoryQualified": false,
+    "allLayersSecretsQualified": false,
+    "releaseApproved": false
+  },
+  "physicalComparison": {
+    "completeDependencyIdentities": 785,
+    "exactNativePathNameVersionMatches": 785,
+    "additionalFirstPartyScanOccurrence": 1,
+    "unqualifiedMetadataFiles": 82,
+    "namedVersionless": 54,
+    "unnamedModuleBoundaries": 23,
+    "otherIdentityless": 5,
+    "parentVersionsInferred": false
+  },
+  "existingDevPreflight": {
+    "observedAt": "2026-10-19T06:54:28.455342+00:00",
+    "postgresVersion": "170006",
+    "transactionReadOnly": true,
+    "legacyPreservationGuardAccepted": true,
+    "migrationOrDataWritesPerformed": false,
+    "restoreOrUpgradeProven": false
+  },
+  "newerSource": {
+    "nativeEntry": "200c1709fa28aea3c7b21736283644618a906d4a",
+    "publisherCreatedAndAliasFix": "69d8ad8d40095ce0847377e90414173a71692727",
+    "registeredSourceTests": 1073,
+    "includedInThisImage": false
+  },
+  "liveGoogle": {
+    "observedAt": "2026-10-19T06:45:43.727412Z",
+    "callback": "https://cal.mereka.dev/api/integrations/googlecalendar/callback",
+    "providerError": "redirect_uri_mismatch",
+    "configurationWritesPerformed": false
+  },
+  "limitations": [
+    "No real staff identity, account linkage, browser loop, Google consent or booking journey acceptance.",
+    "No existing-data migration, restore, PostgreSQL upgrade or native routing cutover acceptance.",
+    "No registry publication, serving image change or release approval.",
+    "Raw scanner completion and zero reported critical/secrets do not qualify full inventory or all-layer secret absence."
+  ]
+}
