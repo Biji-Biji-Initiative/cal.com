@@ -44,6 +44,22 @@ preservation, stale SCIM-grant removal, and disabled/deprovisioned booking
 handoff planning. They compile the owned TypeScript contract in memory and do
 not read credentials or connect to PostgreSQL, Authentik, or a running API.
 
+## Zero-item paging correction — 2026-10-19
+
+A valid zero-item page with a positive `totalResults` previously returned its
+unchanged `startIndex` as the next cursor. A caller following that cursor could
+repeat the same request indefinitely. SCIM permits count-zero requests that
+return only the total; see [RFC 7644, section 3.4.2.4](https://www.rfc-editor.org/rfc/rfc7644#section-3.4.2.4).
+
+`nextScimStart` now stops on an empty page while preserving the parsed total
+and start index. The regression covers an empty directory and count-zero
+responses both at the first index and partway through a nonempty directory.
+The existing nonempty-page cursor checks remain in place.
+
+The focused command above passes nine source cases, with zero failures or
+skips. This correction makes no database or IdP calls and does not close
+`CAL-04.SCIM` runtime acceptance.
+
 ## Boundary that remains open
 
 This source contract does not implement a scoped bearer-token endpoint,

@@ -152,6 +152,7 @@ export function parseScimPage<T>(value: unknown, map: (resource: unknown) => T):
 }
 
 export function nextScimStart<T>(page: ScimPage<T>): number | null {
+  if (page.itemsPerPage === 0) return null;
   const next = page.startIndex + page.itemsPerPage;
   return next > page.totalResults ? null : next;
 }

@@ -870,13 +870,20 @@
           "exit_code": 0,
           "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates.",
           "code_revision": "aa8f7df30"
+        },
+        {
+          "file": "docs/community-enterprise/SCIM-PROVISIONING-CONTRACT-2026-10-17.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/scim-contract.test.cjs",
+          "exit_code": 0,
+          "summary": "2026-10-19: nine source cases pass after correcting the repeated-cursor defect for zero-item pages. Count-zero responses preserve totals and terminate paging; first-page, mid-directory and empty-directory cases are covered. No database, Authentik, route or runtime acceptance is claimed."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 1,
-      "progress": "A write-free SCIM contract now fixes externalId identity, bounded paging, member-only group PATCH, grant provenance, local-grant and booking-history preservation, and disabled/deprovisioned handoff planning. Native Authentik discovery, scoped token dispatch, persistence and runtime revocation remain open.",
+      "progress": "A write-free SCIM contract now fixes externalId identity, bounded paging, member-only group PATCH, grant provenance, local-grant and booking-history preservation, and disabled/deprovisioned handoff planning. The 2026-10-19 source correction stops zero-item pages from repeating their cursor while preserving count-zero totals. Native Authentik discovery, scoped token dispatch, persistence and runtime revocation remain open.",
       "progress_reference": "docs/community-enterprise/SCIM-PROVISIONING-CONTRACT-2026-10-17.md",
       "progress_summary": "The write-free SCIM provisioning contract remains source-proven. A bounded inventory now confirms no direct SCIM API route, HTTP adapter or database write in the inspected source and separates local session markers from IdP revocation; runtime Authentik dispatch, persistence and group/deprovision reconciliation remain open."
     },

@@ -111,6 +111,29 @@ test("SCIM page cursor is bounded and cannot skip or overrun resources", () => {
   );
 });
 
+test("empty SCIM pages preserve totals without repeating the same cursor", () => {
+  for (const [startIndex, totalResults] of [
+    [1, 0],
+    [1, 50],
+    [8, 50],
+  ]) {
+    const page = parseScimPage(
+      {
+        schemas: [SCIM_LIST_SCHEMA],
+        startIndex,
+        itemsPerPage: 0,
+        totalResults,
+        Resources: [],
+      },
+      () => assert.fail("An empty page must not map any resources")
+    );
+    assert.equal(page.totalResults, totalResults);
+    assert.equal(page.startIndex, startIndex);
+    assert.deepEqual(page.resources, []);
+    assert.equal(nextScimStart(page), null);
+  }
+});
+
 test("directory filter changes do not revoke existing grants", () => {
   const plan = planScimMembershipReconciliation({
     directoryId: "directory-1",
