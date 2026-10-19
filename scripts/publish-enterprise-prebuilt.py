@@ -191,6 +191,53 @@ def hidden_or_replaced(key, seen, non_directories, whiteouts):
         not hidden or key == hidden or key.startswith(hidden + "/") for hidden in whiteouts)
 
 
+def installed_aliases(aliases, tree, packages, protected, deadline):
+    need(not any(parent in aliases for key in protected
+                 for parent in [key, *(str(value) for value in Path(key).parents if str(value) != ".")]),
+         "Unsupported installed-component alias ancestor")
+    for alias in aliases:
+        if "node_modules" not in alias.split("/"):
+            continue
+        need(aliases[alias][0] == "symlink", "Unsupported installed hardlink")
+        pending, resolved, followed, states = alias.split("/"), [], 0, set()
+        while pending:
+            need(time.monotonic() <= deadline and len(pending) <= 2048, "Installed alias exceeds bound")
+            part = pending.pop(0)
+            if part in {"", "."}:
+                continue
+            if part == "..":
+                need(resolved, "Installed alias escapes image")
+                resolved.pop()
+                continue
+            resolved.append(part)
+            key = "/".join(resolved)
+            if key in aliases:
+                kind, target = aliases[key]
+                need(kind == "symlink", "Unsupported installed hardlink")
+                need(type(target) is str and 0 < len(target) <= 4096 and "\\" not in target
+                     and all(ord(c) >= 32 and ord(c) != 127 for c in target), "Invalid installed alias target")
+                followed += 1
+                state = (key, tuple(pending))
+                need(followed <= 40 and state not in states, "Installed alias cycle or depth")
+                states.add(state)
+                resolved.pop()
+                if target.startswith("/"):
+                    resolved = []
+                pending = target.split("/") + pending
+            else:
+                need(key in tree, "Dangling installed alias")
+                need(not pending or tree[key] == "dir", "Installed alias traverses non-directory")
+        target = "/".join(resolved)
+        package_file = target + "/package.json"
+        need(tree.get(target) == "dir" and tree.get(package_file) == "file" and package_file in packages,
+             "Installed alias lacks physical package target")
+        metadata = strict_json(packages[package_file])
+        need(type(metadata) is dict and "name" in metadata and "version" in metadata,
+             "Installed alias target lacks complete identity")
+        pattern(metadata["name"], r"[A-Za-z0-9_@./-]{1,300}")
+        pattern(metadata["version"], r"[A-Za-z0-9_.+~-]{1,300}")
+
+
 def image_archive(file, build, layout=None):
     with tarfile.open(file, mode="r:") as tar:
         members = {}
@@ -212,8 +259,17 @@ def image_archive(file, build, layout=None):
              and type(index.get("schemaVersion")) is int and index["schemaVersion"] == 2
              and type(index.get("manifests")) is list and len(index["manifests"]) == 1,
              "Exactly one OCI platform manifest is required")
-        def descriptor(desc, media_type=None):
-            need(type(desc) is dict and set(desc) <= {"mediaType", "digest", "size", "platform"}, "Invalid OCI descriptor")
+        def descriptor(desc, media_type=None, selected=False):
+            keys = {"mediaType", "digest", "size", "platform"}
+            if selected:
+                keys.add("annotations")
+            need(type(desc) is dict and set(desc) <= keys, "Invalid OCI descriptor")
+            if "annotations" in desc:
+                shape(desc["annotations"], "org.opencontainers.image.created")
+                try:
+                    parse_time(desc["annotations"]["org.opencontainers.image.created"])
+                except ValueError:
+                    raise Refused("Invalid selected OCI creation timestamp") from None
             pattern(desc.get("digest"), DIGEST)
             integer(desc.get("size"), MAX_ARCHIVE)
             name = "blobs/sha256/" + desc["digest"][7:]
@@ -222,7 +278,7 @@ def image_archive(file, build, layout=None):
                 need(desc.get("mediaType") == media_type, "Unsupported OCI media type")
             return name
         picked = index["manifests"][0]
-        manifest_name = descriptor(picked, MANIFEST)
+        manifest_name = descriptor(picked, MANIFEST, selected=True)
         need(picked.get("platform", {"os": "linux", "architecture": "amd64"}) == {"os": "linux", "architecture": "amd64"}, "Wrong selected OCI platform")
         manifest = content(manifest_name)
         shape(manifest, "schemaVersion mediaType config layers")
@@ -264,6 +320,7 @@ def image_archive(file, build, layout=None):
         shipped = {}
         package_files = {}
         aliases = {}
+        final_tree = {}
         os_status = None
         expanded = 0
         deadline = time.monotonic() + READ_SECONDS
@@ -287,6 +344,7 @@ def image_archive(file, build, layout=None):
                 non_directories = set()
                 layer_values = {}
                 layer_aliases = {}
+                layer_tree = {}
                 whiteouts = set()
                 for entries, entry in enumerate(filesystem, 1):
                     need(entries <= 500000 and filesystem.offset <= MAX_EXPANDED and time.monotonic() <= deadline, "Expanded layer exceeds bound")
@@ -301,6 +359,9 @@ def image_archive(file, build, layout=None):
                         need(entry.isfile() and entry.size == 0 and (base == ".wh..wh..opq" or len(base) > 4), "Invalid OCI whiteout")
                         hidden = parent if base == ".wh..wh..opq" else (parent + "/" + base[4:]).lstrip("/")
                         whiteouts.add(hidden)
+                    else:
+                        layer_tree[name] = ("dir" if entry.isdir() else "file" if entry.isfile() else
+                                            "symlink" if entry.issym() else "hardlink" if entry.islnk() else "special")
                     if name == "var/lib/dpkg/status":
                         need(entry.isfile() and entry.size <= MAX_JSON, "Invalid dpkg inventory file")
                         layer_values[name] = filesystem.extractfile(entry).read()
@@ -309,14 +370,14 @@ def image_archive(file, build, layout=None):
                         layer_values[name] = filesystem.extractfile(entry).read()
                         need(len(layer_values) <= 20000 and sum(len(v) for v in layer_values.values()) <= 2 * MAX_JSON, "Installed-component inventory exceeds bound")
                     if entry.issym() or entry.islnk():
-                        layer_aliases[name] = True
+                        layer_aliases[name] = ("symlink" if entry.issym() else "hardlink", entry.linkname)
                     for key in expected:
                         if name == key:
                             need(entry.isfile() and entry.size <= MAX_JSON, "Runtime identity file has wrong type/size")
                             layer_values[key] = filesystem.extractfile(entry).read()
                         elif key.startswith(name + "/"):
                             need(entry.isdir(), "Runtime identity ancestor is not a directory")
-                for inventory in [shipped, package_files, aliases]:
+                for inventory in [shipped, package_files, aliases, final_tree]:
                     for key in list(inventory):
                         if hidden_or_replaced(key, seen, non_directories, whiteouts):
                             inventory.pop(key)
@@ -333,10 +394,15 @@ def image_archive(file, build, layout=None):
                     else:
                         package_files[key] = value
                 aliases.update(layer_aliases)
+                final_tree.update(layer_tree)
+                for key in layer_tree:
+                    for parent in Path(key).parents:
+                        if str(parent) != ".":
+                            final_tree.setdefault(str(parent), "dir")
+                need(len(final_tree) <= 500000, "Final filesystem inventory exceeds bound")
                 need(len(package_files) <= 20000 and sum(len(v) for v in package_files.values()) <= 2 * MAX_JSON, "Installed-component inventory exceeds bound")
         identity_paths = {*expected, *package_files, "var/lib/dpkg/status"}
-        need(not any("node_modules" in alias.split("/") or any(key == alias or key.startswith(alias + "/") for key in identity_paths)
-                     for alias in aliases), "Unsupported final installed-component alias semantics")
+        installed_aliases(aliases, final_tree, package_files, identity_paths, deadline)
         need(set(shipped) == set(expected), "Missing shipped runtime identity files")
         need(strict_json(shipped["calcom/enterprise-build.json"]) == build
              and shipped["calcom/apps/web/.next/BUILD_ID"].decode().strip() == build["buildId"], "Embedded build identity mismatch")

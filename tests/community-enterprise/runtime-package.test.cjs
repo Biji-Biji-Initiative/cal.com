@@ -326,16 +326,54 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  if scenario=='same-layer-opaque-replacement':
   layers[0][extra]=encoded({'name':'extra','version':'0.0.0'})
   layers.append({extra:encoded({'name':'extra','version':'2.0.0'}),'calcom/node_modules/next/node_modules/.wh..wh..opq':b''})
+ alias_scenarios={'package-alias','alias-next-hashed','alias-absolute','alias-chain','alias-depth40','alias-depth41',
+  'alias-cycle','alias-escape','alias-dangling','alias-file','alias-hardlink','alias-package-json','alias-target-marker',
+  'alias-outside-inventory','alias-componentwise-escape','alias-replaced-ancestor','alias-whiteout-target',
+  'alias-opaque-target','alias-removed','alias-whiteout-replacement','alias-duplicate-coverage','alias-dpkg-ancestor'}
+ alias_entries={}
+ if scenario in alias_scenarios:alias_entries['calcom/node_modules/alias']=(tarfile.SYMTYPE,'next')
+ if scenario=='alias-next-hashed':
+  alias_entries={'calcom/apps/web/.next/node_modules/next-hashed':(tarfile.SYMTYPE,'../../../../node_modules/next')}
+ if scenario=='alias-absolute':alias_entries['calcom/node_modules/alias']=(tarfile.SYMTYPE,'/calcom/node_modules/next')
+ if scenario in ['alias-chain','alias-cycle']:
+  alias_entries={'calcom/node_modules/alias':(tarfile.SYMTYPE,'second'),'calcom/node_modules/second':(tarfile.SYMTYPE,'next' if scenario=='alias-chain' else 'alias')}
+ if scenario in ['alias-depth40','alias-depth41']:
+  count=40 if scenario=='alias-depth40' else 41
+  alias_entries={'calcom/node_modules/link'+str(i):(tarfile.SYMTYPE,'link'+str(i+1) if i<count-1 else 'next') for i in range(count)}
+ if scenario=='alias-escape':alias_entries['calcom/node_modules/alias']=(tarfile.SYMTYPE,'../../../outside')
+ if scenario=='alias-dangling':alias_entries['calcom/node_modules/alias']=(tarfile.SYMTYPE,'missing')
+ if scenario=='alias-file':alias_entries['calcom/node_modules/alias']=(tarfile.SYMTYPE,'next/package.json')
+ if scenario=='alias-hardlink':alias_entries['calcom/node_modules/alias']=(tarfile.LNKTYPE,'calcom/node_modules/next')
+ if scenario=='alias-package-json':
+  alias_entries={'calcom/node_modules/alias/package.json':(tarfile.SYMTYPE,'../../next/package.json')}
+ if scenario=='alias-target-marker':layers[0]['calcom/node_modules/next/package.json']=encoded({'type':'module'})
+ if scenario=='alias-outside-inventory':
+  alias_entries['calcom/node_modules/alias']=(tarfile.SYMTYPE,'../packages/shared')
+  layers[0]['calcom/packages/shared/package.json']=encoded({'name':'@calcom/shared','version':'1.0.0'})
+ if scenario=='alias-componentwise-escape':
+  alias_entries={'calcom/node_modules/alias':(tarfile.SYMTYPE,'../jump/../../outside'),'calcom/jump':(tarfile.SYMTYPE,'/calcom')}
+ if scenario=='alias-replaced-ancestor':
+  alias_entries['calcom/node_modules/alias']=(tarfile.SYMTYPE,'target')
+  layers[0]['calcom/node_modules/target/package.json']=encoded({'name':'target','version':'1.0.0'})
+  layers.append({'calcom/node_modules/target':b'replaced directory'})
+ if scenario=='alias-whiteout-target':layers.append({'calcom/node_modules/.wh.next':b''})
+ if scenario=='alias-opaque-target':layers.append({'calcom/node_modules/next/.wh..wh..opq':b''})
+ if scenario=='alias-removed':layers.append({'calcom/node_modules/.wh.alias':b''})
+ if scenario=='alias-whiteout-replacement':
+  layers.append({'calcom/node_modules/next/package.json':encoded({'name':'next','version':'2.0.0'}),'calcom/node_modules/.wh.next':b''})
+ if scenario=='alias-dpkg-ancestor':
+  layers.append({});alias_entries={'var/lib/dpkg':(tarfile.SYMTYPE,'../dpkg-target')}
  layer_blobs=[];layer_descriptors=[];config['rootfs']['diff_ids']=[]
- for layer_files in layers:
+ for layer_number,layer_files in enumerate(layers):
   layerbuf=io.BytesIO()
   with tarfile.open(fileobj=layerbuf,mode='w') as tar:
    for name,data in layer_files.items():
     info=tarfile.TarInfo(name); info.size=len(data);tar.addfile(info,io.BytesIO(data))
    if scenario=='duplicate-package':
     info=tarfile.TarInfo('calcom/node_modules/next/package.json');data=layer_files[info.name];info.size=len(data);tar.addfile(info,io.BytesIO(data))
-   if scenario=='package-alias':
-    info=tarfile.TarInfo('calcom/node_modules/alias');info.type=tarfile.SYMTYPE;info.linkname='next';tar.addfile(info)
+   if layer_number==(1 if scenario=='alias-dpkg-ancestor' else 0):
+    for name,(kind,target) in alias_entries.items():
+     info=tarfile.TarInfo(name);info.type=kind;info.linkname=target;tar.addfile(info)
   layer=layerbuf.getvalue();config['rootfs']['diff_ids'].append('sha256:'+m.sha(layer))
   compressed=scenario in ['gzip','corrupt-gzip','gzip-bound','gzip-deadline']
   blob=gzip.compress(layer,mtime=0) if compressed else layer
@@ -347,8 +385,23 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  def desc(data,mt):return {'mediaType':mt,'digest':'sha256:'+m.sha(data),'size':len(data)}
  manifest={'schemaVersion':2,'mediaType':m.MANIFEST,'config':desc(config_bytes,'application/vnd.oci.image.config.v1+json'),
            'layers':[desc(blob,'application/vnd.oci.image.layer.v1.tar'+('+gzip' if compressed else '')) for blob in layer_blobs]}
+ if scenario=='config-created-annotation':manifest['config']['annotations']={'org.opencontainers.image.created':timestamp}
+ if scenario=='layer-created-annotation':manifest['layers'][0]['annotations']={'org.opencontainers.image.created':timestamp}
  manifest_bytes=encoded(manifest);manifest_digest='sha256:'+m.sha(manifest_bytes)
  index={'schemaVersion':2,'manifests':[desc(manifest_bytes,m.MANIFEST)]}
+ created_cases={'created-annotation':timestamp,'created-nanoseconds':timestamp.replace('Z','.123456789Z'),
+  'created-invalid-date':'2026-02-30T00:00:00Z','created-invalid-leap':'2025-02-29T00:00:00Z',
+  'created-invalid-hour':'2026-10-19T25:00:00Z','created-non-utc':'2026-10-19T00:00:00+08:00',
+  'created-missing-zone':'2026-10-19T00:00:00','created-too-precise':'2026-10-19T00:00:00.1234567890Z',
+  'created-overlong':'x'*2001,'created-wrong-type':True}
+ if scenario in created_cases:index['manifests'][0]['annotations']={'org.opencontainers.image.created':created_cases[scenario]}
+ if scenario=='created-unknown-annotation':index['manifests'][0]['annotations']={'unknown':'fixture'}
+ if scenario=='created-extra-annotation':index['manifests'][0]['annotations']={'org.opencontainers.image.created':timestamp,'extra':'fixture'}
+ if scenario=='created-ref-name':index['manifests'][0]['annotations']={'org.opencontainers.image.ref.name':'fixture-tag'}
+ if scenario=='created-empty-annotations':index['manifests'][0]['annotations']={}
+ if scenario=='created-annotations-type':index['manifests'][0]['annotations']=[]
+ if scenario=='created-unknown-descriptor-key':
+  index['manifests'][0]['annotations']={'org.opencontainers.image.created':timestamp};index['manifests'][0]['urls']=['https://example.invalid']
  if scenario=='index-platform':index['manifests'][0]['platform']={'os':'linux','architecture':'arm64'}
  if scenario=='multiple-platforms':index['manifests'].append(index['manifests'][0])
  members={'oci-layout':encoded({'imageLayoutVersion':'1.0.0'}),'index.json':encoded(index),
@@ -379,7 +432,8 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
   'Vulnerabilities':[],'Secrets':[]}
  if scenario in ['nested-copy-included','same-layer-opaque-replacement']:
   node_result['Packages'].append({'ID':'extra','Name':'extra','Version':'2.0.0','PkgPath':extra})
- if scenario=='replaced-copy':node_result['Packages'][0]['Version']='2.0.0'
+ if scenario in ['replaced-copy','alias-whiteout-replacement']:node_result['Packages'][0]['Version']='2.0.0'
+ if scenario=='alias-duplicate-coverage':node_result['Packages'].append({'ID':'invented-alias-copy','Name':'next','Version':'1.0.0','PkgPath':'calcom/node_modules/alias/package.json'})
  scan={**identity,'scanner':{'version':'0.75.0','binarySha256':m.sha(b'scanner'),'databaseSha256':m.sha(b'database'),
    'ignoredFindings':0,'skipFiles':[],'skipDirs':[],'ignoreUnfixed':False},'rawReportSha256':m.sha(b'private scan fixture'),
   'secretScope':{'filesystem':True,'allLayers':True,'configAndHistory':True,'findings':0,'exitCode':0},'releaseApproved':False,
@@ -460,7 +514,8 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
    assert args==['crane','blob',m.REGISTRY+'@'+config_digest]
    return response(out=encoded(config)+(b' ' if scenario=='config-readback' else b''))
   raise AssertionError('unexpected command')
- positive=scenario in ['admit','publish','idempotent','gzip','nested-copy-included','removed-copy','opaque-copy','replaced-copy','same-layer-opaque-replacement','fetch','safe-redirect','module-marker','source-revision','database-nanoseconds']
+ positive=scenario in ['admit','publish','idempotent','gzip','nested-copy-included','removed-copy','opaque-copy','replaced-copy','same-layer-opaque-replacement','fetch','safe-redirect','module-marker','source-revision','database-nanoseconds','created-annotation','created-nanoseconds',
+  'package-alias','alias-next-hashed','alias-absolute','alias-chain','alias-depth40','alias-removed','alias-whiteout-replacement']
  try:
   if scenario=='cli-redaction':
    receipt['unexpected']='fixture-only-sensitive-provider-body';(d/'publication.json').write_bytes(encoded(receipt));receipt_hash=m.file_hash(d/'publication.json')
@@ -530,6 +585,24 @@ for (const scenario of [
   "whiteout",
   "index-platform",
   "multiple-platforms",
+  "created-annotation",
+  "created-nanoseconds",
+  "created-invalid-date",
+  "created-invalid-leap",
+  "created-invalid-hour",
+  "created-non-utc",
+  "created-missing-zone",
+  "created-too-precise",
+  "created-overlong",
+  "created-wrong-type",
+  "created-unknown-annotation",
+  "created-extra-annotation",
+  "created-ref-name",
+  "created-empty-annotations",
+  "created-annotations-type",
+  "created-unknown-descriptor-key",
+  "config-created-annotation",
+  "layer-created-annotation",
   "corrupt-blob",
   "missing-blob",
   "unreferenced-blob",
@@ -579,6 +652,27 @@ for (const scenario of [
   "gzip-deadline",
   "duplicate-package",
   "package-alias",
+  "alias-next-hashed",
+  "alias-absolute",
+  "alias-chain",
+  "alias-depth40",
+  "alias-depth41",
+  "alias-cycle",
+  "alias-escape",
+  "alias-dangling",
+  "alias-file",
+  "alias-hardlink",
+  "alias-package-json",
+  "alias-target-marker",
+  "alias-outside-inventory",
+  "alias-componentwise-escape",
+  "alias-replaced-ancestor",
+  "alias-whiteout-target",
+  "alias-opaque-target",
+  "alias-removed",
+  "alias-whiteout-replacement",
+  "alias-duplicate-coverage",
+  "alias-dpkg-ancestor",
   "nested-copy-missing",
   "nested-copy-included",
   "removed-copy",

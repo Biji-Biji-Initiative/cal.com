@@ -56,6 +56,13 @@ non-finite numbers; integer IDs cannot be booleans. Archive size is at most
 restricted to OCI metadata and SHA256 blob files; links, special files,
 duplicates, unrelated payloads and unsupported media/platform types fail.
 All config/layer/manifest byte hashes and descriptor sizes must match.
+Only the selected index image descriptor may carry the exact
+`org.opencontainers.image.created` annotation, containing a valid UTC timestamp
+with `Z` and at most nine fractional digits. Other annotations, including mutable
+reference names, and annotations on config/layer descriptors fail. Admission
+preserves the original archive, manifest and config bytes and their digests.
+The real d8 archive remains refused for incomplete package metadata. Named
+vendored package versions are never inferred from a parent package.
 
 The helper streams layers without extracting or executing them. Total expanded
 bytes are bounded to 8 GiB, each layer to 500,000 members, and layer reading to
@@ -117,9 +124,16 @@ must have exactly one matching scan path/name/version occurrence; no extra scan
 occurrences are accepted. Name/version ambiguity fails; exact type-only module
 markers are not installed package identities. The five historic Next/Axios/Effect/
 Prisma paths are additional sentinels. First-party files outside `node_modules`
-are outside this dependency inventory. Final symlink/hardlink aliases within
-`node_modules` or affecting inventory/identity ancestors are unsupported and fail
-closed; this is not a claim that every existing image is admitted.
+are outside this dependency inventory. An alias equal to or above any physical
+package JSON, runtime identity file or dpkg status fails. Remaining symlink
+directories under `node_modules` resolve only inside the final virtual image,
+following each component, link and `..` in filesystem order, with a 40-link
+bound. Their target must contain an already inventoried regular `package.json`
+with its own complete name/version; aliases add no package occurrences.
+Hardlinks, file aliases, missing targets, cycles, escapes and traversal through
+non-directories fail. Whiteouts and replacements apply before resolution; no
+host filesystem path is followed. This supports internal Next directory aliases
+without claiming that every existing image is admitted.
 
 Production time and native/scan completion times must be within 24 hours (up to
 five minutes future clock skew). Zero CRITICAL and zero detected secrets are
@@ -204,19 +218,22 @@ Run the focused Node test with at most four workers, actionlint with the existin
 custom runner label declared in task scratch, Python syntax checks, Biome, UBS
 and Gitleaks. Full build/E2E and new tool/dependency installation are separate.
 
-The focused command `node --test --test-concurrency=4 --test-reporter=spec
-tests/community-enterprise/runtime-package.test.cjs` passes **118/118**, including
-database expiry/coherence/nanosecond and application-versus-publisher revision
-controls. Python syntax, actionlint (the unchanged custom label declared in task
-scratch), Biome, Gitleaks and diff checks pass. UBS remains **exit 1: 13 critical,
-50 warning, 129 information findings**, with no suppressions. Ten critical
-matches concern public OCI/archive/config/source checksum comparisons, not
-credential authentication. Three critical matches are unchanged test-fixture
-items: one public dummy secret and two rules on the trusted source-fixture loader.
-Warnings cover exact JSON type/boolean gates (including rejection of integer
-booleans) and JSON parsing whose failure propagates to a failed CLI/test. Extra
-Ruff/Bandit diagnostics retain their separate dispositions: compatible UTC parsing,
-CLI error redaction, fixed-argument/no-shell subprocess execution, and an image
-environment allowlist literal that opens no listening socket. This is substantive
-source triage, not a clean scanner result or release approval. Exact commands,
-file/line/rule catalog and source hashes are retained in the task review receipt.
+The focused command `node --test --test-concurrency=4 --test-reporter=tap
+tests/community-enterprise/runtime-package.test.cjs` passes **157/157**. The
+registered `test:community-enterprise` source gate passes **1073/1073**, including
+creation-annotation rejection, alias resolution, whiteout/replacement, duplicate
+coverage, database freshness and application-versus-publisher revision controls.
+Python syntax, Node syntax, Biome, Gitleaks and diff checks pass. The unchanged
+workflow previously passed actionlint with its custom runner label declared in
+task scratch. Focused UBS remains **exit 1: 3 critical, 42 warning, 175 information
+findings**, with no suppressions. The three critical matches are unchanged test
+fixtures: one public dummy secret and two rules on the trusted source-fixture
+loader. Warnings cover exact JSON type/boolean gates (including rejection of
+integer booleans) and JSON parsing whose failure propagates to a failed CLI/test.
+Historical public checksum-comparison findings remain public-data comparisons,
+not credential authentication. This is source triage, not a clean scanner result
+or release approval. Exact commands, file/line/rule catalog and source hashes are
+retained in `alias-fix-verification.json`, `alias-security-verification.json` and
+`ubs-triage.json` in the private task review directory. Actual image admission
+still refuses ambiguous installed-package metadata; these source tests do not
+supply missing vendored versions or establish native/security acceptance.
