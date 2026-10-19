@@ -2301,6 +2301,15 @@
       "evidence": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-2026-10-19.md",
       "receipt": "docs/community-enterprise/NATIVE-IMAGE-QUALIFICATION-RECEIPT-2026-10-19.json",
       "notes": "Frozen mail source 0aaaa local OCI passes isolated native qualification in 66.31 seconds: 596 exact migrations, replay and actual post-HTTP database-snapshot equality, core counts zero; provider/login/session HTTP 200, exact callback denial, three entry SSR states and nine header guards. Native receipt acdf8737 and terminal ff1d36cc bind the actual image; correction 1052894e identifies the terminal redacted-log marker hash as not SQL content evidence. All owned containers, PostgreSQL, socket, fixture, unit, PID and cgroups are absent; the actual slot was released at 10:50:16.441233746Z. Earlier attempts remain preserved. Later Sharp/self-link/Trigger source, client JavaScript, real IdP/user/Google/browser/SMTP/data journeys, image security, publication and deployment remain outside this proof; task states are unchanged."
+    },
+    {
+      "date": "2026-10-19",
+      "application_source": "31c2d0bfc3ea2255820fb0e8da58bb99cc91b4b5",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-04.SESSION",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
+      "notes": "Dated live-dev triage: exact public lifecycle routes and identity-header guards are serving; anonymous real browser reached styled IdP identification on both hosts but the automated receipt remains failed. Corrected canonical header diagnostic returns to app root, not sign_out. Authenticated logout remains unproved. Google Calendar still rejects its callback; packaged native-only startup, security remediation and publisher admission remain separate gates. Actual Velero 1.18.3 native policy/modifier smoke passed 19 semantic leaf cases. The 12:41Z metadata acquisition attempt refused current-Pod identity drift before any DownloadRequest/download; no data restore or migration acceptance. Published established legacy session refresh/privilege correction 31c2d0bf passes 97 focused controls, 37 existing sign-in controls and strict 2,265-file closure; it is not deployed or proven as the live-loop cause. All 39 task states and prior evidence remain unchanged."
     }
   ]
 }
