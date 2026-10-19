@@ -451,21 +451,17 @@ export const getOptions = ({
         );
       }
       log.debug("callbacks:jwt", safeStringify({ token, user, account, trigger, session }));
-      // The data available in 'session' depends on what data was supplied in update method call of session
-      if (trigger === "update") {
-        return {
-          ...token,
-          profileId: session?.profileId ?? token.profileId ?? null,
-          upId: session?.upId ?? token.upId ?? null,
-          locale: session?.locale ?? token.locale ?? "en",
-          name: session?.name ?? token.name,
-          username: session?.username ?? token.username,
-          email: session?.email ?? token.email,
-        } as JWT;
-      }
-      const autoMergeIdentities = async () => {
+      const autoMergeIdentities = async (refreshSession = false) => {
+        const userId = Number(token.sub);
+        // Established sessions belong to their signed subject, even after an email change.
+        if (
+          refreshSession &&
+          (typeof token.sub !== "string" || !/^[1-9]\d*$/.test(token.sub) || !Number.isSafeInteger(userId))
+        ) {
+          throw new Error("Invalid session user");
+        }
         const existingUser = await prisma.user.findFirst({
-          where: { email: token.email! },
+          where: refreshSession ? { id: userId } : { email: token.email! },
           select: {
             id: true,
             username: true,
@@ -474,6 +470,7 @@ export const getOptions = ({
             email: true,
             role: true,
             locale: true,
+            locked: true,
             movedToProfileId: true,
             teams: {
               include: {
@@ -488,13 +485,14 @@ export const getOptions = ({
           },
         });
 
-        if (!existingUser) {
+        if (!existingUser || (refreshSession && existingUser.locked)) {
+          if (refreshSession) throw new Error("Invalid session user");
           return token;
         }
 
         // Check if the existingUser has any active teams
         const belongsToActiveTeam = checkIfUserBelongsToActiveTeam(existingUser);
-        const { teams: _teams, ...existingUserWithoutTeamsField } = existingUser;
+        const { teams: _teams, locked: _locked, ...existingUserWithoutTeamsField } = existingUser;
         const allProfiles = await ProfileRepository.findAllProfilesForUserIncludingMovedUser(existingUser);
         log.debug(
           "callbacks:jwt:autoMergeIdentities",
@@ -502,7 +500,12 @@ export const getOptions = ({
             allProfiles,
           })
         );
-        const { upId } = determineProfile({ profiles: allProfiles, token });
+        let profileToken = token;
+        if (refreshSession && trigger === "update" && session?.upId !== undefined) {
+          if (typeof session.upId !== "string" || !session.upId) throw new Error("Invalid profile");
+          profileToken = { ...token, upId: session.upId };
+        }
+        const { upId } = determineProfile({ profiles: allProfiles, token: profileToken });
 
         const profile = await ProfileRepository.findByUpIdWithAuth(upId, existingUser.id);
         if (!profile) {
@@ -524,9 +527,18 @@ export const getOptions = ({
           orgRole = membership?.role;
         }
 
+        const refreshedToken = refreshSession
+          ? { ...token, ...existingUserWithoutTeamsField }
+          : { ...existingUserWithoutTeamsField, ...token };
+        if (refreshSession && existingUser.role === "ADMIN" && token.role !== "ADMIN") {
+          // A new admin grant or login-time security restriction requires fresh sign-in.
+          refreshedToken.role = token.role === "INACTIVE_ADMIN" ? "INACTIVE_ADMIN" : "USER";
+        }
+        if (refreshSession && refreshedToken.role !== "INACTIVE_ADMIN") {
+          delete refreshedToken.inactiveAdminReason;
+        }
         return {
-          ...existingUserWithoutTeamsField,
-          ...token,
+          ...refreshedToken,
           profileId: profile.id,
           upId,
           belongsToActiveTeam,
@@ -548,8 +560,8 @@ export const getOptions = ({
               : null,
         } as JWT;
       };
-      if (!user) {
-        return await autoMergeIdentities();
+      if (!user || trigger === "update") {
+        return await autoMergeIdentities(true);
       }
       if (!account) {
         return token;

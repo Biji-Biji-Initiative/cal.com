@@ -107,6 +107,11 @@ export async function getServerSession(options: {
     user: userFromDb,
     upId,
   });
+  let role: Session["user"]["role"] = user.role;
+  // DB refresh can revoke admin access, but cannot upgrade the authenticated session.
+  if (role === "ADMIN" && token.role !== "ADMIN") {
+    role = token.role === "INACTIVE_ADMIN" ? "INACTIVE_ADMIN" : "USER";
+  }
 
   const session: Session = {
     hasValidLicense,
@@ -120,7 +125,8 @@ export async function getServerSession(options: {
       emailVerified: user.emailVerified,
       email_verified: user.emailVerified !== null,
       completedOnboarding: user.completedOnboarding,
-      role: user.role,
+      role,
+      inactiveAdminReason: role === "INACTIVE_ADMIN" ? token.inactiveAdminReason : undefined,
       image: getUserAvatarUrl({
         avatarUrl: user.avatarUrl,
       }),

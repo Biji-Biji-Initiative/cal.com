@@ -75,6 +75,8 @@ async function getUserFromSession(ctx: SessionContext, session: Maybe<Session>) 
 
   return {
     ...user,
+    // A second DB read must preserve the validated session's privilege ceiling.
+    role: user.role === "ADMIN" && session.user.role !== "ADMIN" ? "USER" : user.role,
     avatar: `${WEBAPP_URL}/${user.username}/avatar.png${organization.id ? `?orgId=${organization.id}` : ""}`,
     // TODO: OrgNewSchema - later -  We could consolidate the props in user.profile?.organization as organization is a profile thing now.
     organization,

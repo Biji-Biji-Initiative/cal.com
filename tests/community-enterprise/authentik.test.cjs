@@ -321,12 +321,14 @@ test("account linking refuses stale target UUID and cannot rebind a different us
 function callbacks(f) {
   const source = read("packages/features/auth/lib/next-auth-options.ts");
   const ast = ts.createSourceFile("options.ts", source, ts.ScriptTarget.Latest, true);
-  const declaration = ast.statements.find(
-    (node) =>
-      ts.isVariableStatement(node) &&
-      node.declarationList.declarations.some((d) => d.name.getText(ast) === "getOptions")
+  const declarations = ["checkIfUserBelongsToActiveTeam", "determineProfile", "getOptions"].map((name) =>
+    ast.statements.find(
+      (node) =>
+        ts.isVariableStatement(node) &&
+        node.declarationList.declarations.some((d) => d.name.getText(ast) === name)
+    )
   );
-  assert.ok(declaration);
+  assert.ok(declarations.every(Boolean));
   const deps = {
     prisma: f.db,
     authentikConfig: config,
@@ -341,11 +343,15 @@ function callbacks(f) {
     encode: nativeJwt.encode,
     userMetadata: { parse: (v) => v },
     isNumber: (v) => /^[0-9]+$/.test(v),
+    ProfileRepository: f.profileRepository,
+    IS_TEAM_BILLING_ENABLED: false,
+    ENABLE_PROFILE_SWITCHER: true,
+    getIdentityProvider: () => null,
   };
   const prelude = Object.keys(deps)
     .map((name) => `const ${name}=require(${JSON.stringify(name)});`)
     .join("\n");
-  return compile(`${prelude}\n${declaration.getText(ast)}`, deps).getOptions({
+  return compile(`${prelude}\n${declarations.map((node) => node.getText(ast)).join("\n")}`, deps).getOptions({
     getDubId: () => undefined,
     getTrackingData: () => ({}),
   });
@@ -373,10 +379,269 @@ test("production JWT update does not fall into legacy client-identity merge", as
   assert.equal(updated.role, "USER");
   assert.equal(updated.upId, "prof-profile-20");
 });
-test("server-session path cannot return cached authorization after account lock", async () => {
+// These named repository doubles model lookup/ownership, not Prisma or live authentication.
+// The JWT/session callbacks and profile-selection function above are the production source.
+function legacySessionFixture() {
   const f = fixture();
-  const token = await f.token();
+  f.users = [f.user, { ...f.user, id: 8, email: "other@example.test", username: "other" }];
+  f.profiles = [
+    { id: null, upId: "usr-7", userId: 7, username: "local", organization: null },
+    { id: 21, upId: "prof-owned", userId: 7, username: "owned-profile", organization: { id: 100 } },
+    { id: null, upId: "usr-8", userId: 8, username: "other", organization: null },
+  ];
+  f.userQueries = [];
+  f.profileQueries = [];
+  const findUser = async (query) => {
+    f.userQueries.push(query);
+    const user = f.users.find((candidate) =>
+      query.where.id === undefined ? candidate.email === query.where.email : candidate.id === query.where.id
+    );
+    if (!user) return null;
+    return query.select ? Object.fromEntries(Object.keys(query.select).map((key) => [key, user[key]])) : user;
+  };
+  f.db.user = { findFirst: findUser, findUnique: findUser };
+  f.db.membership = {
+    async findUnique(query) {
+      assert.deepEqual(query.where.userId_teamId, { teamId: 100, userId: 7 });
+      return { role: "MEMBER" };
+    },
+  };
+  f.profileRepository = {
+    async findAllProfilesForUserIncludingMovedUser(user) {
+      f.profileQueries.push({ method: "list", userId: user.id });
+      return f.profiles.filter((profile) => profile.userId === user.id);
+    },
+    async findByUpIdWithAuth(upId, userId) {
+      f.profileQueries.push({ method: "authorize", upId, userId });
+      return f.profiles.find((profile) => profile.upId === upId && profile.userId === userId) ?? null;
+    },
+  };
+  return f;
+}
+async function legacyToken(overrides = {}) {
+  // Authenticate claims with the installed NextAuth JWE codec before exercising the callback.
+  const secret = "local-session-refresh-fixture-not-a-live-secret";
+  const encoded = await nativeJwt.encode({
+    secret,
+    token: {
+      sub: "7",
+      id: 7,
+      email: "local@example.test",
+      name: "Cached Name",
+      username: "cached-username",
+      role: "ADMIN",
+      locale: "old-locale",
+      upId: "usr-7",
+      profileId: null,
+      ...overrides,
+    },
+  });
+  const token = await nativeJwt.decode({ secret, token: encoded });
+  assert.ok(token);
+  return token;
+}
+test("established legacy session refresh uses fresh DB fields and retains token lifetime", async () => {
+  const f = legacySessionFixture();
+  const token = await legacyToken();
+  const options = callbacks(f);
+  const updated = await options.callbacks.jwt({ token });
+  for (const key of ["id", "name", "username", "email", "role", "locale", "avatarUrl"]) {
+    assert.equal(updated[key], f.user[key], key);
+  }
+  for (const key of ["sub", "iat", "exp", "jti"]) assert.equal(updated[key], token[key], key);
+  assert.deepEqual(
+    f.userQueries.map((query) => query.where),
+    [{ id: 7 }]
+  );
+  const session = await options.callbacks.session({
+    session: { user: {}, expires: "future" },
+    token: updated,
+  });
+  assert.equal(session.user.username, f.user.username);
+  assert.equal(session.user.name, f.user.name);
+  assert.equal(session.user.role, "USER");
+  assert.equal(f.writes.length, 0);
+});
+test("established legacy session cannot follow a changed or reassigned email to another user", async () => {
+  const f = legacySessionFixture();
+  f.user.email = "changed@example.test";
+  f.users[1].email = "local@example.test";
+  const token = await legacyToken({ upId: undefined, id: 8 });
+  const updated = await callbacks(f).callbacks.jwt({ token });
+  assert.equal(updated.sub, "7");
+  assert.equal(updated.id, 7);
+  assert.equal(updated.email, "changed@example.test");
+  assert.equal(updated.upId, "usr-7");
+  assert.deepEqual(
+    f.userQueries.map((query) => query.where),
+    [{ id: 7 }]
+  );
+  assert.deepEqual(f.profileQueries, [
+    { method: "list", userId: 7 },
+    { method: "authorize", upId: "usr-7", userId: 7 },
+  ]);
+});
+test("legacy refresh preserves credential sign-in restrictions while applying DB role demotions", async () => {
+  const f = legacySessionFixture();
+  f.user.role = "ADMIN";
+  const options = callbacks(f);
+  const restricted = await options.callbacks.jwt({
+    token: { sub: "7" },
+    user: { ...f.user, role: "INACTIVE_ADMIN", inactiveAdminReason: "both" },
+    account: { type: "credentials", provider: "credentials" },
+  });
+  const token = await legacyToken(restricted);
+  for (const trigger of [undefined, "update"]) {
+    const updated = await options.callbacks.jwt({ token, trigger, session: { role: "ADMIN" } });
+    assert.equal(updated.role, "INACTIVE_ADMIN");
+    assert.equal(updated.inactiveAdminReason, "both");
+  }
+  f.user.role = "USER";
+  const demoted = await options.callbacks.jwt({ token });
+  assert.equal(demoted.role, "USER");
+  assert.equal(demoted.inactiveAdminReason, undefined);
+  f.user.role = "ADMIN";
+  const qualified = await options.callbacks.jwt({
+    token: { sub: "7" },
+    user: f.user,
+    account: { type: "credentials", provider: "credentials" },
+  });
+  assert.equal((await options.callbacks.jwt({ token: await legacyToken(qualified) })).role, "ADMIN");
+});
+test("legacy background refresh cannot grant a newly assigned admin role before fresh sign-in", async () => {
+  const f = legacySessionFixture();
+  f.user.role = "ADMIN";
+  for (const role of ["USER", undefined]) {
+    for (const trigger of [undefined, "update"]) {
+      const token = await legacyToken({ role });
+      const updated = await callbacks(f).callbacks.jwt({ token, trigger, session: { role: "ADMIN" } });
+      assert.equal(updated.role, "USER");
+    }
+  }
+});
+test("legacy update refreshes saved profile and rejects client identity overrides while selecting an owned profile", async () => {
+  const f = legacySessionFixture();
+  f.user.username = "saved-username";
+  f.user.name = "Saved Name";
+  const token = await legacyToken();
+  const updated = await callbacks(f).callbacks.jwt({
+    token,
+    trigger: "update",
+    session: {
+      sub: "8",
+      id: 8,
+      email: "other@example.test",
+      role: "ADMIN",
+      name: "Injected Name",
+      username: "injected-name",
+      locale: "injected-locale",
+      profileId: 999,
+      upId: "prof-owned",
+    },
+  });
+  for (const key of ["id", "name", "username", "email", "role", "locale"]) {
+    assert.equal(updated[key], f.user[key], key);
+  }
+  assert.equal(updated.sub, "7");
+  assert.equal(updated.profileId, 21);
+  assert.equal(updated.upId, "prof-owned");
+  assert.equal(updated.orgAwareUsername, "owned-profile");
+  assert.equal(updated.org.role, "MEMBER");
+  assert.deepEqual(
+    f.userQueries.map((query) => query.where),
+    [{ id: 7 }]
+  );
+  assert.deepEqual(f.profileQueries.at(-1), { method: "authorize", upId: "prof-owned", userId: 7 });
+});
+test("established legacy sessions deny malformed signed subjects without email fallback", async (t) => {
+  for (const sub of [
+    undefined,
+    "",
+    "0",
+    "-7",
+    "07",
+    "7.0",
+    "7e0",
+    "7junk",
+    " 7",
+    7,
+    {},
+    "9007199254740992",
+  ]) {
+    for (const trigger of [undefined, "update"]) {
+      await t.test(`${JSON.stringify(sub)} / ${trigger ?? "refresh"}`, async () => {
+        const f = legacySessionFixture();
+        const token = await legacyToken({ sub });
+        await assert.rejects(
+          callbacks(f).callbacks.jwt({ token, trigger, session: { email: f.user.email } })
+        );
+        assert.equal(f.userQueries.length, 0);
+        assert.equal(f.profileQueries.length, 0);
+      });
+    }
+  }
+});
+test("established legacy sessions deny missing or locked users instead of cached authorization", async (t) => {
+  for (const state of ["missing", "locked"]) {
+    for (const trigger of [undefined, "update"]) {
+      await t.test(`${state} / ${trigger ?? "refresh"}`, async () => {
+        const f = legacySessionFixture();
+        if (state === "missing") f.users = [f.users[1]];
+        else f.user.locked = true;
+        const token = await legacyToken();
+        await assert.rejects(callbacks(f).callbacks.jwt({ token, trigger, session: {} }));
+        assert.deepEqual(
+          f.userQueries.map((query) => query.where),
+          [{ id: 7 }]
+        );
+        assert.equal(f.profileQueries.length, 0);
+      });
+    }
+  }
+});
+test("legacy profile hints must resolve through the signed user's profile authorization", async (t) => {
+  for (const upId of ["usr-8", "prof-missing", "", null, 8, {}]) {
+    await t.test(JSON.stringify(upId), async () => {
+      const f = legacySessionFixture();
+      const token = await legacyToken();
+      await assert.rejects(callbacks(f).callbacks.jwt({ token, trigger: "update", session: { upId } }));
+    });
+  }
+  const f = legacySessionFixture();
+  await assert.rejects(callbacks(f).callbacks.jwt({ token: await legacyToken({ upId: "usr-8" }) }));
+});
+test("initial legacy credentials and email/OAuth linking retain their provider sign-in paths", async () => {
+  const f = legacySessionFixture();
+  const options = callbacks(f);
+  const credentials = await options.callbacks.jwt({
+    token: { sub: "7" },
+    user: f.user,
+    account: { type: "credentials", provider: "credentials" },
+  });
+  assert.equal(credentials.id, 7);
+  assert.equal(credentials.username, f.user.username);
+  assert.equal(f.userQueries.length, 0);
+  for (const account of [
+    { type: "email", provider: "email" },
+    { type: "oauth", provider: "unknown", providerAccountId: "provider-subject" },
+  ]) {
+    const linked = await options.callbacks.jwt({
+      token: { sub: "provider-subject", email: f.user.email },
+      user: f.user,
+      account,
+    });
+    assert.equal(linked.id, 7);
+    assert.equal(linked.sub, "provider-subject");
+    assert.deepEqual(f.userQueries.at(-1).where, { email: f.user.email });
+  }
+});
+function sessionReaders(f, token) {
+  // The repository is the same explicit DB/profile double used by the server-session fixture.
   class UserRepository {
+    async findUnlockedUserForSession({ userId }) {
+      const user = await f.db.user.findUnique({ where: { id: userId } });
+      return user && !user.locked ? user : null;
+    }
     async enrichUserWithTheProfile({ user, upId }) {
       return { ...user, profile: { upId } };
     }
@@ -395,6 +660,80 @@ test("server-session path cannot return cached authorization after account lock"
     "@calcom/prisma": { __esModule: true, default: f.db },
     "next-auth/jwt": { getToken: async () => token },
   });
+  const logger = { debug() {}, warn() {}, error() {} };
+  const sessionModule = compile(read("packages/features/auth/lib/userFromSessionUtils.ts"), {
+    "@calcom/features/profile/repositories/ProfileRepository": { ProfileRepository: f.profileRepository },
+    "@calcom/features/users/repositories/UserRepository": { UserRepository },
+    "@calcom/features/auth/lib/getServerSession": { getServerSession },
+    "@calcom/lib/constants": { WEBAPP_URL: WEB },
+    "@calcom/lib/errorCodes": { ErrorCode: { Unauthorized: "UNAUTHORIZED" } },
+    "@calcom/lib/errors": { ErrorWithCode: Error },
+    "@calcom/lib/logger": { __esModule: true, default: logger },
+    "@calcom/lib/safeStringify": { safeStringify: JSON.stringify },
+    "@calcom/prisma": { __esModule: true, default: f.db },
+    "@calcom/prisma/zod-utils": {
+      userMetadata: { parse: (v) => v },
+      teamMetadataSchema: { parse: (v) => v },
+    },
+  });
+  const trpc = require("@trpc/server");
+  const t = trpc.initTRPC.create();
+  const { isAdminMiddleware } = compile(read("packages/trpc/server/middlewares/sessionMiddleware.ts"), {
+    "@calcom/features/auth/lib/userFromSessionUtils": sessionModule,
+    "@calcom/lib/logger": { __esModule: true, default: logger },
+    "@sentry/nextjs": { setUser() {} },
+    "@trpc/server": trpc,
+    "../trpc": { middleware: t.middleware },
+  });
+  const adminRouter = t.router({ check: t.procedure.use(isAdminMiddleware).query(() => true) });
+  return { getServerSession, adminCaller: (session) => adminRouter.createCaller({ session }) };
+}
+test("server readers and actual admin middleware preserve effective session privilege across DB refreshes", async (t) => {
+  for (const [signedRole, dbRole, effectiveRole] of [
+    ["INACTIVE_ADMIN", "ADMIN", "INACTIVE_ADMIN"],
+    ["USER", "ADMIN", "USER"],
+    [undefined, "ADMIN", "USER"],
+    ["ADMIN", "ADMIN", "ADMIN"],
+    ["ADMIN", "USER", "USER"],
+  ]) {
+    await t.test(`${signedRole ?? "missing"} / DB ${dbRole}`, async (t) => {
+      const f = legacySessionFixture();
+      f.user.role = dbRole;
+      const token = await legacyToken({ role: signedRole, inactiveAdminReason: "both" });
+      const readers = sessionReaders(f, token);
+      await t.test("server session", async () => {
+        const session = await readers.getServerSession({ req: {} });
+        assert.equal(session.user.role, effectiveRole);
+        assert.equal(
+          session.user.inactiveAdminReason,
+          effectiveRole === "INACTIVE_ADMIN" ? "both" : undefined
+        );
+      });
+      await t.test("tRPC re-read and admin middleware", async () => {
+        const session = await callbacks(f).callbacks.session({
+          session: { user: {}, expires: "future" },
+          token,
+        });
+        const request = readers.adminCaller(session).check();
+        if (signedRole === "ADMIN" && dbRole === "ADMIN") assert.equal(await request, true);
+        else await assert.rejects(request, (error) => error.code === "UNAUTHORIZED");
+      });
+    });
+  }
+});
+test("native server role refresh remains tied to the current validated identity", async () => {
+  const f = fixture();
+  const token = await f.token();
+  f.user.role = "ADMIN";
+  const readers = sessionReaders(f, token);
+  const session = await readers.getServerSession({ req: {} });
+  assert.equal(session.user.role, "ADMIN");
+  assert.equal(await readers.adminCaller(session).check(), true);
+});
+test("server-session path cannot return cached authorization after account lock", async () => {
+  const f = fixture();
+  const token = await f.token();
+  const { getServerSession } = sessionReaders(f, token);
   assert.equal((await getServerSession({ req: {} })).user.id, 7);
   f.user.locked = true;
   assert.equal(await getServerSession({ req: {} }), null);
