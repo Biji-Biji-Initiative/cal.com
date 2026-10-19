@@ -349,6 +349,16 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  if scenario in ['distroless-home','wrong-home','duplicate-home']:
   config['config']['Env']+=['PATH=/nodejs/bin','HOME='+('/root' if scenario=='wrong-home' else '/home/node')]
  if scenario=='duplicate-home':config['config']['Env'].append('HOME=/home/node')
+ if scenario in ['distroless-certificate','distroless-certificate-actual-shape','certificate-alternate-path','certificate-regex-dot','duplicate-certificate','certificate-unknown-name']:
+  certificate='/etc/ssl/certs/ca-certificates.crt'
+  config['config']['Env'].append('SSL_CERT_FILE='+certificate)
+ if scenario=='distroless-certificate-actual-shape':
+  config['config']['Env']=['PATH=/nodejs/bin','SSL_CERT_FILE='+certificate,'HOME=/home/node','NODE_ENV=production',
+   'NEXT_TELEMETRY_DISABLED=1','CHECKPOINT_DISABLE=1','PRISMA_HIDE_UPDATE_MESSAGE=1','PRISMA_GENERATE_SKIP_AUTOINSTALL=true','HOSTNAME=0.0.0.0','PORT=3000']
+ if scenario=='certificate-alternate-path':config['config']['Env'][-1]='SSL_CERT_FILE=/tmp/fixture-certificate.crt'
+ if scenario=='certificate-regex-dot':config['config']['Env'][-1]='SSL_CERT_FILE=/etc/ssl/certs/ca-certificatesXcrt'
+ if scenario=='duplicate-certificate':config['config']['Env'].append('SSL_CERT_FILE='+certificate)
+ if scenario=='certificate-unknown-name':config['config']['Env'].append('SSL_CERT_OTHER='+certificate)
  layer_files={'calcom/enterprise-build.json':encoded(build),'calcom/apps/web/.next/BUILD_ID':b'fixture-build',
               'calcom/apps/web/.next/build-manifest.json':b'{}'}
  for key,file in m.RECIPES.items():
@@ -595,7 +605,7 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
   raise AssertionError('unexpected command')
  positive=scenario in ['admit','publish','idempotent','gzip','nested-copy-included','removed-copy','opaque-copy','replaced-copy','same-layer-opaque-replacement','fetch','safe-redirect','module-marker','source-revision','database-nanoseconds','created-annotation','created-nanoseconds',
    'package-alias','alias-next-hashed','alias-absolute','alias-chain','alias-depth40','alias-removed','alias-whiteout-replacement',
-   'distroless-home','status-d-basic','status-d-explicit','status-d-md5sums','status-d-epoch','status-d-replaced','status-d-whiteout-replacement',
+   'distroless-home','distroless-certificate','distroless-certificate-actual-shape','status-d-basic','status-d-explicit','status-d-md5sums','status-d-epoch','status-d-replaced','status-d-whiteout-replacement',
    'status-d-uninstalled-record','status-d-transition']
  try:
   if scenario=='cli-redaction':
@@ -661,6 +671,12 @@ for (const scenario of [
   "wrong-label",
   "secret-env",
   "distroless-home",
+  "distroless-certificate",
+  "distroless-certificate-actual-shape",
+  "certificate-alternate-path",
+  "certificate-regex-dot",
+  "duplicate-certificate",
+  "certificate-unknown-name",
   "wrong-home",
   "duplicate-home",
   "status-d-basic",

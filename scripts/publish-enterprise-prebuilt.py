@@ -174,7 +174,7 @@ def config_schema(config, build):
     allowed = {"PATH": r"[/A-Za-z0-9_:.-]+", "NODE_VERSION": r"22\.\d+\.\d+", "YARN_VERSION": r"\d+\.\d+\.\d+",
                "NODE_ENV": "production", "NEXT_TELEMETRY_DISABLED": "1", "CHECKPOINT_DISABLE": "1",
                "PRISMA_HIDE_UPDATE_MESSAGE": "1", "PRISMA_GENERATE_SKIP_AUTOINSTALL": "true", "HOSTNAME": "0.0.0.0", "PORT": "3000",
-               "HOME": "/home/node"}
+               "HOME": "/home/node", "SSL_CERT_FILE": r"/etc/ssl/certs/ca-certificates\.crt"}
     need(type(c.get("Env")) is list, "Missing runtime environment inventory")
     names = set()
     for entry in c["Env"]:
