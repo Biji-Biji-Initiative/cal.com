@@ -748,3 +748,120 @@ test("manual login exit cancels pending initiation and cannot be overwritten", a
   await f.reply(1, { url: authorization() });
   assert.deepEqual(f.navigation, ["/auth/login"]);
 });
+
+function publicWelcomeRoot(session, onboardingPath = null) {
+  const calls = [];
+  const legacyRequest = { fixture: "public-welcome-request" };
+  const Welcome = () => null;
+  const { default: Page } = compile("apps/web/app/page.tsx", {
+    "react/jsx-runtime": require("react/jsx-runtime"),
+    "next/headers": { headers: async () => ({}), cookies: async () => ({}) },
+    "next/navigation": {
+      redirect(destination) {
+        calls.push({ operation: "redirect", destination });
+        const error = new Error("Unexpected public-root redirect");
+        error.destination = destination;
+        throw error;
+      },
+    },
+    "@calcom/features/auth/lib/getServerSession": {
+      async getServerSession(options) {
+        assert.deepEqual(options, { req: legacyRequest });
+        calls.push({ operation: "session" });
+        return session;
+      },
+    },
+    "@calcom/features/auth/lib/onboardingUtils": {
+      async checkOnboardingRedirect(userId, options) {
+        calls.push({ operation: "onboarding", userId, options });
+        return onboardingPath;
+      },
+    },
+    "@lib/buildLegacyCtx": { buildLegacyRequest: () => legacyRequest },
+    "~/auth/public-welcome-view": { __esModule: true, default: Welcome },
+  });
+  return { page: () => Page(), calls, Welcome };
+}
+
+test("public welcome anonymous root stays public", async () => {
+  // Only session, onboarding and legacy-request boundaries are doubled; the
+  // actual server page chooses whether to render or redirect.
+  const f = publicWelcomeRoot(null);
+  const result = await f.page();
+  assert.equal(result.type, f.Welcome);
+  assert.deepEqual(f.calls, [{ operation: "session" }]);
+});
+
+test("public welcome missing identity stays public", async () => {
+  for (const session of [undefined, {}, { user: {} }, { user: { id: 0 } }]) {
+    const f = publicWelcomeRoot(session);
+    assert.equal((await f.page()).type, f.Welcome);
+    assert.deepEqual(f.calls, [{ operation: "session" }]);
+  }
+});
+
+for (const onboardingPath of [null, "/getting-started"]) {
+  test(`public welcome preserves signed-in ${onboardingPath ? "first setup" : "dashboard"}`, async () => {
+    const f = publicWelcomeRoot({ user: { id: 7, profile: { organizationId: 42 } } }, onboardingPath);
+    const destination = onboardingPath || "/event-types";
+    await assert.rejects(f.page, (error) => error.destination === destination);
+    assert.deepEqual(f.calls, [
+      { operation: "session" },
+      {
+        operation: "onboarding",
+        userId: 7,
+        options: { checkEmailVerification: true, organizationId: 42 },
+      },
+      { operation: "redirect", destination },
+    ]);
+  });
+}
+
+test("public welcome renders passive Cal UI and an explicit non-prefetching Mereka link", async () => {
+  const sideEffects = [];
+  const { default: Welcome } = compile(
+    "apps/web/modules/auth/public-welcome-view.tsx",
+    {
+      "react/jsx-runtime": require("react/jsx-runtime"),
+      "@calcom/lib/hooks/useLocale": {
+        useLocale: () => ({
+          t: (key, values = {}) => {
+            assert.equal(typeof translations[key], "string");
+            return translations[key].replace(/\{\{(\w+)\}\}/g, (_match, name) => values[name]);
+          },
+        }),
+      },
+      "@calcom/ui/components/button": {
+        buttonClasses: (options) => {
+          assert.deepEqual(options, { color: "primary", size: "lg" });
+          return "native-cal-primary-button";
+        },
+      },
+      "@components/ui/AuthContainer": {
+        __esModule: true,
+        default: ({ children, showLogo }) => {
+          assert.equal(showLogo, undefined);
+          return React.createElement("div", { "data-testid": "native-cal-auth-container" }, children);
+        },
+      },
+    },
+    {
+      fetch: () => sideEffects.push("unexpected-fetch"),
+      window: { location: { assign: () => sideEffects.push("unexpected-navigation") } },
+    }
+  );
+  const html = renderToString(React.createElement(Welcome));
+  assert.match(html, /Welcome to Cal/);
+  assert.deepEqual(sideEffects, []);
+  const view = render(React.createElement(React.StrictMode, {}, React.createElement(Welcome)));
+  await act(async () => Promise.resolve());
+  assert.ok(view.getByRole("heading", { level: 1, name: "Welcome to Cal" }));
+  assert.ok(view.getByText("Manage your bookings and availability with your Mereka account."));
+  const link = view.getByRole("link", { name: "Sign in with Mereka" });
+  assert.equal(link.tagName, "A");
+  assert.equal(link.getAttribute("href"), "/auth/mereka?rd=%2Fevent-types");
+  assert.equal(view.getAllByRole("link").length, 1);
+  assert.equal(link.onclick, null);
+  assert.equal(view.queryByText("Select plan"), null);
+  assert.deepEqual(sideEffects, []);
+});
