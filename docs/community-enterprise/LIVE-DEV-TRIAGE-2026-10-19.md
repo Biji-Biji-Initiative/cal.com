@@ -333,3 +333,85 @@ Google's fresh provider-only challenge at18:29:01UTC still returned HTTP302 `red
 Backup metadata comparison now passed for the same bounded archive after the exact published scheduling/pull reset and explicitly opted-in five-key ServiceAccount cleanup transformation. The raw discriminator retains two cleanup-category annotations without projecting their values or asserting their historical writer. The resulting five-object metadata projection claims only after-reset parity; raw parity, admission reinjection absence, FSB payload, PostgreSQL recovery and writer quiescence remain false. Exact-owner disposal and independent readback prove archive, private projection, authentication and request/log material absent, with only the known value-free receipts retained. An isolated restore plan is prepared; fresh capacity, effective controller/plugin and source-volume identity gates remain before any data action. No Restore or recovery SQL has run.
 
 Actual receipts remain under `/data/tmp/cal-image-security-e452-fwr3rei1`, `/data/tmp/cal-native-e452-prep-5PePUI`, `/data/tmp/cal-current-registry-evidence-LX7m5o`, `/data/tmp/cal-google-current-JDenee` and `/data/tmp/cal-dev-metadata-wJgV7E`. The exact e452 image remains on g2; secret reports and raw streams stay private. Both recorded credential incidents remain open. This checkpoint closes no task, changes none of the 39 task objects, and records no production or real staff acceptance.
+
+## Refreshed-email candidate and disposable restore (2026-10-19)
+
+Published application commit `e8e8df8ff779e643a7b1fd34a1283e994223ec6d`
+adds the refreshed database email to the session callback. Its actual-callback
+regression first failed against the previous implementation; the corrected
+authentication suite passed all 100 cases. The complete nine-step producer
+then passed, including the full web TypeScript check and Next build. The three
+previously documented Prisma tracing warnings remain. Source UBS findings and
+the inherited uncancelled Azure fetch remain unsuppressed.
+
+The resulting image has manifest
+`sha256:f76241029f2d7f67bd9c82af3878b04c2546e8ae440f4ef4986499cf04b1d872`,
+config `sha256:5c38ce754e97b3e3b9123cd68576f1384d7df54e68334b92d2e4d1e1d7be126e`
+and archive SHA256
+`ea6816d9c3e4ed93a726015c1e1b127e3c1d2784b8c1d7d41d5eb3ebfaed3879`
+(338,933,248 bytes). Its own raw Trivy run reports zero HIGH/CRITICAL,
+58 MEDIUM and ten LOW findings, all unwaived. The separate full-layer scan
+completed all 58 sources and reports 89 unwaived detector occurrences. These
+are not 89 confirmed or unique credentials, and no old-candidate disposition
+has been transferred. Physical inventory and semantic secret review remain
+separate requirements.
+
+The first physical read refused the inherited `SSL_CERT_FILE` key before
+package comparison. Published reader correction
+`3575f1069fcfbc750e7dbc23192d67a64d8f3c23` accepts only the signed base's exact
+public certificate path, with the regex dot escaped. Ten focused fixtures,
+Biome, Gitleaks and syntax/diff checks pass. Eight test-only UBS critical
+findings and the Python helper-checksum refusal remain unsuppressed. Its
+original wrapper failed on one owned 92-byte temporary cache; later exact
+cleanup is independently recorded. This reader correction changes no image
+bytes or scan findings. The second physical read passed the certificate check
+but refused an ambiguous Node package identity; inventory comparison remains
+unreached. Its original failure, unchanged inputs and independent cleanup are
+retained; the offending metadata is being diagnosed without changing guards.
+
+Native attempt e8e8a01 stopped at the probe's stale expected source commit.
+After that exact binding correction, e8e8a02 passed 596 migrations and replay,
+native HTTP/session checks and the strict bridge principal and onboarding
+redirect checks. It stopped at CSRF handling. The probe statically rejected
+Cal's published `__Secure-next-auth.csrf-token` because it expected the stock
+`__Host-` name; the retained runtime evidence does not isolate the exact failing
+subcheck. The one-name fixture correction passed eleven focused controls,
+including the old probe's failure and unknown-cookie/expiry cases. The failed
+attempts remain failed. The corrected e8e8a03 run then passed in 45.002 seconds:
+fresh database profile/email, exact onboarding 307, immutable subject and
+administrator-update refusals, native CSRF signout with session-cookie removal
+and an empty subsequent session, locked-owner denial and guarded synthetic
+CAS purge back to zero. Native-marker and bridge-token isolation passed in
+both directions. The four containers, private PostgreSQL fixture, socket,
+processes and cgroup are absent, and the real slot was released. These are
+isolated server results; client JavaScript, staff SSO, old-cookie revocation
+and the live user journey remain unproved.
+
+The authorized disposable dev restore created its five owned resources and
+completed with zero errors and two warnings. All three volume restores
+(`data`, `dshm`, `empty-dir`) completed and match their historical backup
+volume, Pod, snapshot, uploader and storage-location identities. The data
+restore matches the new 8 GiB claim; its new PV/CSI handle differs from the
+serving source and has two healthy replicas on distinct nodes. The two
+warnings remain unresolved. One warning-reader attempt refused a changed
+in-memory selection before any provider download; that original failure is
+preserved. The corrected caller keeps the bound selection unchanged. Its
+fresh attempt downloaded 210 compressed bytes, decoded 296 bytes, retained
+both cluster warnings as unclassified/unwaived and repeated the exact
+Restore/Backup/storage identity checks successfully. This is not PostgreSQL integrity, writer
+quiescence, migration or recovery acceptance. The serving database was not
+written; the copied resources remain retained under their exact ownership
+ledger.
+
+The last direct serving-image observation remains the 18:31–18:32Z stock
+Cal 6.2.0 application with only its Node runtime replaced. The candidate is
+not deployed. Google's last actual provider check remains the 18:29Z
+`redirect_uri_mismatch` for the canonical dev Calendar callback. The admitted
+publisher route, Google Console administrator, real staff journey and both
+credential incidents remain open. Owner message 147276 records the updated
+request. This checkpoint changes no task state or production acceptance.
+
+Evidence: producer `a06f3ded703c6d3a2e5a967c66f5c0341113b40d711d0224b8fea4784ad2d51c`;
+native `340a9bcc3b09b2c4ea95f046f93837cb649a1ee7875cebb0e390d6adcd052f0d`;
+whole-layer scan `887aa3476077898e1b0729fab547a3c6f5bc3063794fe782d2129078821f8017`;
+restore warning projection `7d05af25a322498f986dbec4cc6eb128017a56916280049fc445313c1a77017f`.
