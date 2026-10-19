@@ -280,7 +280,10 @@ def node_inventory(files, deadline):
                         and parent_name == "next" and relative.startswith("dist/compiled/")
                         and (bundle == label or bundle.startswith(label + "/"))
                         and {"name", "main"} <= set(package) <= {"name", "main", "author", "license"})
-            need(label == parent_name or label.startswith(parent_name + "/") or compiled,
+            i18next_client = (root.endswith("/node_modules/next-i18next") and parent == root + "/package.json"
+                              and parent_name == "next-i18next" and relative == "dist/commonjs/createClient/package.json"
+                              and package == {"name": "next-i18next-create-client", "main": "./node.js", "browser": "./browser.js"})
+            need(label == parent_name or label.startswith(parent_name + "/") or compiled or i18next_client,
                  "Contradictory module descriptor identity")
         if "version" in package:
             need(pattern(package["version"], r"[A-Za-z0-9_.+~-]{1,300}") == parent_version,

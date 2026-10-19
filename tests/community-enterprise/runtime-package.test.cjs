@@ -318,6 +318,39 @@ if scenario=='tree-as-source':source=subprocess.check_output(['git','-C',str(roo
 now=dt.datetime.now(dt.timezone.utc); timestamp=now.isoformat(timespec='seconds').replace('+00:00','Z')
 def encoded(v): return json.dumps(v,separators=(',',':')).encode()
 def response(code=0,out=b'',err=b''): return types.SimpleNamespace(returncode=code,stdout=out,stderr=err)
+if scenario.startswith('fragment-i18next-client'):
+ package_root='calcom/node_modules/next-i18next'
+ parent_name='next-i18next'
+ relative='dist/commonjs/createClient/package.json'
+ marker={'name':'next-i18next-create-client','main':'./node.js','browser':'./browser.js'}
+ if scenario=='fragment-i18next-client-wrong-name':marker['name']='another-client'
+ if scenario=='fragment-i18next-client-wrong-path':relative='dist/esm/createClient/package.json'
+ if scenario=='fragment-i18next-client-wrong-root':package_root='calcom/node_modules/another-package'
+ if scenario=='fragment-i18next-client-root-prefix':package_root+='-extra'
+ if scenario=='fragment-i18next-client-wrong-parent':parent_name='another-package'
+ if scenario=='fragment-i18next-client-main-change':marker['main']='./other.js'
+ if scenario=='fragment-i18next-client-main-escape':marker['main']='../../../../outside.js'
+ if scenario=='fragment-i18next-client-browser-change':marker['browser']='./other.js'
+ if scenario=='fragment-i18next-client-browser-escape':marker['browser']='../../../../outside.js'
+ if scenario=='fragment-i18next-client-main-absolute':marker['main']='/node.js'
+ if scenario=='fragment-i18next-client-main-missing':marker.pop('main')
+ if scenario=='fragment-i18next-client-browser-missing':marker.pop('browser')
+ if scenario=='fragment-i18next-client-extra-module':marker['module']='./node.js'
+ if scenario=='fragment-i18next-client-extra-private':marker['private']=True
+ if scenario=='fragment-i18next-client-extra-script':marker['scripts']={'prepare':'fixture-only-never-executed'}
+ parent=package_root+'/package.json'
+ files={parent:encoded({'name':parent_name,'version':'15.4.2'}),package_root+'/'+relative:encoded(marker)}
+ if scenario=='fragment-i18next-client-nearer-parent':
+  files[package_root+'/dist/commonjs/package.json']=encoded({'name':'next-i18next','version':'15.4.2'})
+ if scenario=='fragment-i18next-client':
+  assert m.node_inventory(files,m.time.monotonic()+5)=={parent:('next-i18next','15.4.2')}, 'marker invented an installed occurrence or version'
+ else:
+  try:m.node_inventory(files,m.time.monotonic()+5)
+  except m.Refused as error:
+   expected='Unsupported nested module descriptor' if scenario.endswith('-extra-script') else 'Contradictory module descriptor identity'
+   assert str(error)==expected, 'unexpected marker refusal'
+  else:raise AssertionError('altered internal marker accepted')
+ print('fixture-control-passed');sys.exit(0)
 if scenario=='fragment-semantic-deadline':
  try:m.node_inventory({'calcom/node_modules/next/package.json':encoded({'name':'next','version':'1.0.0'})},m.time.monotonic()-1)
  except m.Refused:print('fixture-control-passed');sys.exit(0)
@@ -901,6 +934,23 @@ for (const scenario of [
   "fragment-shapes75",
   "fragment-spoofed-install-root",
   "fragment-nested-next-parent",
+  "fragment-i18next-client",
+  "fragment-i18next-client-wrong-name",
+  "fragment-i18next-client-wrong-path",
+  "fragment-i18next-client-wrong-root",
+  "fragment-i18next-client-root-prefix",
+  "fragment-i18next-client-wrong-parent",
+  "fragment-i18next-client-nearer-parent",
+  "fragment-i18next-client-main-change",
+  "fragment-i18next-client-main-escape",
+  "fragment-i18next-client-browser-change",
+  "fragment-i18next-client-browser-escape",
+  "fragment-i18next-client-main-absolute",
+  "fragment-i18next-client-main-missing",
+  "fragment-i18next-client-browser-missing",
+  "fragment-i18next-client-extra-module",
+  "fragment-i18next-client-extra-private",
+  "fragment-i18next-client-extra-script",
   "fragment-semantic-deadline",
   "cli-redaction",
   "source-revision",
