@@ -239,6 +239,98 @@ def installed_aliases(aliases, tree, packages, protected, deadline):
         pattern(metadata["version"], r"[A-Za-z0-9_.+~-]{1,300}")
 
 
+def node_inventory(files, deadline):
+    metadata, installed = {}, {}
+    for name, data in files.items():
+        need(time.monotonic() <= deadline, "Installed package metadata exceeds time bound")
+        package = strict_json(data)
+        need(type(package) is dict, "Invalid installed package metadata")
+        metadata[name] = package
+        if "name" in package and "version" in package:
+            installed[name] = (pattern(package["name"], r"[A-Za-z0-9_@./-]{1,300}"),
+                               pattern(package["version"], r"[A-Za-z0-9_.+~-]{1,300}"))
+    for name, package in metadata.items():
+        need(time.monotonic() <= deadline, "Installed package metadata exceeds time bound")
+        if name in installed:
+            continue
+        parts = name.split("/")
+        anchor = max(i for i, part in enumerate(parts) if part == "node_modules")
+        width = 2 if parts[anchor + 1].startswith("@") else 1
+        root = "/".join(parts[:anchor + 1 + width])
+        need(name != root + "/package.json" and root + "/package.json" in installed,
+             "Incomplete installed package root")
+        parents = [str(parent) + "/package.json" for parent in Path(name).parent.parents
+                   if str(parent) == root or str(parent).startswith(root + "/")]
+        parent = next((candidate for candidate in parents if candidate in installed), None)
+        need(parent is not None, "Missing complete module descriptor parent")
+        parent_name, parent_version = installed[parent]
+        directory = str(Path(name).parent)
+        component = str(Path(parent).parent)
+        fields = {"name", "version", "type", "main", "module", "browser", "react-native", "types",
+                  "exports", "sideEffects", "private", "author", "license"}
+        need(package and set(package) <= fields and any(key in package for key in
+             ["type", "main", "module", "browser", "react-native", "types", "exports"]),
+             "Unsupported nested module descriptor")
+        if "name" in package:
+            label = pattern(package["name"], r"[A-Za-z0-9_@./-]{1,300}")
+            need(not any(part in {"", ".", ".."} for part in label.split("/")), "Invalid module descriptor name")
+            relative = name.removeprefix(component + "/")
+            bundle = relative.removeprefix("dist/compiled/").removesuffix("/package.json")
+            compiled = (root.endswith("/node_modules/next") and parent == root + "/package.json"
+                        and parent_name == "next" and relative.startswith("dist/compiled/")
+                        and (bundle == label or bundle.startswith(label + "/"))
+                        and {"name", "main"} <= set(package) <= {"name", "main", "author", "license"})
+            need(label == parent_name or label.startswith(parent_name + "/") or compiled,
+                 "Contradictory module descriptor identity")
+        if "version" in package:
+            need(pattern(package["version"], r"[A-Za-z0-9_.+~-]{1,300}") == parent_version,
+                 "Contradictory module descriptor version")
+        if "type" in package:
+            need(type(package["type"]) is str and package["type"] in {"module", "commonjs"}, "Invalid module descriptor type")
+        if "private" in package:
+            need(type(package["private"]) is bool, "Invalid module descriptor private flag")
+        def target(value):
+            need(time.monotonic() <= deadline, "Installed package metadata exceeds time bound")
+            need(type(value) is str and 0 < len(value) <= 4096 and "\\" not in value
+                 and all(ord(char) >= 32 and ord(char) != 127 for char in value)
+                 and not value.startswith("/"), "Invalid module descriptor target")
+            resolved = os.path.normpath(directory + "/" + value)
+            need(resolved == component or resolved.startswith(component + "/"), "Module descriptor target escapes parent")
+        for key in ["main", "module", "browser", "react-native", "types"]:
+            if key in package:
+                target(package[key])
+        if "sideEffects" in package:
+            effects = package["sideEffects"]
+            need(type(effects) is bool or type(effects) is list and len(effects) <= 1000,
+                 "Invalid module descriptor side effects")
+            if type(effects) is list:
+                for value in effects:
+                    target(value)
+        def export_targets(value, depth=0):
+            need(time.monotonic() <= deadline, "Installed package metadata exceeds time bound")
+            need(depth <= 16, "Module descriptor exports exceed bound")
+            if type(value) is str:
+                target(value)
+            elif value is not None:
+                need(type(value) in {dict, list} and len(value) <= 1000, "Invalid module descriptor exports")
+                if type(value) is dict:
+                    need(all(type(key) is str and len(key) <= 300 for key in value), "Invalid module descriptor export key")
+                for child in value.values() if type(value) is dict else value:
+                    export_targets(child, depth + 1)
+        if "exports" in package:
+            export_targets(package["exports"])
+        if "license" in package:
+            pattern(package["license"], r"[^\x00-\x1f\x7f]{1,4096}")
+        if "author" in package:
+            author = package["author"]
+            need(type(author) is str or type(author) is dict and set(author) <= {"name", "email", "url"},
+                 "Invalid module descriptor author")
+            for value in author.values() if type(author) is dict else [author]:
+                need(time.monotonic() <= deadline, "Installed package metadata exceeds time bound")
+                pattern(value, r"[^\x00-\x1f\x7f]{1,4096}")
+    return installed
+
+
 def dpkg_inventory(files):
     """Read final regular control records, without merging or fabricating files."""
     combined = "var/lib/dpkg/status"
@@ -457,15 +549,8 @@ def image_archive(file, build, layout=None):
         for name, digest in expected.items():
             if digest:
                 need(sha(shipped[name]) == digest, "Shipped runtime recipe/build bytes differ")
-        installed = {}
-        for name, data in package_files.items():
-            package = strict_json(data)
-            need(type(package) is dict, "Invalid installed package metadata")
-            if "name" in package and "version" in package:
-                installed[name] = (pattern(package["name"], r"[A-Za-z0-9_@./-]{1,300}"),
-                                   pattern(package["version"], r"[A-Za-z0-9_.+~-]{1,300}"))
-            else:
-                need(package in [{"type": "module"}, {"type": "commonjs"}], "Ambiguous installed package identity")
+        # Every descriptor remains in the hashed layer bytes and bounded final metadata.
+        installed = node_inventory(package_files, deadline)
         need(final_tree.get("var/lib/dpkg/status.d") in {None, "dir"}, "Invalid dpkg inventory directory")
         os_packages = dpkg_inventory(os_files)
         need(installed and os_packages, "Empty installed-component inventory")

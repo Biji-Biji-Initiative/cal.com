@@ -318,6 +318,10 @@ if scenario=='tree-as-source':source=subprocess.check_output(['git','-C',str(roo
 now=dt.datetime.now(dt.timezone.utc); timestamp=now.isoformat(timespec='seconds').replace('+00:00','Z')
 def encoded(v): return json.dumps(v,separators=(',',':')).encode()
 def response(code=0,out=b'',err=b''): return types.SimpleNamespace(returncode=code,stdout=out,stderr=err)
+if scenario=='fragment-semantic-deadline':
+ try:m.node_inventory({'calcom/node_modules/next/package.json':encoded({'name':'next','version':'1.0.0'})},m.time.monotonic()-1)
+ except m.Refused:print('fixture-control-passed');sys.exit(0)
+ raise AssertionError('expired semantic deadline accepted')
 with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  d=pathlib.Path(temp)/'bundle'; d.mkdir()
  checkout=root
@@ -369,6 +373,56 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  for file,name in m.REQUIRED.items():layer_files[file]=encoded({'name':name,'version':'1.0.0'})
  if scenario=='ambiguous-package':layer_files['calcom/node_modules/extra/package.json']=encoded({'name':'extra'})
  if scenario=='module-marker':layer_files['calcom/node_modules/next/esm/package.json']=encoded({'type':'module'})
+ fragment='calcom/node_modules/next/esm/package.json'
+ fragment_cases={
+  'fragment-name-only':{'name':'next/esm','main':'./index.js'},
+  'fragment-version-only':{'version':'1.0.0','type':'module'},
+  'fragment-type-side-effects':{'type':'module','sideEffects':['./fixture.css']},
+  'fragment-contradictory-name':{'name':'other','main':'./index.js'},
+  'fragment-contradictory-version':{'version':'2.0.0','type':'module'},
+  'fragment-invalid-type':{'type':['module']},
+  'fragment-unknown-fields':{'type':'module','scripts':{'prepare':'fixture-only-no-execution'}},
+  'fragment-target-escape':{'main':'../../../../outside.js'},
+  'fragment-no-module-hint':{'name':'next/esm'},
+ }
+ if scenario in fragment_cases:layer_files[fragment]=encoded(fragment_cases[scenario])
+ if scenario=='fragment-duplicate-field':layer_files[fragment]=b'{"type":"module","type":"commonjs"}'
+ if scenario=='fragment-standalone-marker':layer_files['calcom/node_modules/orphan/package.json']=encoded({'type':'module'})
+ if scenario=='fragment-standalone-incomplete':layer_files['calcom/node_modules/orphan/esm/package.json']=encoded({'name':'orphan','main':'./index.js'})
+ if scenario=='fragment-cross-namespace':layer_files['calcom/node_modules/next/node_modules/orphan/esm/package.json']=encoded({'type':'module'})
+ if scenario=='fragment-sibling-prefix':layer_files['calcom/node_modules/nextish/esm/package.json']=encoded({'type':'module'})
+ if scenario in ['fragment-complete-nested','fragment-complete-missing-scan','fragment-nearest-parent','fragment-ambiguous-parent']:
+  layer_files['calcom/node_modules/next/embedded/package.json']=encoded({'name':'embedded','version':'2.0.0'})
+ if scenario in ['fragment-nearest-parent','fragment-ambiguous-parent']:
+  layer_files['calcom/node_modules/next/embedded/esm/package.json']=encoded({'version':'2.0.0' if scenario=='fragment-nearest-parent' else '1.0.0','type':'module'})
+ if scenario in ['fragment-next-bundle','fragment-next-bundle-subpath','fragment-next-bundle-wrong-name']:
+  bundle='@fixture/bundle/subpath' if scenario=='fragment-next-bundle-subpath' else 'fixture-bundle'
+  label='@fixture/bundle' if scenario=='fragment-next-bundle-subpath' else 'other' if scenario=='fragment-next-bundle-wrong-name' else 'fixture-bundle'
+  layer_files['calcom/node_modules/next/dist/compiled/'+bundle+'/package.json']=encoded({'name':label,'main':'index','author':{'name':'Fixture Author'},'license':'MIT'})
+ if scenario in ['fragment-spoofed-install-root','fragment-nested-next-parent']:
+  owner='calcom/node_modules/not-next' if scenario=='fragment-spoofed-install-root' else 'calcom/node_modules/next/embedded'
+  layer_files[owner+'/package.json']=encoded({'name':'next','version':'2.0.0'})
+  layer_files[owner+'/dist/compiled/fixture-bundle/package.json']=encoded({'name':'fixture-bundle','main':'index'})
+ if scenario=='fragment-shapes75':
+  shapes=[(1,{'type':'module','sideEffects':['./fixture.css']}),(8,{'type':'module','sideEffects':False}),
+   (5,{'main':'./index.js','module':'./index.mjs','types':'./index.d.ts','type':'module','sideEffects':False}),
+   (4,{'main':'./index.js','browser':'./browser.js'}),(1,{'version':'1.0.0','type':'module'}),
+   (1,{'name':'next/fixture','private':True,'type':'module'}),
+   (2,{'name':'next/fixture','main':'./index.js','module':'./index.mjs','exports':{'.':{'import':'./index.mjs','require':'./index.js'}},'private':True,'sideEffects':False,'type':'module'}),
+   (1,{'main':'./index.js','module':'./index.mjs','react-native':'./native.js','type':'module'}),
+   (9,{'name':'fixture','main':'index','license':'MIT'}),(30,{'name':'fixture','main':'index','author':'Fixture Author','license':'MIT'}),
+   (1,{'name':'fixture','main':'index','author':'Fixture Author'}),(10,{'name':'fixture','main':'index','author':{'name':'Fixture Author'},'license':'MIT'}),
+   (1,{'name':'next/fixture','browser':'./browser.js','main':'./index.js'}),
+   (1,{'main':'./index.js','module':'./index.mjs','types':'./index.d.ts','sideEffects':['./fixture.css']})]
+  number=0
+  for count,shape in shapes:
+   for _ in range(count):
+    descriptor=copy.deepcopy(shape);location='descriptor-'+str(number)
+    compiled=descriptor.get('name')=='fixture'
+    if 'name' in descriptor:descriptor['name']=location if compiled else 'next/'+location
+    location=('dist/compiled/' if compiled else 'modules/')+location
+    layer_files['calcom/node_modules/next/'+location+'/package.json']=encoded(descriptor);number+=1
+  assert number==75
  layer_files['var/lib/dpkg/status']=b'Package: fixture-os\nStatus: install ok installed\nVersion: 1.0\nArchitecture: amd64\n\n'
  status_path='var/lib/dpkg/status.d/fixture-os';os_version='2:1.0-3+deb13u1' if scenario=='status-d-epoch' else '1.0'
  if scenario.startswith('status-d-'):
@@ -521,6 +575,10 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
   'Vulnerabilities':[],'Secrets':[]}
  if scenario in ['nested-copy-included','same-layer-opaque-replacement']:
   node_result['Packages'].append({'ID':'extra','Name':'extra','Version':'2.0.0','PkgPath':extra})
+ if scenario in ['fragment-complete-nested','fragment-nearest-parent','fragment-ambiguous-parent']:
+  node_result['Packages'].append({'ID':'embedded','Name':'embedded','Version':'2.0.0','PkgPath':'calcom/node_modules/next/embedded/package.json'})
+ if scenario in ['fragment-spoofed-install-root','fragment-nested-next-parent']:
+  node_result['Packages'].append({'ID':'spoofed','Name':'next','Version':'2.0.0','PkgPath':owner+'/package.json'})
  if scenario in ['replaced-copy','alias-whiteout-replacement']:node_result['Packages'][0]['Version']='2.0.0'
  if scenario=='alias-duplicate-coverage':node_result['Packages'].append({'ID':'invented-alias-copy','Name':'next','Version':'1.0.0','PkgPath':'calcom/node_modules/alias/package.json'})
  scan={**identity,'scanner':{'version':'0.75.0','binarySha256':m.sha(b'scanner'),'databaseSha256':m.sha(b'database'),
@@ -606,7 +664,8 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  positive=scenario in ['admit','publish','idempotent','gzip','nested-copy-included','removed-copy','opaque-copy','replaced-copy','same-layer-opaque-replacement','fetch','safe-redirect','module-marker','source-revision','database-nanoseconds','created-annotation','created-nanoseconds',
    'package-alias','alias-next-hashed','alias-absolute','alias-chain','alias-depth40','alias-removed','alias-whiteout-replacement',
    'distroless-home','distroless-certificate','distroless-certificate-actual-shape','status-d-basic','status-d-explicit','status-d-md5sums','status-d-epoch','status-d-replaced','status-d-whiteout-replacement',
-   'status-d-uninstalled-record','status-d-transition']
+   'status-d-uninstalled-record','status-d-transition','fragment-name-only','fragment-version-only','fragment-type-side-effects',
+   'fragment-complete-nested','fragment-nearest-parent','fragment-next-bundle','fragment-next-bundle-subpath','fragment-shapes75']
  try:
   if scenario=='cli-redaction':
    receipt['unexpected']='fixture-only-sensitive-provider-body';(d/'publication.json').write_bytes(encoded(receipt));receipt_hash=m.file_hash(d/'publication.json')
@@ -818,6 +877,31 @@ for (const scenario of [
   "port-redirect",
   "ambiguous-package",
   "module-marker",
+  "fragment-name-only",
+  "fragment-version-only",
+  "fragment-type-side-effects",
+  "fragment-contradictory-name",
+  "fragment-contradictory-version",
+  "fragment-invalid-type",
+  "fragment-unknown-fields",
+  "fragment-target-escape",
+  "fragment-no-module-hint",
+  "fragment-duplicate-field",
+  "fragment-standalone-marker",
+  "fragment-standalone-incomplete",
+  "fragment-cross-namespace",
+  "fragment-sibling-prefix",
+  "fragment-complete-nested",
+  "fragment-complete-missing-scan",
+  "fragment-nearest-parent",
+  "fragment-ambiguous-parent",
+  "fragment-next-bundle",
+  "fragment-next-bundle-subpath",
+  "fragment-next-bundle-wrong-name",
+  "fragment-shapes75",
+  "fragment-spoofed-install-root",
+  "fragment-nested-next-parent",
+  "fragment-semantic-deadline",
   "cli-redaction",
   "source-revision",
   "tree-as-source",
