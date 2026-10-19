@@ -10,8 +10,8 @@ const root = path.resolve(__dirname, "../..");
 const identityRoot = "packages/features/community-enterprise/identity/";
 const serviceRoot = "apps/api/v2/src/modules/auth/services/";
 const strategyRoot = "apps/api/v2/src/modules/auth/strategies/";
-function load(relative, imports = {}) {
-  const source = fs.readFileSync(path.join(root, relative), "utf8");
+function load(relative, imports = {}, transform = (source) => source) {
+  const source = transform(fs.readFileSync(path.join(root, relative), "utf8"));
   const result = ts.transpileModule(source, {
     reportDiagnostics: true,
     compilerOptions: {
@@ -296,7 +296,7 @@ const methods = {
   THIRD_PARTY_ACCESS_TOKEN: "THIRD_PARTY_ACCESS_TOKEN",
   OAUTH_CLIENT: "OAUTH_CLIENT",
 };
-function strategyFixture() {
+function strategyFixture(options = {}) {
   const f = fixture();
   f.bearerCalls = [];
   f.thirdCalls = [];
@@ -318,7 +318,7 @@ function strategyFixture() {
       stripApiKey: (value, prefix) => value.slice(prefix.length),
       sha256Hash: (value) => value,
     },
-    "@/lib/enums/auth-methods": { AuthMethods: methods },
+    "@/lib/enums/auth-methods": { AuthMethods: options.authMethods ?? methods },
     "@/lib/is-origin-allowed/is-origin-allowed": { isOriginAllowed: () => true },
     "@/lib/passport/strategies/types": { BaseStrategy: Strategy },
     "@/modules/prisma/prisma-write.service": {},
@@ -347,7 +347,7 @@ function strategyFixture() {
         return f.nextToken;
       },
     },
-    "@calcom/platform-constants": {
+    "@calcom/platform-constants": options.constants ?? {
       INVALID_ACCESS_TOKEN: "invalid",
       X_CAL_CLIENT_ID: "client",
       X_CAL_SECRET_KEY: "secret",
@@ -739,3 +739,298 @@ test("controller-level permission checking ahead of method authentication is det
     })
   );
 });
+
+function loadAtomScheduleController({
+  apiRequire,
+  constants,
+  nest,
+  ApiAuthGuardOnlyAllow,
+  Permissions,
+  GetUser,
+  ApiAuthGuard,
+  PermissionsGuard,
+  domain,
+  dropMetadata,
+}) {
+  return load(
+    "apps/api/v2/src/modules/atoms/controllers/atoms.schedules.controller.ts",
+    {
+      "@calcom/platform-constants": constants,
+      "@calcom/platform-libraries/schedules": {
+        createScheduleHandler: domain,
+        duplicateScheduleHandler: domain,
+        getAvailabilityListHandler: domain,
+      },
+      "@calcom/platform-types": {},
+      "@nestjs/common": nest,
+      "@nestjs/swagger": apiRequire("@nestjs/swagger"),
+      zod: require("zod"),
+      "../services/schedules-atom.service": {},
+      "@/lib/api-versions": { API_VERSIONS_VALUES: [] },
+      "@/modules/atoms/inputs/get-atom-schedules-query-params.input": {},
+      "@/modules/auth/decorators/get-user/get-user.decorator": { GetUser },
+      "@/modules/auth/decorators/permissions/permissions.decorator": { Permissions },
+      "@/modules/auth/decorators/api-auth-guard-only-allow.decorator": { ApiAuthGuardOnlyAllow },
+      "@/modules/auth/guards/api-auth/api-auth.guard": { ApiAuthGuard },
+      "@/modules/auth/guards/permissions/permissions.guard": { PermissionsGuard },
+      "@/modules/users/users.repository": {},
+    },
+    (source) =>
+      dropMetadata ? source.replace(/^\s*@ApiAuthGuardOnlyAllow\(\[[^\n]+\]\)\r?\n/gm, "\n") : source
+  ).AtomsSchedulesController;
+}
+
+async function dispatchAtomScheduleMutation(f, method, kind, token) {
+  const {
+    constants,
+    controller,
+    reflector,
+    AtomsSchedulesController,
+    ApiAuthGuard,
+    PermissionsGuard,
+    Permissions,
+    GUARDS_METADATA,
+    apiGuard,
+    permissionGuard,
+  } = f;
+  const headers = {};
+  if (kind === "third-party") headers.Authorization = `Bearer ${token}`;
+  if (kind === "API_KEY") headers.Authorization = "Bearer custom_fixture-key";
+  if (kind === "ACCESS_TOKEN") headers.Authorization = "Bearer fixture-platform-access-token";
+  if (kind === "OAUTH_CLIENT_CREDENTIALS") {
+    headers[constants.X_CAL_CLIENT_ID] = "fixture-client";
+    headers[constants.X_CAL_SECRET_KEY] = f.clientCredential;
+  }
+  const request = { params: {}, get: (header) => headers[header] };
+  f.lastRequest = request;
+  const handler = controller[method];
+  const context = {
+    getHandler: () => handler,
+    getClass: () => AtomsSchedulesController,
+    switchToHttp: () => ({ getRequest: () => request }),
+  };
+  const guards = Reflect.getMetadata(GUARDS_METADATA, handler);
+  assert.deepEqual(guards, [ApiAuthGuard, PermissionsGuard]);
+  assert.deepEqual(reflector.get(Permissions, handler), [constants.SCHEDULE_WRITE]);
+  for (const Guard of guards) {
+    await (Guard === ApiAuthGuard ? apiGuard : permissionGuard).canActivate(context);
+  }
+  let args = [request.user, 101];
+  if (method === "updateSchedule") args = [request.user, { name: "Source fixture" }, 101];
+  else if (method === "createSchedule") args = [request.user, { name: "Source fixture" }];
+  return controller[method](...args);
+}
+
+// Real Nest metadata and JWT verification; Passport dispatch, repositories and
+// schedule writes are named boundaries. No HTTP, database or provider is called.
+function atomScheduleFixture(options = {}) {
+  const { createRequire } = require("node:module");
+  const apiRequire = createRequire(path.join(root, "apps/api/v2/package.json"));
+  const nest = apiRequire("@nestjs/common");
+  const { Reflector } = apiRequire("@nestjs/core");
+  const { GUARDS_METADATA } = apiRequire("@nestjs/common/constants");
+  const jwt = require("jsonwebtoken");
+  const constants = {
+    ...load("packages/platform/constants/api.ts"),
+    ...load("packages/platform/constants/permissions.ts"),
+  };
+  const { AuthMethods } = load("apps/api/v2/src/lib/enums/auth-methods.ts");
+  const f = strategyFixture({ authMethods: AuthMethods, constants });
+  const reflector = new Reflector();
+  const decoratorPath = "apps/api/v2/src/modules/auth/decorators/";
+  const { ApiAuthGuardOnlyAllow } = load(`${decoratorPath}api-auth-guard-only-allow.decorator.ts`, {
+    "@nestjs/core": { Reflector },
+  });
+  const { Permissions } = load(`${decoratorPath}permissions/permissions.decorator.ts`, {
+    "@nestjs/core": { Reflector },
+  });
+  const { randomBytes } = require("node:crypto");
+  const fixtureSecret = randomBytes(32).toString("hex");
+  f.clientCredential = randomBytes(32).toString("hex");
+  const { TokensService } = load("apps/api/v2/src/modules/tokens/tokens.service.ts", {
+    "@/modules/tokens/tokens.repository": {},
+    "@nestjs/common": nest,
+    "@nestjs/config": {},
+    jsonwebtoken: jwt,
+  });
+  f.permissionMask = constants.SCHEDULE_WRITE;
+  f.permissionReads = 0;
+  f.domainCalls = [];
+  const currentClient = () => ({
+    id: "fixture-client",
+    permissions: f.permissionMask,
+    secret: f.clientCredential,
+    organizationId: 100,
+    redirectUris: [],
+  });
+  const tokens = {
+    getAccessTokenClient: async () => currentClient(),
+    getAccessTokenOwnerId: async () => 7,
+    getAccessTokenPermissionState: async () => {
+      f.permissionReads++;
+      return { expiresAt: new Date(Date.now() + 60000), client: currentClient() };
+    },
+  };
+  const clients = {
+    getOAuthClient: async () => currentClient(),
+    getOAuthClientPermissionState: async () => {
+      f.permissionReads++;
+      return currentClient();
+    },
+  };
+  f.api.tokensRepository = tokens;
+  f.api.oauthRepository = clients;
+  f.api.oauthFlowService = {
+    validateAccessToken: async (token) => token === "fixture-platform-access-token",
+  };
+  f.api.membershipsRepository = {
+    findPlatformOwnerUserId: async () => 7,
+    findPlatformAdminUserId: async () => null,
+  };
+  f.api.usersService = { getUserMainOrgId: () => 100 };
+  f.api.tokensService = new TokensService({ get: () => fixtureSecret }, tokens);
+  f.thirdPartyToken = (scope, secret = fixtureSecret) =>
+    jwt.sign(
+      { userId: 7, clientId: "fixture-third-party-client", scope: [scope], token_type: "Access Token" },
+      secret,
+      {
+        expiresIn: 60,
+      }
+    );
+
+  class PassportBoundary {
+    async canActivate(context) {
+      // The production override reads actual method metadata before selection.
+      const request = this.getRequest(context);
+      f.api.outcome = null;
+      await f.api.authenticate(request);
+      if (f.api.outcome.error) throw f.api.outcome.error;
+      request.user = f.api.outcome.user;
+      return true;
+    }
+  }
+  const { ApiAuthGuard } = load(
+    "apps/api/v2/src/modules/auth/guards/api-auth/api-auth.guard.ts",
+    {
+      "@nestjs/common": nest,
+      "@nestjs/core": { Reflector },
+      "@nestjs/passport": { AuthGuard: () => PassportBoundary },
+      "../../decorators/api-auth-guard-only-allow.decorator": { ApiAuthGuardOnlyAllow },
+    },
+    (source) =>
+      options.dropPropagation
+        ? source.replace(
+            "request.allowedAuthMethods = allowedMethods;",
+            "request.allowedAuthMethods = undefined;"
+          )
+        : source
+  );
+  const platformUtils = load("packages/platform/utils/permissions.ts", {
+    "@calcom/platform-constants": constants,
+  });
+  const { PermissionsGuard } = load("apps/api/v2/src/modules/auth/guards/permissions/permissions.guard.ts", {
+    "@calcom/platform-constants": constants,
+    "@calcom/platform-utils": platformUtils,
+    "@nestjs/common": nest,
+    "@nestjs/core": { Reflector },
+    "@/lib/enums/auth-methods": { AuthMethods },
+    "@/modules/auth/decorators/permissions/permissions.decorator": { Permissions },
+    "@/modules/auth/services/client-secret": { clientSecretsMatch },
+    "@/modules/auth/services/credential-policy": credentials,
+    "@/modules/oauth-clients/oauth-client.repository": {},
+    "@/modules/tokens/tokens.repository": {},
+  });
+  const { GetUser } = load(`${decoratorPath}get-user/get-user.decorator.ts`, { "@nestjs/common": nest });
+  const domain = async (input) => {
+    const user = input.ctx?.user ?? input.user;
+    assert.equal(user.id, 7);
+    f.domainCalls.push(input);
+    return { id: 101 };
+  };
+  const AtomsSchedulesController = loadAtomScheduleController({
+    apiRequire,
+    constants,
+    nest,
+    ApiAuthGuardOnlyAllow,
+    Permissions,
+    GetUser,
+    ApiAuthGuard,
+    PermissionsGuard,
+    domain,
+    dropMetadata: options.dropMetadata,
+  });
+  const controller = new AtomsSchedulesController({ updateUserSchedule: domain });
+  const apiGuard = new ApiAuthGuard(reflector);
+  const permissionGuard = new PermissionsGuard(reflector, tokens, clients);
+  Object.assign(f, {
+    constants,
+    controller,
+    reflector,
+    AtomsSchedulesController,
+    ApiAuthGuard,
+    PermissionsGuard,
+    Permissions,
+    GUARDS_METADATA,
+    apiGuard,
+    permissionGuard,
+  });
+  f.dispatch = (method, kind, token) => dispatchAtomScheduleMutation(f, method, kind, token);
+  return f;
+}
+
+const atomMutations = ["updateSchedule", "createSchedule", "duplicateExistingSchedule"];
+const atomSupportedMethods = ["OAUTH_CLIENT_CREDENTIALS", "API_KEY", "ACCESS_TOKEN", "NEXT_AUTH"];
+for (const method of atomMutations) {
+  for (const scope of ["READ_PROFILE", "READ_BOOKING"]) {
+    test(`actual ${method} metadata denies third-party ${scope} before domain work`, async () => {
+      const f = atomScheduleFixture();
+      await assert.rejects(f.dispatch(method, "third-party", f.thirdPartyToken(scope)), /Invalid|disallowed/);
+      assert.deepEqual(f.lastRequest.allowedAuthMethods, atomSupportedMethods);
+      assert.equal(f.domainCalls.length, 0);
+    });
+    test(`absent ${method} metadata reproduces third-party ${scope} admission`, async () => {
+      const f = atomScheduleFixture({ dropMetadata: true });
+      await f.dispatch(method, "third-party", f.thirdPartyToken(scope));
+      assert.equal(f.lastRequest.allowedAuthMethods, undefined);
+      assert.equal(f.domainCalls.length, 1);
+    });
+  }
+  for (const kind of atomSupportedMethods) {
+    test(`actual ${method} metadata retains supported ${kind}`, async () => {
+      const f = atomScheduleFixture();
+      await f.dispatch(method, kind);
+      assert.equal(f.domainCalls.length, 1);
+      if (kind === "ACCESS_TOKEN" || kind === "OAUTH_CLIENT_CREDENTIALS") assert.equal(f.permissionReads, 1);
+      if (kind === "NEXT_AUTH") assert.equal(f.transactions.length, 1);
+      if (kind === "API_KEY") assert.ok(f.keyDelegation);
+    });
+  }
+  for (const kind of ["ACCESS_TOKEN", "OAUTH_CLIENT_CREDENTIALS"]) {
+    test(`actual ${method} retains current permission denial for ${kind}`, async () => {
+      const f = atomScheduleFixture();
+      f.permissionMask = 0;
+      await assert.rejects(f.dispatch(method, kind), /required permissions/);
+      assert.equal(f.permissionReads, 1);
+      assert.equal(f.domainCalls.length, 0);
+    });
+  }
+  test(`actual ${method} still rejects invalid JWT signatures without the new policy`, async () => {
+    const f = atomScheduleFixture({ dropMetadata: true });
+    await assert.rejects(
+      f.dispatch(method, "third-party", f.thirdPartyToken("READ_BOOKING", "wrong-fixture-key"))
+    );
+    assert.equal(f.domainCalls.length, 0);
+  });
+  test(`actual ${method} still rejects a locked JWT owner without the new policy`, async () => {
+    const f = atomScheduleFixture({ dropMetadata: true });
+    f.user.locked = true;
+    await assert.rejects(f.dispatch(method, "third-party", f.thirdPartyToken("READ_PROFILE")), /unavailable/);
+    assert.equal(f.domainCalls.length, 0);
+  });
+  test(`broken ApiAuthGuard propagation would bypass ${method} policy`, async () => {
+    const f = atomScheduleFixture({ dropPropagation: true });
+    await f.dispatch(method, "third-party", f.thirdPartyToken("READ_PROFILE"));
+    assert.equal(f.lastRequest.allowedAuthMethods, undefined);
+    assert.equal(f.domainCalls.length, 1);
+  });
+}

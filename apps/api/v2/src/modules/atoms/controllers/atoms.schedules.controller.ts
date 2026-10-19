@@ -34,6 +34,7 @@ import { z } from "zod";
 import { SchedulesAtomsService } from "../services/schedules-atom.service";
 import { API_VERSIONS_VALUES } from "@/lib/api-versions";
 import { GetAtomSchedulesQueryParams } from "@/modules/atoms/inputs/get-atom-schedules-query-params.input";
+import { ApiAuthGuardOnlyAllow } from "@/modules/auth/decorators/api-auth-guard-only-allow.decorator";
 import { GetUser } from "@/modules/auth/decorators/get-user/get-user.decorator";
 import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
 import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
@@ -108,6 +109,7 @@ export class AtomsSchedulesController {
 
   @Patch("schedules/:scheduleId")
   @Permissions([SCHEDULE_WRITE])
+  @ApiAuthGuardOnlyAllow(["OAUTH_CLIENT_CREDENTIALS", "API_KEY", "ACCESS_TOKEN", "NEXT_AUTH"])
   @UseGuards(ApiAuthGuard, PermissionsGuard)
   @ApiOperation({ summary: "Update atom schedule" })
   async updateSchedule(
@@ -129,6 +131,7 @@ export class AtomsSchedulesController {
 
   @Post("schedules/create")
   @Permissions([SCHEDULE_WRITE])
+  @ApiAuthGuardOnlyAllow(["OAUTH_CLIENT_CREDENTIALS", "API_KEY", "ACCESS_TOKEN", "NEXT_AUTH"])
   @UseGuards(ApiAuthGuard, PermissionsGuard)
   @ApiOperation({ summary: "Create atom schedule" })
   async createSchedule(
@@ -145,6 +148,7 @@ export class AtomsSchedulesController {
 
   @Post("schedules/:scheduleId/duplicate")
   @Permissions([SCHEDULE_WRITE])
+  @ApiAuthGuardOnlyAllow(["OAUTH_CLIENT_CREDENTIALS", "API_KEY", "ACCESS_TOKEN", "NEXT_AUTH"])
   @UseGuards(ApiAuthGuard, PermissionsGuard)
   @ApiOperation({ summary: "Duplicate existing schedule" })
   async duplicateExistingSchedule(

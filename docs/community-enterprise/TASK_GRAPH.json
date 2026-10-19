@@ -1155,6 +1155,13 @@
           "command": "node --test --test-reporter=spec tests/community-enterprise/api-route-inventory.test.cjs",
           "exit_code": 0,
           "summary": "Source AST inventory covers all 38 API v2 controller files, 175 routes, 89 mutations, 54 permission-decorated routes, effective class/method guard coverage and 13 direct token-reader files. Full resource intersection, key lifecycle runtime and serving-image acceptance remain open."
+        },
+        {
+          "file": "docs/community-enterprise/API-THIRD-PARTY-SCHEDULE-BOUNDARY-2026-10-19.md",
+          "level": "source",
+          "command": "node --test --test-reporter=spec tests/community-enterprise/api-session-boundary.test.cjs",
+          "exit_code": 0,
+          "summary": "2026-10-19: 116 focused source cases pass, including 39 added Atoms schedule-policy cases after six discriminating read-only OAuth mutation failures. Real Nest metadata and ApiAuthGuard propagate method policy before actual strategy/JWT/permission/controller execution. All four supported methods, current managed-permission denials and invalid-signature/locked-owner controls pass. Passport, repositories and domain writes remain doubles; native HTTP/database and serving acceptance remain open."
         }
       ],
       "required_for_team_release": true,
@@ -1165,9 +1172,10 @@
         "docs/community-enterprise/CALENDAR-REFERENCE-AUTHORIZATION-2026-10-13.md",
         "docs/community-enterprise/API-KEY-CONTROLLER-2026-10-13.md",
         "docs/community-enterprise/API-PERMISSION-BINDING-2026-10-17.md",
-        "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json"
+        "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json",
+        "docs/community-enterprise/API-THIRD-PARTY-SCHEDULE-BOUNDARY-2026-10-19.md"
       ],
-      "progress": "Managed client permissions now follow Passport\u2019s selected method and current primary token/client authority. Nine controller guard placements repaired; 54 direct permission-decorated methods in 14 controllers have correct order. Real HTTP/PostgreSQL75, key-controller36, native Jest27 and focused source154 pass. Full resource/transaction scopes, dynamic route reachability and deployed proof remain unfinished; no old image is relabeled.",
+      "progress": "Managed client permissions now follow Passport\u2019s selected method and current primary token/client authority. Nine controller guard placements repaired; 54 direct permission-decorated methods in 14 controllers have correct order. Real HTTP/PostgreSQL75, key-controller36, native Jest27 and focused source154 pass. Full resource/transaction scopes, dynamic route reachability and deployed proof remain unfinished; no old image is relabeled. 2026-10-19: the three Atoms schedule mutations explicitly exclude read-only third-party OAuth tokens through existing method authentication policy; 116 focused source cases pass. Other credential types and current permission checks remain intact. This bounded source evidence does not close full API scope/resource or runtime acceptance.",
       "progress_reference": "docs/community-enterprise/API-ROUTE-INVENTORY-2026-10-17.md",
       "progress_summary": "API route and permission inventory is source-proven; full principal/scope/resource runtime intersection remains open."
     },
