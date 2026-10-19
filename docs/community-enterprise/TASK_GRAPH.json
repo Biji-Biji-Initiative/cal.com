@@ -2337,6 +2337,15 @@
       "production_changed": false,
       "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
       "notes": "Published explicit bridge-compatible source e452 and distroless recipe e6dc; exact remote bytes independently verified. Focused355 pass; strict actual import closure108 identical pre/post diagnostics remains FAILED/unwaived; producer full types/build and new exact-image/native/data/security qualification remain open. Packaging26 plain fixtures pass without an image action. Owner selected existing single bridge with strict native default otherwise; reported staff lifecycle awaits receipts. Backup metadata remains refused at imagePullSecrets, all raw custody disposed; isolated reset64 offline reader/focused actual-CLI controls pass while full wrapper140s timeout remains unverified. No Restore/FSB/recovery SQL/quiescence. Google redirect mismatch, Console/admin/publisher authority, actual staff onboarding/logout/calendar and both prior credential incidents remain open. No task closure or production acceptance; all39 task objects and all prior checkpoints unchanged."
+    },
+    {
+      "date": "2026-10-19",
+      "application_source": "e452d8ee92c60b2301be387aaae20624bed11ee3",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-02.PREVIEW",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
+      "notes": "Actual full e452 web producer completed all9 steps0, full types151.129s and Next build581.494s; immutable lock and private output verified, unit/worktree/PIDs/cgroup gone and slot released. Earlier isolated108 diagnostics and three Prisma trace warnings remain unwaived. Five pure source-control commands pass with explicit doubles, no image/JWE/SQL proof. Packaging remains preparation, no rebuilt OCI/security/native/browser/deployment acceptance. Infra5b339 exact3 files independently API-verified; native Velero parser/modifier and64 reader controls pass but fullwrapper140s timeout and UBS checksum refusal remain open. One metadata archive transfer200 refused historical-metadata-unqualified; exact offending metadata is unknown, complete raw custody cleanup verified. No metadata/Restore/FSB/SQL/quiescence acceptance. Last serving observation stock6.2; Google provider mismatch last directly checked10:54:48UTC, Console/admin/publisher and real staff journeys remain open. All39 tasks/prior checkpoints/other fields unchanged; no production mutation or task closure."
     }
   ]
 }
