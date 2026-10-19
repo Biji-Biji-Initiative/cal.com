@@ -2310,6 +2310,15 @@
       "production_changed": false,
       "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
       "notes": "Dated live-dev triage: exact public lifecycle routes and identity-header guards are serving; anonymous real browser reached styled IdP identification on both hosts but the automated receipt remains failed. Corrected canonical header diagnostic returns to app root, not sign_out. Authenticated logout remains unproved. Google Calendar still rejects its callback; packaged native-only startup, security remediation and publisher admission remain separate gates. Actual Velero 1.18.3 native policy/modifier smoke passed 19 semantic leaf cases. The 12:41Z metadata acquisition attempt refused current-Pod identity drift before any DownloadRequest/download; no data restore or migration acceptance. Published established legacy session refresh/privilege correction 31c2d0bf passes 97 focused controls, 37 existing sign-in controls and strict 2,265-file closure; it is not deployed or proven as the live-loop cause. All 39 task states and prior evidence remain unchanged."
+    },
+    {
+      "date": "2026-10-19",
+      "application_source": "06729e80b55563444183fc71b9b1a0997a8259a6",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-02.PREVIEW",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
+      "notes": "14:00Z continuation: Trigger SDK/CLI4.7.4 and systeminformation5.33.15 published with five remote blobs and personal author verified; 25 native controls, strict 5,828-file closure and immutable skip-build pass. Actual frozen lock audit301->286 with none introduced; unsuppressed UBS and earlier full-postinstall failures remain recorded. Older 0aaaa exact image raw diagnostic52HIGH and whole-layer108 unwaived detector matches block release; neither scan qualifies later source. Second metadata acquisition downloaded once but refused pod-api-default on nonzero priority; original refusal/worker unchanged and all raw custody disposed. Infra6d90846d explicitly clears both scheduling fields only for the exact dev restore Pod, with maintained wrapper and actual Velero26semantic controls/32GoPASS plus three remote blobs verified. No accepted archive, FSB payload, data restore, database mutation, image publication, deployment, real staff logout or Google Calendar acceptance. Existing owner requests remain open. All39 task objects and prior checkpoints remain unchanged."
     }
   ]
 }

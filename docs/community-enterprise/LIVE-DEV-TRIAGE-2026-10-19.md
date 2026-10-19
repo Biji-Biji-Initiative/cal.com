@@ -86,8 +86,9 @@ At 12:13Z, read-only GitHub checks still found zero Cal repository runners and
 no public-admitting group among 27 organization runner groups. The personal
 credential lacks package scopes. The deployment owner must supply the admitted
 publisher route. No artifact upload, registry push or new app deployment ran.
-The Trigger upgrade also remains held pending the separately requested
-security-remediation decision; introduced findings were not waived.
+At the 13:06Z record, the Trigger upgrade was held pending a separately
+requested security-remediation decision; introduced findings were not waived.
+The 14:00Z continuation below records the resolved source correction.
 
 ## Recovery qualification
 
@@ -131,3 +132,62 @@ SHA256 identities are:
 These observations close no additional programme task. Keep source, isolated
 qualification, live anonymous behavior and authenticated release acceptance
 separate when continuing this work.
+
+## Continuation at 14:00Z
+
+The earlier Trigger hold was resolved under the standing authorization for
+ordinary reversible work; no new user answer was received or inferred.
+Source `06729e80b55563444183fc71b9b1a0997a8259a6` publishes Trigger SDK/CLI
+4.7.4 and the existing systeminformation resolution at 5.33.15. All five
+remote blobs and personal authorship were verified. Twenty-five native SDK
+controls, the strict 5,828-file import closure and immutable skip-build install
+passed. The frozen offline lock audit fell from 301 to 286 advisory occurrences
+with none introduced. UBS remains unsuppressed at three critical, three warning
+and three information findings, with retained negative-fixture/test-read
+dispositions. Earlier full-postinstall failures remain unproved. This source
+and the session correction above are absent from the previously built image.
+
+The exact local `0aaaa` image has now completed two distinct security checks.
+Its raw Trivy diagnostic reports 52 HIGH occurrences: 43 OS and nine Node
+dependency findings, with zero reported critical or secrets in that diagnostic.
+The separate whole-layer detector reports **108 unwaived matches** across all
+26 complete native reports. These are detector matches, not 108 confirmed
+credentials; none has been declared harmless or waived. The whole-layer stage
+completed with findings and blocks release. Both scanner workloads terminated,
+all owned resources were removed, and the actual slots were released.
+The older image cannot qualify later dependency or authentication source.
+
+The second metadata-only acquisition used a freshly reviewed identity/backup
+storage binding. Its one DownloadRequest and provider GET acquired 247,967
+compressed bytes, but the strict projection refused `pod-api-default`.
+An offline diagnostic of that already acquired archive found a nonzero integer
+Pod priority where the source projection expected no field. This is not an
+accepted API default. The original refusal and worker remain unchanged.
+Exact owned cleanup disposed of the raw archive and private transfer material;
+the actual owner process is absent and no raw custody remains. No further
+download, filesystem backup payload, restore or database mutation followed.
+
+Infrastructure `6d90846d49f2a55a171722c8e89f2e34ee7f7e13` now explicitly resets
+both Pod scheduling fields, `priority` and `priorityClassName`, in the isolated
+dev restore modifier. It retains the exact historical namespace/Pod scope.
+The maintained wrapper suite passed, and actual Velero 1.18.3 modifier code
+passed 26 semantic controls (32 Go test results), including absent/present
+fields and hostile/out-of-scope cases. All three remote source blobs and
+personal authorship were verified. This is modifier qualification using
+synthetic input, not acceptance of the refused archive or a data restore.
+
+Google callback acceptance, the admitted image publisher and the native-only
+entrypoint versus existing bridge deployment contract still require their
+existing owners. Requests were routed to those owners; no credential was
+requested from the user. The live staff login/onboarding/logout journey and
+Google Calendar connection remain unproved. No additional task is closed.
+
+| Continuation evidence | Receipt SHA256 |
+| --- | --- |
+| SDK five-blob/personal-author readback | `f16f0d59116f035a50d7327c1006afd8ffbd886704cfb375b583b11763bd1194` |
+| Current-image raw diagnostic | `2c795a2c45478d5c6dfb54ceb135f5a9ac8a40d747feb21e3fe0bc1f6722c36a` |
+| Current-image whole-layer findings | `1e2410a9d4c9081dead639ce3254ec35fc97af702d2dd8858fdf98f35a39c786` |
+| Second metadata refusal | `c0837e371473cb5c9813bf45d1a73feb9c372dbe678c600fc2f7545d73dde476` |
+| Second metadata cleanup readback | `257c9ad356c13590534271b0b8506500d42c6ed47019691b07e13229d17eb7a6` |
+| Native scheduling modifier controls | `ee7f4ba7d0bdb5c615f61825e3be1521c20b6316c12bbc2f99006b249455b26d` |
+| Scheduling reset remote source readback | `f5d12f81db806e734752606f286802fee9d564794a80068d56002679d23a48b0` |
