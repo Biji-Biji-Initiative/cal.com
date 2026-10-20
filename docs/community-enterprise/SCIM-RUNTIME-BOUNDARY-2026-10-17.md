@@ -20,20 +20,36 @@ competing mappings and atomic audit failure. The child-team grant integration
 adds pending-payment/platform-root refusals and keeps the same transaction open
 through the mapped team/member/provenance write.
 
-`ScimGroupMembershipService.ts` is an add-only operator adapter for an exact
+`ScimGroupMembershipService.ts` is a reviewed operator adapter for an exact
 existing directory/group mapping to a direct child team. It creates only a
 native accepted `MEMBER` with provenance and audit in one transaction. Existing
 local memberships are preserved; ambiguous provenance, privileged/custom roles
 and role/acceptance/nullable-timestamp drift are refused by
-`ScimMembershipProvenance.ts`. Ten isolated PostgreSQL grant tests exercise
-these boundaries, rollback, replay and competing absent-member requests.
+`ScimMembershipProvenance.ts`. Twenty isolated PostgreSQL tests exercise
+these boundaries, rollback, replay, competing absent-member requests and
+explicit managed team membership deactivation.
 The source guard has nine additional focused controls.
+
+The `deactivate` operation accepts only an explicit `group-member-remove` event.
+It requires the same current exact identity, directory/group mapping and
+unchanged MEMBER provenance as a grant. It atomically marks the native team
+membership unaccepted, advances its managed acceptance/timestamp snapshot and
+records an audit event. Existing local grants, root-organization admission,
+users, native Host rows and past/future bookings remain unchanged. Deleting
+Membership would cascade-delete Host rows, so this operation retains them.
+Actual current host-selection and booking-commit services exclude the inactive
+member; a deterministic PostgreSQL lock-wait test proves a booking commit waits
+for in-flight deactivation and then refuses the stale selected host. Collective
+hosts do not silently become smaller meetings. Audit failure rolls back both
+membership and provenance. Filter-change/sync snapshots cannot invoke this
+operation, and `add` cannot reactivate it. Future bookings still require a
+separate reviewed handoff; this operation does not queue or execute one.
 
 The bounded inventory now reports these three SCIM source modules. The two
 original request/provisioning contracts remain write-free. Direct API v2 SCIM
 routes and IdP HTTP dispatch remain absent in the inspected scope. No hosted
 schema migration, native service injection, SCIM token issuance, provider
-dispatch, remove/deprovision operation, session revocation or 60-second
+dispatch, membership deletion/user-wide deprovision, session revocation or 60-second
 multi-replica acceptance is claimed. Local fixture evidence does not authorize
 application database execution.
 

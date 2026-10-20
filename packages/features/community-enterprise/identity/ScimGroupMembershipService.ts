@@ -24,15 +24,23 @@ const refused = () =>
     ErrorCode.Forbidden,
     "SCIM group grant requires exact current mapping and unchanged member provenance"
   );
-const action = "identity.scim.membership.granted";
+const deactivationSchema = inputSchema.extend({ event: z.literal("group-member-remove") });
 
-// Add-only reviewed operator adapter. Organization admission and revocation use
-// their own domain workflows; no existing local membership is adopted or edited.
+// Reviewed operator adapter; organization admission and user-wide deprovision
+// remain separate workflows. Local memberships are never adopted or edited.
 export class ScimGroupMembershipService {
   constructor(private readonly db: PrismaClient) {}
 
   add(raw: unknown) {
-    const input = inputSchema.parse(raw);
+    return this.run(inputSchema.parse(raw), false);
+  }
+
+  deactivate(raw: unknown) {
+    return this.run(deactivationSchema.parse(raw), true);
+  }
+
+  private run(input: z.infer<typeof inputSchema> | z.infer<typeof deactivationSchema>, deactivate: boolean) {
+    const action = deactivate ? "identity.scim.membership.deactivated" : "identity.scim.membership.granted";
     return new ScimIdentityService(this.db).withResolvedIdentity(
       input.identity,
       input.teamId,
@@ -80,7 +88,7 @@ export class ScimGroupMembershipService {
           grants
         );
         // Reactivation requires its own reviewed operation.
-        if (disposition === "owned" && member?.accepted !== true) throw refused();
+        if (!deactivate && disposition === "owned" && member?.accepted !== true) throw refused();
         const operationHash = digest({ action, input });
         const prior = await tx.enterpriseAuditEvent.findUnique({
           where: { operationId: input.operationId },
@@ -88,29 +96,44 @@ export class ScimGroupMembershipService {
         });
         if (
           prior &&
-          (prior.action !== action || prior.operationHash !== operationHash || disposition !== "owned")
+          (prior.action !== action ||
+            prior.operationHash !== operationHash ||
+            disposition !== "owned" ||
+            (deactivate && member?.accepted !== false))
         )
           throw refused();
+        if (member && disposition === "local")
+          return { status: "preserved-local" as const, membershipId: member.id };
+        if (member && !deactivate) return { status: "already-managed" as const, membershipId: member.id };
+        if (deactivate && !member) return { status: "absent" as const };
+        if (member && !member.accepted)
+          return { status: "already-inactive" as const, membershipId: member.id };
+        const select = { id: true, role: true, accepted: true, customRoleId: true, updatedAt: true } as const;
+        // Deleting Membership cascades native Host rows. Retain those and all
+        // appointments while the existing booking authority fences assignment.
+        const changed = member
+          ? await tx.membership.update({ where: { id: member.id }, data: { accepted: false }, select })
+          : await tx.membership.create({
+              data: { teamId: input.teamId, userId: identity.userId, role: "MEMBER", accepted: true },
+              select,
+            });
+        const snapshot = {
+          lastManagedRole: changed.role,
+          lastManagedAccepted: changed.accepted,
+          lastManagedCustomRoleId: changed.customRoleId,
+          lastManagedUpdatedAt: changed.updatedAt,
+        };
         if (member)
-          return {
-            status: disposition === "local" ? ("preserved-local" as const) : ("already-managed" as const),
-            membershipId: member.id,
-          };
-        const created = await tx.membership.create({
-          data: { teamId: input.teamId, userId: identity.userId, role: "MEMBER", accepted: true },
-          select: { id: true, role: true, accepted: true, customRoleId: true, updatedAt: true },
-        });
-        await tx.scimMembershipGrant.create({
-          data: {
-            directoryId: scope.directoryId,
-            membershipId: created.id,
-            lastManagedRole: created.role,
-            lastManagedAccepted: created.accepted,
-            lastManagedCustomRoleId: created.customRoleId,
-            lastManagedUpdatedAt: created.updatedAt,
-          },
-          select: { id: true },
-        });
+          await tx.scimMembershipGrant.update({
+            where: { directoryId_membershipId: { directoryId: scope.directoryId, membershipId: member.id } },
+            data: snapshot,
+            select: { id: true },
+          });
+        else
+          await tx.scimMembershipGrant.create({
+            data: { directoryId: scope.directoryId, membershipId: changed.id, ...snapshot },
+            select: { id: true },
+          });
         await tx.enterpriseAuditEvent.create({
           data: {
             operationId: input.operationId,
@@ -118,11 +141,11 @@ export class ScimGroupMembershipService {
             action,
             actorUserId: scope.actorUserId,
             organizationId: scope.organizationId,
-            details: { membershipId: created.id, directoryId: scope.directoryId, groupName: input.groupName },
+            details: { membershipId: changed.id, directoryId: scope.directoryId, groupName: input.groupName },
           },
           select: { id: true },
         });
-        return { status: "granted" as const, membershipId: created.id };
+        return { status: member ? ("deactivated" as const) : ("granted" as const), membershipId: changed.id };
       }
     );
   }
