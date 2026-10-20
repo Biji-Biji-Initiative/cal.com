@@ -351,6 +351,9 @@ test("team key cannot export the same owner's personal booking", async () => {
 });
 test("personal key preserves organizer authority but refuses unrelated bookings", async () => {
   const personal = await lifecycle.createApiKey(db, other.id, {});
+  await db.membership.create({
+    data: { userId: other.id, teamId: team.id, role: "MEMBER", accepted: true },
+  });
   assert.equal((await request("allowed", personal)).status, 403);
   assert.equal((await request("unrelated", personal)).status, 200);
   assert.equal(exportsCalled, 1);
@@ -1484,4 +1487,102 @@ test("native export hydration and policy use the same primary read-only snapshot
   });
   assert.equal((await request("allowed")).status, 200);
   assert.equal(observed, 1);
+});
+
+async function personalExportHost() {
+  const event = await db.eventType.findFirstOrThrow({ where: { slug: "allowed" } });
+  const bookingRow = await db.booking.update({ where: { uid: "allowed" }, data: { userId: other.id } });
+  await db.host.create({ data: { eventTypeId: event.id, userId: owner.id } });
+  await db.attendee.create({
+    data: { bookingId: bookingRow.id, name: "Current host", email: owner.email, timeZone: "UTC" },
+  });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { role: "MEMBER" },
+  });
+  return lifecycle.createApiKey(db, owner.id, {});
+}
+test("personal-key export refuses revoked organizer resource membership", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { accepted: false },
+  });
+  assert.equal((await request("allowed", personal)).status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("personal-key export cannot revive retained Host after parent removal", async () => {
+  const personal = await personalExportHost();
+  const org = await db.team.create({ data: { name: "Host parent", isOrganization: true } });
+  await db.team.update({ where: { id: team.id }, data: { parentId: org.id } });
+  await db.membership.create({ data: { userId: owner.id, teamId: org.id, role: "MEMBER", accepted: false } });
+  assert.equal((await request("allowed", personal)).status, 403);
+  assert.equal(exportsCalled, 0);
+  assert.equal(await db.host.count({ where: { userId: owner.id } }), 1);
+});
+test("personal-key organizer needs a current read grant rather than ADMIN label", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await db.role.create({
+    data: {
+      id: "export-updater",
+      name: "No booking read",
+      teamId: team.id,
+      permissions: { create: { resource: "eventType", action: "update" } },
+    },
+  });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { customRoleId: "export-updater" },
+  });
+  assert.equal((await request("allowed", personal)).status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("personal-key current MEMBER Host preserves native export contract", async () => {
+  const personal = await personalExportHost();
+  assert.equal((await request("allowed", personal)).status, 200);
+  assert.equal(exportsCalled, 1);
+});
+for (const [resource, action] of [
+  ["eventType", "read"],
+  ["booking", "readTeamBookings"],
+])
+  test(`personal-key owner export retains explicit ${resource}.${action} role`, async () => {
+    const personal = await lifecycle.createApiKey(db, owner.id, {});
+    await db.role.create({
+      data: {
+        id: "export-reader",
+        name: "Explicit export reader",
+        teamId: team.id,
+        permissions: { create: { resource, action } },
+      },
+    });
+    await db.membership.update({
+      where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+      data: { customRoleId: "export-reader" },
+    });
+    assert.equal((await request("allowed", personal)).status, 200);
+    assert.equal(exportsCalled, 1);
+  });
+test("personal-key resource read does not itself grant another organizer export", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { role: "MEMBER" },
+  });
+  assert.equal((await request("unrelated", personal)).status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("legacy default booking authority remains compatible without API scope marker", async () => {
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { accepted: false },
+  });
+  assert.equal(await access.doesUserIdHaveAccessToBooking({ userId: owner.id, bookingUid: "allowed" }), true);
+});
+
+test("personal-key organizer cannot export a team's booking without membership", async () => {
+  const personal = await lifecycle.createApiKey(db, other.id, {});
+  assert.equal(await db.membership.count({ where: { userId: other.id, teamId: team.id } }), 0);
+  assert.equal((await request("unrelated", personal)).status, 403);
+  assert.equal(exportsCalled, 0);
 });

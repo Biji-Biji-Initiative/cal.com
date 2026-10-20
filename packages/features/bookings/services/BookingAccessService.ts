@@ -90,6 +90,24 @@ export class BookingAccessService {
         return false;
     }
 
+    if (apiKeyTeamId === null) {
+      const resourceTeamId = booking.eventType?.teamId ?? booking.eventType?.parent?.teamId;
+      if (
+        resourceTeamId != null &&
+        !(await permissionCheckService.checkPermission({
+          userId,
+          teamId: resourceTeamId,
+          permission: "eventType.read",
+        })) &&
+        !(await permissionCheckService.checkPermission({
+          userId,
+          teamId: resourceTeamId,
+          permission: "booking.readTeamBookings",
+        }))
+      )
+        return false;
+    }
+
     // Case 1: User is the booking organizer
     if (userId === booking.userId) return true;
 

@@ -426,3 +426,36 @@ is preserved; it provides no assembled API acceptance. The corrected affected
 source checks pass. Full build/whole CI/API image, managed-client/version scopes,
 remaining key/resource edges and original runtime gates remain open. No install,
 whole-app/SCIM/audit baseline, provider or production action was repeated.
+
+## Personal API-key resource membership before organizer/Host grants
+
+Source predecessor `4a184c7285c9d1c1a4c9c725c143c04d78dd0fba`; four clear exact
+paths were leased after fresh original ready/inbox/live-reservation checks.
+
+An explicit personal-key marker now requires current resource permission before
+the retained organizer/Host decision. The shared existing policy admits either
+eventType.read or booking.readTeamBookings on the real team/managed-parent team.
+This retains active MEMBER host access and either existing custom read role,
+while honoring membership/root revocation and custom-role action rather than
+its ADMIN storage label. The relation check still runs afterward: resource read
+alone cannot expose another organizer's private export. Legacy callers omitting
+the API marker retain their original behavior. No new permission is introduced.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old-source negatives | 94 passed, 3 failed: revoked organizer membership, retained Host after root removal, non-read custom role inheriting ADMIN label |
+| Final native HTTP/domain/PG | 98 passed, zero failures/skips; exit 0 and owned cleanup verified |
+| Positive/no-widening controls | Current MEMBER Host; explicit eventType.read and booking.readTeamBookings owner roles; unrelated organizer denied; personal resource without team retained; default legacy caller unchanged |
+| Native strict source/import closure and final fixture checkJs | Both exit 0 |
+| Affected shared authorization source checks | 67 passed |
+
+The initial fixed run passed 96 of 97 and refused an old positive fixture's
+organizer who had no team membership. Its allow/deny assertions remain intact;
+the legitimate positive now establishes accepted MEMBER membership. A separate
+absent-membership organizer negative records the boundary explicitly. The final
+98-case actual run passes. All old/failure/corrected receipts remain private.
+
+The native export still shares the primary read-only authority/output snapshot.
+No unchanged whole app, SCIM or audit baseline, install, external key or production
+action was repeated. Managed-client resource binding, other API/version families
+and original runtime/provider acceptance remain unfinished; CAL-05.API stays open.
