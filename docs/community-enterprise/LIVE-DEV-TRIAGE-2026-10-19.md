@@ -749,3 +749,116 @@ The exact e8 physical 776 Node / 14 OS comparison and its 105 focused source
 tests remain their limited historical evidence. All 89 detector findings remain
 unqualified and unwaived. Physical inventory does not override the native
 capability hold or establish complete image, API, worker or production acceptance.
+
+## Native DEV settings closure and preservation preparation (2026-10-20)
+
+The real calendar settings page is now verified. DEV infrastructure commit
+`3e1bda93c27b6bfed9079b8d0ed99ebfd13c638a` corrects only the native
+ALLOWED_HOSTNAMES value: this installed Cal version wraps quoted CSV in brackets
+and matches base-domain suffixes. The old full JSON array nested the entries;
+full public host names also failed its suffix match. The native value now uses
+the Mereka DEV base domain. The proxy still accepts exactly the canonical and
+alias hosts. Images, encryption revision, proxy implementation and carriers are
+unchanged; staging and production renders are identical to their preimages.
+
+Focused native-contract tests pass, and the relevant source suite passes 123
+tests with one existing PostgreSQL skip. Gitleaks reports no findings. UBS
+findings remain unsuppressed: 17 inherited critical findings and 41 warnings,
+including four introduced test/parser warnings reviewed separately. This is not
+a clean UBS claim. The three published blobs were independently read back.
+
+The first bounded rollout observation ended not ready and is retained. A later
+metadata read qualified the previous healthy Pod and the new running Pod without
+restarts. A subsequent bounded startup diagnosis observed actual readiness;
+the final five native commands returned zero and qualified generation 42 as one
+ready, available, updated replica with stable Pod UID/spec, actual loaded CSV,
+native parser/suffix results and reviewed source. No rollout restart or second
+configuration change was made. The logger warning/JSON fault remains separately
+unqualified; correcting this native domain contract does not prove a logger fix.
+
+At 01:51:56Z, the fresh real Safari page
+`/settings/my-account/calendars` showed the expected Google account, Google
+Calendar, Check for conflicts and Add events to. Error, Try Again, loading and
+busy markers were absent. No calendar control changed. This closes that exact
+DEV page failure; installed-calendar and authenticated journey evidence remain
+separate observations.
+
+Google Meet configuration was restored through the existing native admin form,
+with exactly one Save. Fresh read-only native results qualified enabled state,
+all three exact Google-source settings and the complete ordered redirect array.
+The first post-save DOM observer matched a toast as a second card and failed;
+the original failure remains, and no Save was retried. One normal native
+Install app click subsequently reached the native event-type assignment phase.
+No event type, default location, booking or provider meeting was changed.
+Fresh native installed-conferencing observations at 01:53:13/01:53:34Z then
+showed exactly one Google Meet heading/card with no error. A failed count-query
+observer remains separately retained; the successful native transition and
+installed card are the user-installation evidence.
+
+The real staff journey is now complete for the current configuration: one native
+Sign out reached the public welcome page; ordinary same-profile navigation to
+the native session endpoint at 01:59:24Z showed exact JSON `{}`. The welcome page
+remained, and one explicit Mereka sign-in at 02:01:13Z returned to the same staff
+dashboard. The final 02:02:43Z native session request returned 200 with expected
+staff/admin identity, and the native Google-credential check returned 200/true.
+No passkey or credential intervention was needed. This proves app logout and
+explicit re-entry using the existing IdP session; fresh-passkey, global IdP
+logout, token-revocation and screenshot acceptance are not claimed. The sealed
+staff-native-journey receipt binds sixteen evidence files and retains earlier
+observer refusals, navigation transitions and CSP-blocked injected fetches.
+
+The saved username and public `/gurpreet` profile remain qualified. A settled
+fresh `/event-types` page showed native event types, New and Availability with
+the expected staff session. Early SPA-navigation and exact-label observer
+failures are retained as observer results, not new product defects.
+
+Correction to the earlier migration count: the fourteen-digit directory filter
+excluded four legitimate native fifteen/seventeen-digit migration names. The
+selected native source has 588 migrations. Thus the observed 584 count is not a
+complete installed set and does not establish version drift against 588 database
+rows. Exact source/installed/database names and raw checksums remain the required
+comparison. The corrected read-only reader has not run; no migration is approved.
+
+The reduced release and all five capability-removing cleanup migrations remain
+on hold, including against empty tables. Full native source objects were
+verified against all 10,341 sealed path/mode/blob entries without changing shared
+source, refs, index or foreign files. Six explicit scratch partitions cover
+3,733 trusted application paths: 2,713 missing native paths and 1,020 unchanged
+MIT paths. Root independently checked their twelve file hashes and all final
+native/preimage identities. The exact six partitions pass read-only
+`git apply --check`; this is hunk compatibility, not source adoption or a build.
+
+All 123 programme-different paths have exact three-way fragment evidence. Fifty
+have identical native/MIT bases, but they still require capability review:
+programme onboarding, organization, authorization or routing cuts must not be
+retained merely because a patch applies. Root prepared provisional scratch
+schema and platform-binding proposals: preserve every byte of the native 119
+model schema plus the existing independent audit extension; restore actual
+native reassignment, verification, organization, payment and phone functions
+with necessary existing identity/API adapter exports. Native policy absorption,
+dependency/lock support, remaining service merges and generation checks are open.
+No source-restoration patch, dependency install, build or migration has run.
+
+A separate real guest gap is now confirmed: anonymous GETs without cookies or
+identity headers to `/gurpreet` on both public DEV hosts return 302 to
+`https://auth0.mereka.dev/application/o/authorize/`. Redirect queries were omitted
+and the provider redirect was not followed. The earlier public-profile rendering
+was observed in the staff browser and does not prove anonymous booking access.
+Native public booker routing needs repair while retaining explicit protected
+Mereka entry, native auth boundaries and the two-host proxy restriction.
+
+Both native cron secrets are absent from the serving Pod, DEV ExternalSecret
+mappings and exact hidden-value provider metadata. Installed tasker cron/cleanup
+source uses the interpolated Bearer guard, but compiled/middleware/external
+equivalence has not been asserted or exercised. A selective native-secret/ESO
+configuration plan is prepared with separate actual Secret-adoption and Pod
+carrier gates. No key has been created and no scheduler/worker/endpoint enabled
+or invoked. This configuration admission precedes wider native public API routing.
+The optional migration/pending reader also remains unexecuted: a tiny cgroup
+check found insufficient immediate headroom for an extra PostgreSQL Node process
+in the web container. A bounded PostgreSQL-Pod read and public-file hash route is
+being prepared instead, without changing memory limits or the healthy app.
+
+DEV native API/Redis/scheduler configuration, Zoom credentials, mail delivery,
+full native adoption, image/security qualification and production acceptance
+remain open. The current source proposals and page proof do not close them.
