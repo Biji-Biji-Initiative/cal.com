@@ -391,3 +391,38 @@ repository/PostgreSQL. No external/private production URL is guessed or probed.
 The retained authority, serializable mutation and positive/denial controls remain
 green. Full client/resource/version and original runtime programme acceptance
 remain open; the complete API leaf is not closed by this source increment.
+
+## Calendar export current authority and primary output snapshot
+
+Source predecessor `26cbdb5829dfc67d8eb3710c4038936d38c9e76e`; nine exact clear
+paths were leased after fresh original ready/inbox/reservations checks.
+
+The guard checked primary authority, but the native service dropped the principal
+and reloaded output from independent read repositories. It now retains the full
+principal and repeats the same BookingAccessService authority inside a primary,
+read-only RepeatableRead transaction. Both native booking and event repository
+hydration use that transaction. Shared access/repository methods accept an
+explicit client while default callers preserve their previous behavior.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old native source | 83 passed, 6 failed: post-guard moved resource, disabled actor, revoked membership, changed personal organizer; lagged output; absent authority transaction |
+| Fixed actual native HTTP/domain/PG | 89 passed, zero failures/skips; exit 0 and owned database cleanup verified |
+| Actual output contract | Tracked calendar formatter and event-name parser run; Google/Office/Outlook/ICS IDs retained; decoded ICS contains VCALENDAR; current title/description/location present and old snapshot values absent |
+| Same database mode | Native hydration query observes primary RepeatableRead and transaction_read_only=on |
+| Native strict import closure and fixture checkJs | Both exit 0 |
+| Affected authorization/route-inventory source checks | 68 passed, zero failures/skips |
+
+Real changes commit after the native guard returns its actual authority decision.
+A separate real PG snapshot retains old booking/event rows during native HTTP
+dispatch. Neither test substitutes policy outcomes or SQL results. Export
+generation is never reached after refused authority. The bounded formatter loader
+excludes the unused location-placeholder lookup and localization loading; the
+formatter, event naming, ICS library, schema and database remain actual source.
+
+An initial direct verification command mistakenly included api-assembled.test.cjs,
+whose isolated-runner precondition refused before full-API bootstrap. That receipt
+is preserved; it provides no assembled API acceptance. The corrected affected
+source checks pass. Full build/whole CI/API image, managed-client/version scopes,
+remaining key/resource edges and original runtime gates remain open. No install,
+whole-app/SCIM/audit baseline, provider or production action was repeated.

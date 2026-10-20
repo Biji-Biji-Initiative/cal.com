@@ -477,8 +477,11 @@ export class BookingRepository implements IBookingRepository {
     });
   }
 
-  async findByUidIncludeEventType({ bookingUid }: { bookingUid: string }) {
-    return await this.prismaClient.booking.findUnique({
+  async findByUidIncludeEventType(
+    { bookingUid }: { bookingUid: string },
+    client: Pick<Prisma.TransactionClient, "booking"> = this.prismaClient
+  ) {
+    return await client.booking.findUnique({
       where: {
         uid: bookingUid,
       },
@@ -526,8 +529,11 @@ export class BookingRepository implements IBookingRepository {
     });
   }
 
-  async findByIdIncludeEventType({ bookingId }: { bookingId: number }) {
-    return await this.prismaClient.booking.findUnique({
+  async findByIdIncludeEventType(
+    { bookingId }: { bookingId: number },
+    client: Pick<Prisma.TransactionClient, "booking"> = this.prismaClient
+  ) {
+    return await client.booking.findUnique({
       where: {
         id: bookingId,
       },

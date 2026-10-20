@@ -92,6 +92,22 @@ before(async () => {
     }),
   };
   const { load } = fixtureModules(state);
+  const nativeSource = sourceModules(db).load;
+  const eventNaming = compile("packages/features/eventtypes/lib/eventNaming.ts", {
+    zod: require("zod"),
+    "@calcom/app-store/locations": {
+      guessEventLocationType() {
+        throw new Error("Location placeholder is outside this export fixture");
+      },
+    },
+  });
+  const nativeCalendar = compile("packages/features/bookings/lib/getCalendarLinks.ts", {
+    ics: require("ics"),
+    rrule: require("rrule"),
+    "@calcom/dayjs": nativeSource("packages/dayjs/index.ts"),
+    "@calcom/features/eventtypes/lib/eventNaming": eventNaming,
+    "@calcom/prisma/zod-utils": nativeSource("packages/prisma/zod-utils.ts"),
+  });
   const { PermissionCheckService } = load(
     path.join(root, "packages/features/community-enterprise/authorization/PermissionCheckService.ts")
   );
@@ -152,12 +168,13 @@ before(async () => {
         ["getCalendarLinks", "getBookings", "getBooking"],
         {
           ...nest,
+          BookingAccessService,
           getAllUserBookings: listing.getAllUserBookings,
           getPagination: load(path.join(root, api, "lib/pagination/pagination.ts")).getPagination,
           getTranslation: async () => (key) => key,
-          getCalendarLinks: ({ booking }) => {
+          getCalendarLinks: (input) => {
             exportsCalled++;
-            return [{ label: booking.uid, link: "https://calendar.example.test/fixture.ics" }];
+            return nativeCalendar.getCalendarLinks(input);
           },
         }
       );
@@ -165,6 +182,7 @@ before(async () => {
       nativeBookings = service;
       service.eventTypeAccessService = eventAccess.access;
       service.prismaReadService = { prisma: db };
+      service.prismaWriteService = { prisma: db };
       service.kyselyWriteService = primarySql;
       service.kyselyReadService = {
         kysely: new Proxy(primarySql.kysely, {
@@ -957,7 +975,11 @@ async function laggedReaders(change, request) {
   return db.$transaction(
     async (lag) => {
       await lag.eventType.count();
-      const readers = [nativeBookings.bookingsRepository, ...eventAccess.readers];
+      const readers = [
+        nativeBookings.bookingsRepository,
+        nativeBookings.eventTypesRepository,
+        ...eventAccess.readers,
+      ];
       const previous = readers.map((reader) => reader.dbRead);
       readers.forEach((reader) => {
         reader.dbRead = { prisma: lag };
@@ -1358,4 +1380,108 @@ test("native private-link create succeeds twice for the same owner and milliseco
   assert.notEqual(first.body.data.linkId, second.body.data.linkId);
   assert.equal(await db.hashedLink.count(), 5);
   assert.equal((await privateLink("GET", events.allowed.id)).body.data.length, 3);
+});
+
+function afterBookingAdmission(context, change) {
+  const { BookingPbacGuard } = runtime.load(path.join(root, booking, "guards/booking-pbac.guard.ts"));
+  const guard = runtime.module.get(BookingPbacGuard);
+  const authority = guard.bookingAccessService;
+  const original = authority.doesUserIdHaveAccessToBooking.bind(authority);
+  let changed = false;
+  authority.doesUserIdHaveAccessToBooking = async (input) => {
+    const allowed = await original(input);
+    if (allowed && !changed) {
+      changed = true;
+      await change();
+    }
+    return allowed;
+  };
+  context.after(() => {
+    authority.doesUserIdHaveAccessToBooking = original;
+  });
+}
+test("native export refuses resource moved after actual guard admission", async (context) => {
+  afterBookingAdmission(context, () =>
+    db.eventType.updateMany({ where: { slug: "allowed" }, data: { teamId: foreign.id } })
+  );
+  assert.equal((await request("allowed")).status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("native export refuses owner disabled after actual guard admission", async (context) => {
+  afterBookingAdmission(context, () => db.user.update({ where: { id: owner.id }, data: { locked: true } }));
+  assert.equal((await request("allowed")).status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("native export refuses membership revoked after actual guard admission", async (context) => {
+  afterBookingAdmission(context, () =>
+    db.membership.update({
+      where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+      data: { accepted: false },
+    })
+  );
+  assert.equal((await request("allowed")).status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("native personal export rechecks changed booking organizer after guard", async (context) => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  afterBookingAdmission(context, () =>
+    db.booking.update({ where: { uid: "personal" }, data: { userId: other.id } })
+  );
+  assert.equal((await request("personal", personal)).status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("native export uses current data despite real lagging reader snapshot", async () => {
+  const event = await db.eventType.findFirstOrThrow({ where: { slug: "allowed" } });
+  await db.eventType.update({
+    where: { id: event.id },
+    data: { eventName: "{Event type title}", title: "old-title", description: "old-description" },
+  });
+  await db.booking.update({
+    where: { uid: "allowed" },
+    data: { metadata: { videoCallUrl: "https://old-location.example.test" } },
+  });
+  const result = await laggedReaders(
+    async () => {
+      await db.eventType.update({
+        where: { id: event.id },
+        data: { title: "current-title", description: "current-description" },
+      });
+      await db.booking.update({
+        where: { uid: "allowed" },
+        data: { metadata: { videoCallUrl: "https://current-location.example.test" } },
+      });
+    },
+    () => request("allowed")
+  );
+  assert.equal(result.status, 200);
+  const output = JSON.stringify(result.body);
+  for (const text of ["old-title", "old-description", "old-location"])
+    assert.equal(output.includes(text), false);
+  for (const text of ["current-title", "current-description", "current-location"])
+    assert.equal(output.includes(text), true);
+  assert.deepEqual(
+    result.body.data.map((link) => link.id),
+    ["googleCalendar", "microsoftOffice", "microsoftOutlook", "ics"]
+  );
+  const ics = result.body.data.find((link) => link.id === "ics").link;
+  assert.match(decodeURIComponent(ics), /BEGIN:VCALENDAR/);
+});
+test("native export hydration and policy use the same primary read-only snapshot", async (context) => {
+  const repo = nativeBookings.bookingsRepository;
+  const original = repo.getByUidWithAttendeesAndUserAndEvent.bind(repo);
+  let observed = 0;
+  repo.getByUidWithAttendeesAndUserAndEvent = async (uid, client) => {
+    assert.ok(client, "native export hydration needs the authority client");
+    const [mode] =
+      await client.$queryRaw`SELECT current_setting('transaction_isolation') AS isolation, current_setting('transaction_read_only') AS readonly`;
+    assert.equal(mode.isolation, "repeatable read");
+    assert.equal(mode.readonly, "on");
+    observed++;
+    return original(uid, client);
+  };
+  context.after(() => {
+    repo.getByUidWithAttendeesAndUserAndEvent = original;
+  });
+  assert.equal((await request("allowed")).status, 200);
+  assert.equal(observed, 1);
 });

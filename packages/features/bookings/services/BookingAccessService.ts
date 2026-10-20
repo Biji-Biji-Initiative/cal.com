@@ -1,16 +1,13 @@
 import { PermissionCheckService } from "@calcom/features/community-enterprise/authorization/PermissionCheckService";
 import type { PrismaClient } from "@calcom/prisma";
+import type { Prisma } from "@calcom/prisma/client";
 import { MembershipRole } from "@calcom/prisma/enums";
 import { BookingRepository } from "../repositories/BookingRepository";
 
 type BookingForAccessCheck = NonNullable<Awaited<ReturnType<BookingRepository["findByUidIncludeEventType"]>>>;
 
 export class BookingAccessService {
-  private permissionCheckService: PermissionCheckService;
-
-  constructor(private prismaClient: PrismaClient) {
-    this.permissionCheckService = new PermissionCheckService(prismaClient);
-  }
+  constructor(private prismaClient: PrismaClient) {}
 
   private isUserAHost(userId: number, booking: BookingForAccessCheck): boolean {
     const hostMap = new Map<number, { id: number; email: string }>();
@@ -49,25 +46,28 @@ export class BookingAccessService {
     bookingUid,
     bookingId,
     apiKeyTeamId,
+    client = this.prismaClient,
   }: {
     userId: number;
     bookingUid?: string;
     bookingId?: number;
     apiKeyTeamId?: number | null;
+    client?: Pick<Prisma.TransactionClient, "booking" | "user" | "membership" | "team">;
   }): Promise<boolean> {
     const bookingRepo = new BookingRepository(this.prismaClient);
+    const permissionCheckService = new PermissionCheckService(client);
 
     // Fetch booking by UID or ID
     const booking = bookingUid
-      ? await bookingRepo.findByUidIncludeEventType({ bookingUid })
+      ? await bookingRepo.findByUidIncludeEventType({ bookingUid }, client)
       : bookingId
-        ? await bookingRepo.findByIdIncludeEventType({ bookingId })
+        ? await bookingRepo.findByIdIncludeEventType({ bookingId }, client)
         : null;
 
     if (!booking) return false;
     if (bookingId && bookingUid && booking.id !== bookingId) return false;
     if (!Number.isSafeInteger(userId) || userId <= 0) return false;
-    const actor = await this.prismaClient.user.findUnique({
+    const actor = await client.user.findUnique({
       where: { id: userId },
       select: { locked: true },
     });
@@ -80,7 +80,7 @@ export class BookingAccessService {
       if (!Number.isSafeInteger(apiKeyTeamId) || apiKeyTeamId <= 0 || resourceTeamId !== apiKeyTeamId)
         return false;
       if (
-        !(await this.permissionCheckService.checkPermission({
+        !(await permissionCheckService.checkPermission({
           userId,
           teamId: apiKeyTeamId,
           permission: "booking.readTeamBookings",
@@ -100,7 +100,7 @@ export class BookingAccessService {
     if (booking.eventType?.teamId) {
       const teamId = booking.eventType.teamId;
 
-      const hasAccess = await this.permissionCheckService.checkPermission({
+      const hasAccess = await permissionCheckService.checkPermission({
         userId,
         teamId,
         permission: "booking.readTeamBookings",
@@ -112,7 +112,7 @@ export class BookingAccessService {
     // A managed child belongs to the parent's team. Mere coworker or
     // organization membership never grants access to a private appointment.
     if (booking.eventType?.parent?.teamId) {
-      return this.permissionCheckService.checkPermission({
+      return permissionCheckService.checkPermission({
         userId,
         teamId: booking.eventType.parent.teamId,
         permission: "booking.readTeamBookings",

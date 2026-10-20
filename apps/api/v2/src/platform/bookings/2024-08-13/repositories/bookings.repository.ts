@@ -146,8 +146,11 @@ export class BookingsRepository_2024_08_13 {
     });
   }
 
-  async getByUidWithAttendeesAndUserAndEvent(uid: string) {
-    const booking = await this.dbRead.prisma.booking.findUnique({
+  async getByUidWithAttendeesAndUserAndEvent(
+    uid: string,
+    client: Pick<Prisma.TransactionClient, "booking"> = this.dbRead.prisma
+  ) {
+    const booking = await client.booking.findUnique({
       where: {
         uid,
       },

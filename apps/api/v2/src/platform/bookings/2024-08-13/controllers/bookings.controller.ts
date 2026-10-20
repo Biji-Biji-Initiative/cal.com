@@ -529,8 +529,11 @@ export class BookingsController_2024_08_13 {
       `,
   })
   @HttpCode(HttpStatus.OK)
-  async getCalendarLinks(@Param("bookingUid") bookingUid: string): Promise<CalendarLinksOutput_2024_08_13> {
-    const calendarLinks = await this.bookingsService.getCalendarLinks(bookingUid);
+  async getCalendarLinks(
+    @Param("bookingUid") bookingUid: string,
+    @GetUser() user: ApiAuthGuardUser
+  ): Promise<CalendarLinksOutput_2024_08_13> {
+    const calendarLinks = await this.bookingsService.getCalendarLinks(bookingUid, user);
 
     return {
       status: SUCCESS_STATUS,

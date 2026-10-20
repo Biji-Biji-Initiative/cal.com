@@ -1,4 +1,5 @@
 import {
+  BookingAccessService,
   confirmBookingHandler,
   distributedTracing,
   getAllUserBookings,
@@ -51,6 +52,7 @@ import { KyselyWriteService } from "@/modules/kysely/kysely-write.service";
 import { OAuthClientRepository } from "@/modules/oauth-clients/oauth-client.repository";
 import { OAuthClientUsersService } from "@/modules/oauth-clients/services/oauth-clients-users.service";
 import { PrismaReadService } from "@/modules/prisma/prisma-read.service";
+import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
 import { TeamsEventTypesRepository } from "@/modules/teams/event-types/teams-event-types.repository";
 import { TeamsRepository } from "@/modules/teams/teams/teams.repository";
 import { UsersService } from "@/modules/users/services/users.service";
@@ -106,7 +108,8 @@ export class BookingsService_2024_08_13 {
     private readonly errorsBookingsService: ErrorsBookingsService_2024_08_13,
     private readonly regularBookingService: RegularBookingService,
     private readonly recurringBookingService: RecurringBookingService,
-    private readonly eventTypeAccessService: EventTypeAccessService
+    private readonly eventTypeAccessService: EventTypeAccessService,
+    private readonly prismaWriteService: PrismaWriteService
   ) {}
 
   async createBooking(request: Request, body: CreateBookingInput, authUser: AuthOptionalUser) {
@@ -1209,33 +1212,52 @@ export class BookingsService_2024_08_13 {
     return this.getBooking(bookingUid, requestUser);
   }
 
-  async getCalendarLinks(bookingUid: string): Promise<CalendarLink[]> {
-    const booking = await this.bookingsRepository.getByUidWithAttendeesAndUserAndEvent(bookingUid);
+  async getCalendarLinks(bookingUid: string, user: ApiAuthGuardUser): Promise<CalendarLink[]> {
+    return this.prismaWriteService.prisma.$transaction(
+      async (client) => {
+        await client.$executeRaw`SET TRANSACTION READ ONLY`;
+        const hasAccess = await new BookingAccessService(
+          this.prismaWriteService.prisma
+        ).doesUserIdHaveAccessToBooking({
+          userId: user.id,
+          bookingUid,
+          apiKeyTeamId: user.apiKeyTeamId,
+          client,
+        });
+        if (!hasAccess) throw new ForbiddenException("Booking calendar export is unavailable");
+        const booking = await this.bookingsRepository.getByUidWithAttendeesAndUserAndEvent(
+          bookingUid,
+          client
+        );
 
-    if (!booking) {
-      throw new NotFoundException(`Booking with uid ${bookingUid} not found`);
-    }
+        if (!booking) {
+          throw new NotFoundException(`Booking with uid ${bookingUid} not found`);
+        }
 
-    if (!booking.eventTypeId) {
-      throw new BadRequestException(`Booking with uid ${bookingUid} has no event type`);
-    }
+        if (!booking.eventTypeId) {
+          throw new BadRequestException(`Booking with uid ${bookingUid} has no event type`);
+        }
 
-    const eventType = await this.eventTypesRepository.getEventTypeByIdIncludeUsersAndTeam(
-      booking.eventTypeId
-    );
-    if (!eventType) {
-      throw new BadRequestException(`Booking with uid ${bookingUid} has no event type`);
-    }
-    // TODO: Maybe we should get locale from query params?
-    return getCalendarLinks({
-      booking,
-      eventType: {
-        ...eventType,
-        // TODO: Support dynamic event bookings later. It would require a slug input it seems
-        isDynamic: false,
+        const eventType = await this.eventTypesRepository.getEventTypeByIdIncludeUsersAndTeam(
+          booking.eventTypeId,
+          client
+        );
+        if (!eventType) {
+          throw new BadRequestException(`Booking with uid ${bookingUid} has no event type`);
+        }
+        // TODO: Maybe we should get locale from query params?
+        return getCalendarLinks({
+          booking,
+          eventType: {
+            ...eventType,
+            // TODO: Support dynamic event bookings later. It would require a slug input it seems
+            isDynamic: false,
+          },
+          // It can be made customizable through the API endpoint later.
+          t: await getTranslation("en", "common"),
+        });
       },
-      // It can be made customizable through the API endpoint later.
-      t: await getTranslation("en", "common"),
-    });
+      { isolationLevel: "RepeatableRead" }
+    );
   }
 }

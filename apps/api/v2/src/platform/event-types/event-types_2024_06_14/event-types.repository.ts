@@ -165,8 +165,11 @@ export class EventTypesRepository_2024_06_14 {
     });
   }
 
-  async getEventTypeByIdIncludeUsersAndTeam(eventTypeId: number) {
-    const eventType = await this.dbRead.prisma.eventType.findUnique({
+  async getEventTypeByIdIncludeUsersAndTeam(
+    eventTypeId: number,
+    client: Pick<Prisma.TransactionClient, "eventType"> = this.dbRead.prisma
+  ) {
+    const eventType = await client.eventType.findUnique({
       where: { id: eventTypeId },
       include: { users: true, team: true },
     });
