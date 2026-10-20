@@ -537,3 +537,81 @@ Retained evidence:
 
 All 39 task objects, previous graph checkpoints and other graph fields remain
 unchanged; this checkpoint does not close staff, calendar or release acceptance.
+
+
+## Google connected; broader integration recovery (2026-10-20 00:05Z)
+
+The actual staff Safari session returned 200 from native session validation and
+matched the intended account and admin role. One normal Google consent completed,
+and Cal returned to `/apps/installed/calendar` with the expected Google account,
+discovered calendars, conflict checking and destination-calendar controls. No
+meeting, calendar event or message was created. This supersedes the earlier
+connection-pending checkpoint. Receipt:
+`c6ade5b75d6f0a2b4dde1cf0d7c8f435c39da26b40f65862a1427d6abd68eaad`.
+
+The owner explicitly selected `cal.mereka.dev/gurpreet`. Native username
+availability returned 200, available and nonpremium. One profile submit succeeded
+with existing full name and timezone preserved, advancing through the calendar
+and video steps. No availability form was edited or submitted. Zoom was absent
+from the owner's captured video-list viewport; complete mounted-list and live
+registry qualification remain pending. No alternative provider or default was
+installed. Later mutable Safari tab indices failed their identity guards, so no
+session-loss or actor attribution follows from their changed URLs. Successful
+Google/profile observations remain preserved; current browser authentication is
+unknown until a newly identified owned window can be checked.
+
+The missing-provider audit has a concrete configuration cause. The current DEV
+recovery command runs URL replacement and `yarn start`, explicitly skipping stock
+migrations and app seeding. Stock v6.2 `start.sh` invokes `seed-app-store.ts`, which
+copies configured provider settings into database App keys and validates enabled
+state. Native OAuth loaders read those database keys, with no environment fallback.
+Google web settings seed both Calendar and Meet. Zoom and Microsoft require their
+own configured pairs; existing stored keys are preserved when no replacement is
+provided. This proves a DEV bootstrap gap, not deletion of March production data.
+No full startup seed or blanket integration toggle has been run.
+
+Google Meet is a dependent non-OAuth app: `google-meet` / `googlevideo` uses the
+same three Google web settings and depends on Google Calendar. Native Connect
+creates a user marker without another provider callback or consent. A selective
+repair still requires an actual live App/principal readiness check.
+
+Five bounded Infisical requests returned 200. Direct Cal folders in dev, staging
+and prod contain Google provider keys, with no direct Zoom or Microsoft pair;
+absence elsewhere is not inferred. A stored shared reference identifies an
+existing Cal.com Integration Zoom app. A nonrotating admin read confirms its name,
+unpublished status and 136 account/admin/master scopes. General-manifest export
+returned 404, and no target credentials were returned. Its suitability for Cal's
+user OAuth flow is unproved; no app, permission, credential or manifest changed.
+
+A separate real calendar-settings error produced SyntaxError metadata. The proxy
+currently replaces the incoming public Host with loopback localhost. A DEV-only
+correction validates the two public authorities and forwards Host separately from
+the unchanged TCP destination, including session validation and native logout.
+Four new cases reproduced three failures before correction and pass afterward;
+121 existing cases pass with one existing PostgreSQL skip. Syntax, diff and
+Gitleaks pass. UBS retains 16 critical and 13 warning findings, all in an exact
+unchanged test prefix; there is no embedded-YAML semantic coverage claim.
+The three-file correction and single DEV rollout annotation are reviewed but not
+published. Both native renders completed; normalized comparison remains pending.
+Encryption revision is preserved. Stage/prod opt-in behavior is unchanged.
+
+Mac SSH timed out twice and Commander reads reported no response. No subsequent
+browser/provider/database mutation was queued. The owner has been asked to keep
+the Mac awake with Commander connected. This blocks canonical deployment and
+browser checks while offline source work continues.
+
+Physical image inventory v4 now parses the image, with OS 14/14 exact and 775
+matching Node occurrences. Its one missing native record is the physically shipped
+first-party `calcom/apps/web/package.json`, omitted by the node_modules-only
+collector. All seven inputs remain unchanged; the phase failed coverage and its
+process/cgroup cleanup and actual slot release are retained. A narrow collector
+correction has a genuine failing regression; its whole-suite attempt timed out,
+so no candidate pass is claimed. The focused resume subsequently passed all 105 selected cases, including 18 new
+app-manifest cases and 87 existing collector/alias/coverage/deadline controls.
+Syntax, Biome, Gitleaks and diff checks passed. UBS remains unsuppressed at
+21 critical, 107 warning and 252 informational findings. The whole-suite timeout
+stays failed; exact owned cleanup and slot release at 00:14:28Z are verified.
+Source review/publication and actual image comparison remain pending.
+All 89 secret-detector occurrences remain semantically unqualified and unwaived;
+70 coordinates are mapped, with 19 blocked by exact replay-format limits. No
+image or production acceptance follows from these partial results.
