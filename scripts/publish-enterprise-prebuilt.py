@@ -34,6 +34,7 @@ MANIFEST = "application/vnd.oci.image.manifest.v1+json"
 RECIPES = {"dockerfileSha256": "Dockerfile.enterprise-preview",
            "entrypointSha256": "scripts/enterprise-runtime-entrypoint.cjs",
            "migrationPreflightSha256": "scripts/check-enterprise-migration.sql", "lockSha256": "yarn.lock"}
+APPLICATION_PACKAGE = "calcom/apps/web/package.json"
 REQUIRED = {"calcom/node_modules/next/package.json": "next", "calcom/node_modules/axios/package.json": "axios",
             "calcom/node_modules/effect/package.json": "effect", "calcom/ops/node_modules/effect/package.json": "effect",
             "calcom/ops/node_modules/prisma/package.json": "prisma"}
@@ -246,6 +247,9 @@ def node_inventory(files, deadline):
         package = strict_json(data)
         need(type(package) is dict, "Invalid installed package metadata")
         metadata[name] = package
+        if name == APPLICATION_PACKAGE:
+            need(package.get("name") == "@calcom/web" and "version" in package,
+                 "Incomplete first-party application identity")
         if "name" in package and "version" in package:
             installed[name] = (pattern(package["name"], r"[A-Za-z0-9_@./-]{1,300}"),
                                pattern(package["version"], r"[A-Za-z0-9_.+~-]{1,300}"))
@@ -452,7 +456,7 @@ def image_archive(file, build, layout=None):
         need(config.get("rootfs", {}).get("type") == "layers" and len(config["rootfs"].get("diff_ids", [])) == len(manifest["layers"]), "Incomplete root filesystem identity")
         for value in config["rootfs"]["diff_ids"]:
             pattern(value, DIGEST)
-        expected = {"calcom/enterprise-build.json": None,
+        expected = {APPLICATION_PACKAGE: None, "calcom/enterprise-build.json": None,
                     "calcom/scripts/enterprise-runtime-entrypoint.cjs": build["entrypointSha256"],
                     "calcom/scripts/check-enterprise-migration.sql": build["migrationPreflightSha256"],
                     "calcom/apps/web/.next/BUILD_ID": None,
@@ -531,6 +535,8 @@ def image_archive(file, build, layout=None):
                     need(not any(str(parent) in non_directories for parent in Path(key).parents if str(parent) != "."), "Ambiguous layer ancestor replacement")
                     if key in expected:
                         shipped[key] = value
+                        if key == APPLICATION_PACKAGE:
+                            package_files[key] = value
                     elif key == "var/lib/dpkg/status" or key.startswith("var/lib/dpkg/status.d/"):
                         os_files[key] = value
                     else:

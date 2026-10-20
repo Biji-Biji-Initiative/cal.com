@@ -404,6 +404,20 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  if scenario=='wrong-shipped-recipe': layer_files['calcom/scripts/enterprise-runtime-entrypoint.cjs']=b'changed'
  if scenario=='missing-shipped-manifest':layer_files.pop('calcom/enterprise-build.json')
  for file,name in m.REQUIRED.items():layer_files[file]=encoded({'name':name,'version':'1.0.0'})
+ app='calcom/apps/web/package.json'
+ layer_files[app]=encoded({'name':'@calcom/web','version':'6.2.0'})
+ if scenario=='app-manifest':
+  for i in range(770):layer_files['calcom/node_modules/fixture-dependency-'+str(i)+'/package.json']=encoded({'name':'fixture-dependency-'+str(i),'version':'1.0.0'})
+ if scenario=='app-manifest-missing':layer_files.pop(app)
+ if scenario=='app-manifest-name-missing':layer_files[app]=encoded({'version':'6.2.0'})
+ if scenario=='app-manifest-name-wrong':layer_files[app]=encoded({'name':'@calcom/another','version':'6.2.0'})
+ if scenario=='app-manifest-version-missing':layer_files[app]=encoded({'name':'@calcom/web'})
+ if scenario=='app-manifest-version-empty':layer_files[app]=encoded({'name':'@calcom/web','version':''})
+ if scenario=='app-manifest-version-type':layer_files[app]=encoded({'name':'@calcom/web','version':620})
+ if scenario=='app-manifest-version-mismatch':layer_files[app]=encoded({'name':'@calcom/web','version':'6.2.1'})
+ if scenario=='app-manifest-duplicate-field':layer_files[app]=b'{"name":"@calcom/web","name":"@calcom/web","version":"6.2.0"}'
+ if scenario=='app-manifest-wrong-path':layer_files['calcom/apps/other/package.json']=layer_files.pop(app)
+ if scenario=='app-manifest-unexpected-outside':layer_files['calcom/apps/other/package.json']=encoded({'name':'@calcom/other','version':'1.0.0'})
  if scenario=='ambiguous-package':layer_files['calcom/node_modules/extra/package.json']=encoded({'name':'extra'})
  if scenario=='module-marker':layer_files['calcom/node_modules/next/esm/package.json']=encoded({'type':'module'})
  fragment='calcom/node_modules/next/esm/package.json'
@@ -482,6 +496,10 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  if scenario in ['nested-copy-missing','nested-copy-included','removed-copy','opaque-copy']:
   layer_files[extra]=encoded({'name':'extra','version':'2.0.0'})
  layers=[layer_files]
+ if scenario=='app-manifest-whiteout':layers.append({'calcom/apps/web/.wh.package.json':b''})
+ if scenario=='app-manifest-ancestor-replaced':layers.append({'calcom/apps/web':b'replaced-directory'})
+ if scenario in ['app-manifest-whiteout-replacement','app-manifest-replacement-stale-scan']:
+  layers.append({app:encoded({'name':'@calcom/web','version':'6.2.1'}),'calcom/apps/web/.wh.package.json':b''})
  if scenario=='status-d-replaced':layers.append({status_path:b'Package: fixture-os\nVersion: 1.0\n'})
  if scenario=='status-d-whiteout-replacement':layers.append({status_path:layer_files[status_path],'var/lib/dpkg/status.d/.wh..wh..opq':b''})
  if scenario=='status-d-whiteout':layers.append({'var/lib/dpkg/status.d/.wh.fixture-os':b''})
@@ -539,6 +557,9 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
   if scenario=='status-d-alias-ancestor':
    layer_files[status_path]=b'Package: fixture-os\nVersion: 1.0\n'
    alias_entries={'var/lib/dpkg/status.d':(tarfile.SYMTYPE,'../elsewhere')}
+ if scenario in ['app-manifest-symlink','app-manifest-hardlink']:
+  layer_files.pop(app);alias_entries={app:(tarfile.SYMTYPE if scenario.endswith('-symlink') else tarfile.LNKTYPE,'../../../node_modules/next/package.json')}
+ if scenario=='app-manifest-ancestor-alias':alias_entries={'calcom/apps/web':(tarfile.SYMTYPE,'../elsewhere')}
  layer_blobs=[];layer_descriptors=[];config['rootfs']['diff_ids']=[]
  for layer_number,layer_files in enumerate(layers):
   layerbuf=io.BytesIO()
@@ -606,6 +627,11 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  node_result={'Target':'Node packages','Class':'lang-pkgs','Type':'node-pkg','Packages':[
   {'ID':str(i),'Name':name,'Version':'1.0.0','PkgPath':file} for i,(file,name) in enumerate(m.REQUIRED.items())],
   'Vulnerabilities':[],'Secrets':[]}
+ if scenario not in ['app-manifest-missing','app-manifest-whiteout','app-manifest-symlink','app-manifest-hardlink','app-manifest-ancestor-alias','app-manifest-ancestor-replaced']:
+  node_result['Packages'].append({'ID':'first-party-web','Name':'@calcom/another' if scenario=='app-manifest-name-wrong' else '@calcom/web','Version':'6.2.1' if scenario=='app-manifest-whiteout-replacement' else '6.2.0','PkgPath':app})
+ if scenario=='app-manifest':
+  for i in range(770):node_result['Packages'].append({'ID':'fixture-dependency-'+str(i),'Name':'fixture-dependency-'+str(i),'Version':'1.0.0','PkgPath':'calcom/node_modules/fixture-dependency-'+str(i)+'/package.json'})
+ if scenario=='app-manifest-unexpected-outside':node_result['Packages'].append({'ID':'outside','Name':'@calcom/other','Version':'1.0.0','PkgPath':'calcom/apps/other/package.json'})
  if scenario in ['nested-copy-included','same-layer-opaque-replacement']:
   node_result['Packages'].append({'ID':'extra','Name':'extra','Version':'2.0.0','PkgPath':extra})
  if scenario in ['fragment-complete-nested','fragment-nearest-parent','fragment-ambiguous-parent']:
@@ -694,7 +720,7 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
    assert args==['crane','blob',m.REGISTRY+'@'+config_digest]
    return response(out=encoded(config)+(b' ' if scenario=='config-readback' else b''))
   raise AssertionError('unexpected command')
- positive=scenario in ['admit','publish','idempotent','gzip','nested-copy-included','removed-copy','opaque-copy','replaced-copy','same-layer-opaque-replacement','fetch','safe-redirect','module-marker','source-revision','database-nanoseconds','created-annotation','created-nanoseconds',
+ positive=scenario in ['app-manifest','app-manifest-whiteout-replacement','admit','publish','idempotent','gzip','nested-copy-included','removed-copy','opaque-copy','replaced-copy','same-layer-opaque-replacement','fetch','safe-redirect','module-marker','source-revision','database-nanoseconds','created-annotation','created-nanoseconds',
    'package-alias','alias-next-hashed','alias-absolute','alias-chain','alias-depth40','alias-removed','alias-whiteout-replacement',
    'distroless-home','distroless-certificate','distroless-certificate-actual-shape','status-d-basic','status-d-explicit','status-d-md5sums','status-d-epoch','status-d-replaced','status-d-whiteout-replacement',
    'status-d-uninstalled-record','status-d-transition','fragment-name-only','fragment-version-only','fragment-type-side-effects',
@@ -744,7 +770,11 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
    if scenario=='wrong-workflow':os.environ['GITHUB_REPOSITORY']='Other/Repo'
    result=m.publish(d,receipt_hash,source,'FixtureActor',checkout,run=crane)
    assert ('push' in calls)==(scenario=='publish')
-  else:result=m.admit(d,receipt_hash,source,'FixtureActor',checkout,now=now)
+  else:
+   if scenario=='app-manifest':
+    _manifest,_config,_image_config,physical,_os=m.image_archive(d/m.FILES['archive'],build,layout=None)
+    assert len(physical)==776 and physical.get(app)==('@calcom/web','6.2.0'), 'actual image collector omitted first-party app occurrence'
+   result=m.admit(d,receipt_hash,source,'FixtureActor',checkout,now=now)
   assert positive, 'invalid bundle admitted'
   assert result['releaseApproved'] is False and result['manifestDigest']==manifest_digest and result['configDigest']==config_digest
   assert result['counts']=={'HIGH':1} and result['tag']=='candidate-'+source+'-'+manifest_digest[7:]
@@ -934,6 +964,24 @@ for (const scenario of [
   "fragment-shapes75",
   "fragment-spoofed-install-root",
   "fragment-nested-next-parent",
+  "app-manifest",
+  "app-manifest-missing",
+  "app-manifest-name-missing",
+  "app-manifest-name-wrong",
+  "app-manifest-version-missing",
+  "app-manifest-version-empty",
+  "app-manifest-version-type",
+  "app-manifest-version-mismatch",
+  "app-manifest-duplicate-field",
+  "app-manifest-wrong-path",
+  "app-manifest-unexpected-outside",
+  "app-manifest-symlink",
+  "app-manifest-hardlink",
+  "app-manifest-ancestor-alias",
+  "app-manifest-whiteout",
+  "app-manifest-ancestor-replaced",
+  "app-manifest-whiteout-replacement",
+  "app-manifest-replacement-stale-scan",
   "fragment-i18next-client",
   "fragment-i18next-client-wrong-name",
   "fragment-i18next-client-wrong-path",
