@@ -366,3 +366,28 @@ validity is still established by the native authentication path; this evidence
 does not claim every other API/client/version or concurrent revocation boundary.
 CAL-05.API and the original 39-node programme remain in progress. No install,
 whole application baseline, external key, provider or production action occurred.
+
+## Private-link bearer unpredictability and same-clock creation
+
+Source predecessor `351bf193615300a014aa0e08b0380ef9014b0235`; four exact clear
+paths were leased after fresh original ready/inbox/reservations inspection.
+
+The native helper derived its bearer link from UUIDv5(user ID : millisecond).
+An observer knowing those public inputs could reconstruct the private URL, and
+two creates for the same owner and millisecond collided at the unique key.
+The helper now uses the existing UUIDv4 implementation's cryptographic entropy
+while retaining short-UUID encoding and its existing caller signature. Existing
+links are read unchanged; no schema, dependency or real credential is issued.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old source | 80 passed, 3 failed: same-clock uniqueness, exact public-seed reconstruction, second native create |
+| Fixed actual HTTP/domain/PG | 83 passed, zero failures/skips, exit 0; owned database cleanup verified |
+| Entropy/format controls | 256 distinct IDs with identical owner/time; each decodes to valid UUIDv4 with existing 22-character short format; public-seed prediction differs |
+| Native route compatibility | Two actual owner creates within one frozen millisecond return 201 and distinct persisted links; native listing retains old and new links |
+
+The tests use Node's Date-only mock and actual tracked helper/native HTTP/service/
+repository/PostgreSQL. No external/private production URL is guessed or probed.
+The retained authority, serializable mutation and positive/denial controls remain
+green. Full client/resource/version and original runtime programme acceptance
+remain open; the complete API leaf is not closed by this source increment.

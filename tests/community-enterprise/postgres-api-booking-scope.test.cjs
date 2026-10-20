@@ -1325,3 +1325,37 @@ test("native private-link listing shares a primary read-only owner snapshot", as
   assert.equal(result.body.data.length, 1);
   assert.equal(observed, 1);
 });
+
+test("private-link bearer IDs remain distinct when owner and clock repeat", (context) => {
+  context.mock.timers.enable({ apis: ["Date"], now: Date.now() });
+  const { generateHashedLink } = sourceModules(db).load("packages/lib/generateHashedLink.ts");
+  const links = Array.from({ length: 256 }, () => generateHashedLink(101));
+  assert.equal(new Set(links).size, links.length);
+  const translator = require("short-uuid")();
+  for (const link of links) {
+    const uuid = translator.toUUID(link);
+    assert.equal(require("uuid").validate(uuid), true);
+    assert.equal(require("uuid").version(uuid), 4);
+    assert.match(link, /^[1-9A-HJ-NP-Za-km-z]{22}$/);
+  }
+});
+test("private-link bearer cannot be reconstructed from public owner and time", (context) => {
+  const timestamp = Date.now();
+  context.mock.timers.enable({ apis: ["Date"], now: timestamp });
+  const { generateHashedLink } = sourceModules(db).load("packages/lib/generateHashedLink.ts");
+  const translator = require("short-uuid")();
+  const { v5 } = require("uuid");
+  const predicted = translator.fromUUID(v5(`101:${timestamp}`, v5.URL));
+  assert.notEqual(generateHashedLink(101), predicted);
+});
+test("native private-link create succeeds twice for the same owner and millisecond", async (context) => {
+  const events = await privateLinkEvents();
+  context.mock.timers.enable({ apis: ["Date"], now: Date.now() });
+  const first = await privateLink("POST", events.allowed.id, "", { maxUsageCount: 3 });
+  const second = await privateLink("POST", events.allowed.id, "", { maxUsageCount: 3 });
+  assert.equal(first.status, 201);
+  assert.equal(second.status, 201);
+  assert.notEqual(first.body.data.linkId, second.body.data.linkId);
+  assert.equal(await db.hashedLink.count(), 5);
+  assert.equal((await privateLink("GET", events.allowed.id)).body.data.length, 3);
+});
