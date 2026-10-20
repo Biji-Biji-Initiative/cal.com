@@ -32,7 +32,7 @@
     ],
     "rule": "One build/integration owner; other work is disjoint. Do not claim workers are dispatched without actual registration and evidence.",
     "ready_command": "node scripts/verify-community-enterprise-task-graph.cjs --ready",
-    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task’s own required level.",
+    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task\u2019s own required level.",
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
       "CAL-05.CORE",
@@ -506,7 +506,7 @@
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 0,
-      "progress": "Qualified e3a79afb HTTPS image and matched 113→56 HIGH scan are published as evidence, not a registry upload. The missing empty-preview first-account path now has an explicit reviewed operator CLI with real 59-case database acceptance; live client/subject/database admission, approved publishing, native entrypoint/routing and serving journey remain unfinished.",
+      "progress": "Qualified e3a79afb HTTPS image and matched 113\u219256 HIGH scan are published as evidence, not a registry upload. The missing empty-preview first-account path now has an explicit reviewed operator CLI with real 59-case database acceptance; live client/subject/database admission, approved publishing, native entrypoint/routing and serving journey remain unfinished.",
       "progress_reference": "docs/community-enterprise/PREVIEW-OPERATOR-2026-10-16.md",
       "blockers": [
         "Live cal.mereka.dev is the restored legacy v6.2.0 image, not the enterprise candidate.",
@@ -1205,7 +1205,7 @@
         "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json",
         "docs/community-enterprise/API-THIRD-PARTY-SCHEDULE-BOUNDARY-2026-10-19.md"
       ],
-      "progress": "Managed client permissions now follow Passport’s selected method and current primary token/client authority. Nine controller guard placements repaired; 54 direct permission-decorated methods in 14 controllers have correct order. Real HTTP/PostgreSQL75, key-controller36, native Jest27 and focused source154 pass. Full resource/transaction scopes, dynamic route reachability and deployed proof remain unfinished; no old image is relabeled. 2026-10-19: the three Atoms schedule mutations explicitly exclude read-only third-party OAuth tokens through existing method authentication policy; 116 focused source cases pass. Other credential types and current permission checks remain intact. This bounded source evidence does not close full API scope/resource or runtime acceptance.",
+      "progress": "Managed client permissions now follow Passport\u2019s selected method and current primary token/client authority. Nine controller guard placements repaired; 54 direct permission-decorated methods in 14 controllers have correct order. Real HTTP/PostgreSQL75, key-controller36, native Jest27 and focused source154 pass. Full resource/transaction scopes, dynamic route reachability and deployed proof remain unfinished; no old image is relabeled. 2026-10-19: the three Atoms schedule mutations explicitly exclude read-only third-party OAuth tokens through existing method authentication policy; 116 focused source cases pass. Other credential types and current permission checks remain intact. This bounded source evidence does not close full API scope/resource or runtime acceptance.",
       "progress_reference": "docs/community-enterprise/API-ROUTE-INVENTORY-2026-10-17.md",
       "progress_summary": "API route and permission inventory is source-proven; full principal/scope/resource runtime intersection remains open."
     },
@@ -1357,7 +1357,7 @@
           "level": "runtime",
           "command": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
-          "summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
+          "summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         },
         {
@@ -1375,7 +1375,7 @@
       "priority": 1,
       "progress": "Packaged native OIDC through a TLS fixture, Chromium team administration, directed/same-host/rerouted bookings and collective availability are locally proven with PostgreSQL and non-relaying SMTP. Not deployed Authentik, connected external calendars or shared preview admission.",
       "progress_reference": "docs/community-enterprise/MULTI-HOST-2026-10-12.md",
-      "progress_summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
+      "progress_summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
     },
     {
       "id": "CAL-07.AUDIT",
@@ -2418,6 +2418,15 @@
       "production_changed": false,
       "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
       "notes": "Native capability baseline and reduced candidate plus five cleanup migration hold continue. Actual two RAM-only DEV cron record creates and readbacks succeeded; infra58105a9 maps only two ESO keys and docs, cacaa8a adds only DEV load annotation. Actual gen43 ready2dwqr five successful native operations verify both loaded values shape/distinctness and zero web/proxy restarts; no value or value hash output, endpoint/scheduler/worker/send. Provider-to-ESO equality and compiled authorization unproved. Earlier rollout cardinality and direct-UID observer refusals retained. Two bootstrap-only failed Pods were evicted for ephemeral-storage before web/proxy; current node flags are not historical proof; owner notified via AgentMail147829, no capacity mutation. Seven native routes settled: five normal content, Workflows and Routing native license notices. Staff logout/reentry and Google/Meet limited proofs retained; no fresh passkey/global logout/revocation. Native hasValidLicense false, env key absent, Deployment row fallback unknown. Zoom current-owner matching app is Server-to-Server OAuth, incompatible with native user authorization_code; DEV native app disabled/empty client fields. Historical other-owner/March absence not inferred; staging PG replicas0, no start. No new app, rotation, consent, meeting or defaults. Guest /gurpreet still302 to staff IdP on bothDEVhosts; controller Traefik3.7.15 qualified; narrow five-file native adapter implementation/testing underway, not deployed. Full-native3733 unambiguous patches remain read-only checked/unapplied. Auth scratch117 source fixture cases plus2 focused projections pass with explicit dependency doubles; six TCP OIDC cases unexecuted, UBS dispositions unsuppressed, no native type/database qualification. Nine root dependency proposals retain native graph/security pins and restore native routing builder; patch/lock/type/Prisma/Node image/advisory closure pending. Executable packaging native baseline guard in preparation, no CI/promoter/lane changes. No source adoption/build/install/migration/runtime workload or production change. All39 task objects and previous graph fields unchanged; no source task closed. Native migration/task-kind SQL, integrations/notifications/API/Redis/Apple/CalDAV/backup/image/security/production gates remain open."
+    },
+    {
+      "date": "2026-10-20",
+      "application_source": "2999be9b5b762c62f9d6e462050f2bb7580005d7",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-04.SESSION",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
+      "notes": "The full prior native Cal baseline is required. Actual read-only DEV PostgreSQL records, installed SQL files and native source agree on all 588 migration names/checksums; installed/source sizes also match. All 20 native Task kinds were included and the observed pending counts were zero. Earlier reader failures are retained; owned process counts were zero before the successful batched read. No database write, extra web Node process or scheduler ran. Guard commit 9fa31274 published exactly five files with complete remote API byte verification. Root independently checked 9,430 native Git identities, all schema/SQL hashes and 30 packet files. 93 distinct focused cases passed; lint, syntax, Gitleaks and diff checks passed. UBS remains unsuppressed exit 1 with explicit dispositions. No image acceptance is claimed. Root dependency closure remains null and reviewed source ports remain empty, so reduced source and old artifacts fail admission. Native source adoption, installation, build and release remain held. DEV guest commit 2bc5f705 reached generation 44, Argo Synced/Healthy and exact proxy/route/private-auth binding. Actual anonymous /gurpreet returned native 404, so public acceptance failed and remains open. The Linux browser refused before navigation because no usable sandbox was available; no host change or browser success is claimed. Native username/organisation lookup diagnosis continues. Exactly one dedicated General Zoom shell was created and User-managed/Development were observed. One ASCII name write and native blur were attempted; persistence is unqualified after a normal reload landed on Marketplace root. No repeated mutation occurred. Authoritative app-id binding and the private custody caller remain open. Credential reads, secret creates, callback/scope edits, consents, native Cal Zoom writes and meetings remain zero. The exact current production database had no Zoom App/personal credential; DEV Deployment id 1 was absent; staging PostgreSQL stayed stopped and unqueried. No historical March or other-account absence is inferred. Native App Store/services remain the authority. All 39 task objects and prior fields are unchanged; no source task is closed. API/worker, notification, entitlement, cron, Apple/CalDAV, backup, image security and production acceptance remain open."
     }
   ]
 }
