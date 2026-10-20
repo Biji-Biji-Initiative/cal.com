@@ -517,7 +517,7 @@ export class BookingsController_2024_08_13 {
   }
 
   @Get("/:bookingUid/calendar-links")
-  @UseGuards(ApiAuthGuard, PermissionsGuard, BookingUidGuard)
+  @UseGuards(ApiAuthGuard, PermissionsGuard, BookingUidGuard, BookingPbacGuard)
   @Permissions([BOOKING_READ])
   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
   @ApiOperation({

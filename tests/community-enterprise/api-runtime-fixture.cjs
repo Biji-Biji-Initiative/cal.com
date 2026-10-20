@@ -13,7 +13,7 @@ const { PassportModule } = require("@nestjs/passport");
 const cookieParser = require("cookie-parser");
 const root = path.resolve(__dirname, "../..");
 
-function fixtureModules(state) {
+function fixtureModules(state, options = {}) {
   const cache = new Map();
   // Managed-token admission intentionally simulates a stale cache; the actual
   // permission repositories must still refuse revoked or diminished authority.
@@ -90,7 +90,8 @@ function fixtureModules(state) {
     PrivateLinksService,
     EventTypeOwnershipGuard,
   };
-  const substitutions = new Map([
+  /** @type {[string, object][]} */
+  const moduleEntries = [
     ["../services/private-links.service", { PrivateLinksService }],
     ["@/modules/event-types/guards/event-type-ownership.guard", { EventTypeOwnershipGuard }],
     ["../services/schedules-atom.service", { SchedulesAtomsService }],
@@ -117,7 +118,8 @@ function fixtureModules(state) {
         },
       },
     ],
-  ]);
+  ];
+  const substitutions = new Map(moduleEntries);
   if (state.permissionFixture) {
     for (const entry of [
       "tokens/tokens.repository",
@@ -159,11 +161,15 @@ function fixtureModules(state) {
           );
         if (name === "@calcom/platform-utils")
           return load(path.join(root, "packages/platform/utils/permissions.ts"));
-        if (name === "@calcom/platform-types") return nativeRequire(name);
+        if (name === "@calcom/platform-types")
+          return load(path.join(root, "packages/platform/types/index.ts"));
+        if (name === "@calcom/platform-enums")
+          return load(path.join(root, "packages/platform/enums/index.ts"));
         if (name === "@calcom/prisma") return { __esModule: true, default: state.primary.prisma };
         if (name === "@calcom/platform-libraries") {
           return Object.assign(
             {},
+            options.platformLibraries,
             ...[
               "identity/AuthentikConfig",
               "identity/AuthentikIdentity",
@@ -200,7 +206,7 @@ function fixtureModules(state) {
 }
 
 async function createApiRuntime(state, options = {}) {
-  const { load, tokens } = fixtureModules(state);
+  const { load, tokens } = fixtureModules(state, options);
   const auth = "apps/api/v2/src/modules/auth/";
   const { NextAuthSessionService } = load(path.join(root, auth, "services/next-auth-session.service.ts"));
   const { ApiAuthStrategy } = load(path.join(root, auth, "strategies/api-auth/api-auth.strategy.ts"));
@@ -250,6 +256,7 @@ async function createApiRuntime(state, options = {}) {
     UseGuards(method === null ? NextAuthGuard : ApiAuthGuard)(FixtureController.prototype, name, descriptor);
     if (method) ApiAuthGuardOnlyAllow([method])(FixtureController.prototype, name, descriptor);
   }
+  /** @type {import("@nestjs/common").Type<object>[]} */
   const controllers = [FixtureController];
   const extraProviders = [];
   if (state.permissionFixture) {
@@ -289,14 +296,16 @@ async function createApiRuntime(state, options = {}) {
     }
     Controller("permission")(PermissionController);
     Permissions([SCHEDULE_WRITE])(PermissionController);
-    for (const [name, route, required] of [
+    /** @type {[string, string, number[] | null][]} */
+    const permissionRoutes = [
       ["read", "read", [SCHEDULE_READ]],
       ["write", "write", [SCHEDULE_WRITE]],
       ["inherited", "inherited", null],
       ["client", "client/:clientId", [SCHEDULE_WRITE]],
       ["guardOnly", "guard-only", [SCHEDULE_WRITE]],
       ["guest", "guest", []],
-    ]) {
+    ];
+    for (const [name, route, required] of permissionRoutes) {
       const descriptor = Object.getOwnPropertyDescriptor(PermissionController.prototype, name);
       Req()(PermissionController.prototype, name, 0);
       Get(route)(PermissionController.prototype, name, descriptor);
@@ -324,6 +333,9 @@ async function createApiRuntime(state, options = {}) {
     controllers.push(load(path.join(apiKeys, "controllers/api-keys.controller.ts")).ApiKeysController);
     extraProviders.push(load(path.join(apiKeys, "services/api-keys.service.ts")).ApiKeysService);
   }
+  const extension = options.extend?.({ load, tokens }) ?? {};
+  controllers.push(...(extension.controllers ?? []));
+  extraProviders.push(...(extension.providers ?? []));
   const module = await Test.createTestingModule({
     imports: [PassportModule],
     controllers,

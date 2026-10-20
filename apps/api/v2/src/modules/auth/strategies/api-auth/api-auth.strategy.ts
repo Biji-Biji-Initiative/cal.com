@@ -22,7 +22,10 @@ import { TokensService } from "@/modules/tokens/tokens.service";
 import { UsersService } from "@/modules/users/services/users.service";
 import { UsersRepository, type UserWithProfile } from "@/modules/users/users.repository";
 
-export type ApiAuthGuardUser = UserWithProfile & { isSystemAdmin: boolean };
+export type ApiAuthGuardUser = UserWithProfile & {
+  isSystemAdmin: boolean;
+  apiKeyTeamId?: number | null;
+};
 export type ApiAuthGuardRequest = Request & {
   authMethod: AuthMethods;
   organizationId: number | null;
@@ -238,7 +241,7 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
       // Retain the established API field contract: a team-bound key carries its
       // exact team ID, not an inferred default organization from another profile.
       request.organizationId = teamId;
-      return user;
+      return { ...user, apiKeyTeamId: teamId };
     } catch (error) {
       if (
         error &&

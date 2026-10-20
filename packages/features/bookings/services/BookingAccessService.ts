@@ -48,10 +48,12 @@ export class BookingAccessService {
     userId,
     bookingUid,
     bookingId,
+    apiKeyTeamId,
   }: {
     userId: number;
     bookingUid?: string;
     bookingId?: number;
+    apiKeyTeamId?: number | null;
   }): Promise<boolean> {
     const bookingRepo = new BookingRepository(this.prismaClient);
 
@@ -70,6 +72,23 @@ export class BookingAccessService {
       select: { locked: true },
     });
     if (!actor || actor.locked !== false) return false;
+
+    // A team-bound credential restricts the retained user authority even when
+    // its owner organizes bookings in several teams or has a personal booking.
+    if (apiKeyTeamId !== undefined && apiKeyTeamId !== null) {
+      const resourceTeamId = booking.eventType?.teamId ?? booking.eventType?.parent?.teamId;
+      if (!Number.isSafeInteger(apiKeyTeamId) || apiKeyTeamId <= 0 || resourceTeamId !== apiKeyTeamId)
+        return false;
+      if (
+        !(await this.permissionCheckService.checkPermission({
+          userId,
+          teamId: apiKeyTeamId,
+          permission: "booking.readTeamBookings",
+          fallbackRoles: [MembershipRole.OWNER, MembershipRole.ADMIN],
+        }))
+      )
+        return false;
+    }
 
     // Case 1: User is the booking organizer
     if (userId === booking.userId) return true;

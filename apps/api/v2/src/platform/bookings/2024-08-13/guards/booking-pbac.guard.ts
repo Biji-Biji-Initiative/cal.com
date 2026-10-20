@@ -1,33 +1,28 @@
-import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
-import { PrismaReadService } from "@/modules/prisma/prisma-read.service";
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  UnauthorizedException,
-  BadRequestException,
-} from "@nestjs/common";
-import { Request } from "express";
-
 import { BookingAccessService } from "@calcom/platform-libraries";
+import {
+  BadRequestException,
+  type CanActivate,
+  type ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
+import type { Request } from "express";
+import type { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
+import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
 
 @Injectable()
 export class BookingPbacGuard implements CanActivate {
   private bookingAccessService: BookingAccessService;
 
-  constructor(private readonly prismaReadService: PrismaReadService) {
-    this.bookingAccessService = new BookingAccessService(
-      this.prismaReadService.prisma
-    );
+  constructor(private readonly prismaWriteService: PrismaWriteService) {
+    this.bookingAccessService = new BookingAccessService(this.prismaWriteService.prisma);
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
       .switchToHttp()
-      .getRequest<
-        Request & { user?: ApiAuthGuardUser; pbacAuthorizedRequest?: boolean }
-      >();
+      .getRequest<Request & { user?: ApiAuthGuardUser; pbacAuthorizedRequest?: boolean }>();
     const user = request.user;
     const bookingUid = request.params.bookingUid;
 
@@ -36,16 +31,14 @@ export class BookingPbacGuard implements CanActivate {
     }
 
     if (!bookingUid) {
-      throw new BadRequestException(
-        "BookingPbacGuard - bookingUid is required"
-      );
+      throw new BadRequestException("BookingPbacGuard - bookingUid is required");
     }
 
-    const hasAccess =
-      await this.bookingAccessService.doesUserIdHaveAccessToBooking({
-        userId: user.id,
-        bookingUid,
-      });
+    const hasAccess = await this.bookingAccessService.doesUserIdHaveAccessToBooking({
+      userId: user.id,
+      bookingUid,
+      apiKeyTeamId: user.apiKeyTeamId,
+    });
 
     if (!hasAccess) {
       throw new ForbiddenException(

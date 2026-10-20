@@ -1,0 +1,17 @@
+{
+  "extends": "../../apps/api/v2/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "files": [
+    "../../apps/api/v2/src/modules/auth/strategies/api-auth/api-auth.strategy.ts",
+    "../../apps/api/v2/src/platform/bookings/2024-08-13/guards/booking-pbac.guard.ts",
+    "../../apps/api/v2/src/platform/bookings/2024-08-13/controllers/bookings.controller.ts",
+    "../../packages/features/bookings/services/BookingAccessService.ts",
+    "../../packages/types/business-days-plugin.d.ts",
+    "../../packages/types/window.d.ts"
+  ],
+  "include": ["../../packages/types/*.d.ts"],
+  "exclude": []
+}
