@@ -64,7 +64,7 @@ export function parseScimRequest(input: {
   if (parts.length < 1 || parts.length > 2 || (parts[0] !== "Users" && parts[0] !== "Groups")) {
     throw new Error("SCIM path must target Users or Groups");
   }
-  if (parts.length === 2) requiredText(parts[1], "resource id", 256);
+  if (parts.length === 2 || method !== "GET") requiredText(parts[1], "resource id", 256);
   if (input.query && Object.keys(input.query).some((key) => /token|credential|authorization/i.test(key))) {
     throw new Error("SCIM credentials must not be supplied in query parameters");
   }

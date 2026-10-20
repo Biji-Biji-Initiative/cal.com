@@ -82,6 +82,39 @@ test("SCIM transport requires a bearer credential and canonical resource route",
   );
 });
 
+for (const [method, resource] of [
+  ["PUT", "Users"],
+  ["PATCH", "Groups"],
+]) {
+  test(`SCIM ${method} ${resource} requires an explicit resource identity`, () => {
+    const input = { method, authorization: "Bearer directory-token-1234" };
+    for (const suffix of ["", "/"]) {
+      assert.throws(
+        () => parseScimRequest({ ...input, path: `/scim/v2/${resource}${suffix}` }),
+        /resource id/
+      );
+    }
+    const parsed = parseScimRequest({ ...input, path: `/scim/v2/${resource}/directory-resource-7` });
+    assert.equal(parsed.method, method);
+    assert.equal(parsed.resource, resource);
+    assert.equal(parsed.resourceId, "directory-resource-7");
+  });
+}
+
+test("SCIM GET retains collection paging and individual resource routes", () => {
+  for (const resource of ["Users", "Groups"]) {
+    const input = { method: "GET", authorization: "Bearer directory-token-1234" };
+    const collection = parseScimRequest({
+      ...input,
+      path: `/scim/v2/${resource}`,
+      query: { startIndex: "1", count: "10" },
+    });
+    assert.equal(collection.resourceId, null);
+    const individual = parseScimRequest({ ...input, path: `/scim/v2/${resource}/directory-resource-7` });
+    assert.equal(individual.resourceId, "directory-resource-7");
+  }
+});
+
 test("group PATCH admits only member add/remove operations", () => {
   const parsed = parseScimGroupPatch({
     schemas: [SCIM_PATCH_SCHEMA],
