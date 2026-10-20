@@ -179,3 +179,44 @@ personal-key host/team membership boundaries remain unfinished, as does the
 post-list hydration gap. Key revocation already admitted in flight is not claimed
 atomically canceled. Full API assembly, provider/identity/deployed acceptance and
 original programme gates remain separate; CAL-05.API is still `in_progress`.
+
+## Current personal-key resource membership continuation
+
+Source predecessor `e835a200354fba92dd3a70adc6484edb4c2f6b83`; the same native API
+leaf and worker continue under five freshly clear exclusive path leases.
+
+The next eight old-source failures demonstrated that personal-key admission alone
+let retained owner/Host rows revive private team access after membership or
+custom-role changes. Managed-parent and parent-organization revocation had the
+same gap, and a personal credential could still delete a revoked team resource.
+A personal key's instance-admin flag replaced a resource relationship. The native
+organization-admin lookup also classified every parentless standalone team as an
+organization, exposing a coworker's personal seated roster.
+
+The retained event authority now intersects current resource-team/action policy
+before its existing owner/Host/admin relations, including personal credentials
+and managed children. Valid member hosts remain permitted. Exact team-key
+restrictions retain their administrator ceiling. API-key authentication still
+returns its existing personal instance-role flag; that flag alone cannot grant a
+resource relationship. The existing native organization lookup now requires
+`isOrganization: true`. No alternate permission engine, role data migration,
+Host deletion or new credential model is introduced.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Expanded old source | 43 passed, 8 failed; all failures exercise real native HTTP/database authorization rather than missing harness prerequisites |
+| Fixed HTTP/domain/PG suite | 51 passed, zero failures/skips; actual runner exit 0 and owned container removal verified |
+| Positive controls | Existing personal authentication flag, accepted member Host, true organization administrator, explicit custom-role read and owner-only delete grant, public UID/attendee setting and all previous scope controls retained |
+| Native strict source/import-closure typing | Exit 0 |
+| Expanded fixture checkJs | Exit 0 |
+
+A retained Host row is explicitly asserted present after refused access; current
+membership policy supplies revocation. The real read-only/custom delete role
+controls use tracked Role/RolePermission and Membership records in the owned
+fixture. The existing PG command now runs all 51 focused cases. There is no new
+install, schema, external identity/provider call or application baseline rerun.
+
+The complete API leaf remains open. Post-list hydration, legacy/other mutation
+routes, managed-client resource binding and primary freshness of every remaining
+native relation require separate proof. Deployment, external revocation/identity,
+full native restoration and whole CI acceptance remain separate original gates.

@@ -28,24 +28,30 @@ export class EventTypeAccessService {
     if (!Number.isSafeInteger(user.id) || user.id <= 0) return false;
     const actor = await client.user.findUnique({ where: { id: user.id }, select: { locked: true } });
     if (!actor || actor.locked !== false) return false;
-    if (user.apiKeyTeamId == null) return true;
-    if (
-      !Number.isSafeInteger(user.apiKeyTeamId) ||
-      user.apiKeyTeamId <= 0 ||
-      !Number.isSafeInteger(eventTypeId) ||
-      eventTypeId <= 0
-    )
-      return false;
+    if (!Number.isSafeInteger(eventTypeId) || eventTypeId <= 0) return false;
     const event = await client.eventType.findUnique({
       where: { id: eventTypeId },
       select: { teamId: true, parent: { select: { teamId: true } } },
     });
-    if (!event || (event.teamId ?? event.parent?.teamId) !== user.apiKeyTeamId) return false;
+    if (!event) return false;
+    const resourceTeamId = event.teamId ?? event.parent?.teamId;
+    if (
+      user.apiKeyTeamId != null &&
+      (!Number.isSafeInteger(user.apiKeyTeamId) ||
+        user.apiKeyTeamId <= 0 ||
+        resourceTeamId !== user.apiKeyTeamId)
+    )
+      return false;
+    if (resourceTeamId == null) return true;
+    // A retained owner or Host relation must not revive a revoked team grant.
     return new PermissionCheckService(client).checkPermission({
       userId: user.id,
-      teamId: user.apiKeyTeamId,
+      teamId: resourceTeamId,
       permission,
-      fallbackRoles: ["ADMIN", "OWNER"],
+      fallbackRoles:
+        user.apiKeyTeamId == null && permission === "eventType.read"
+          ? ["MEMBER", "ADMIN", "OWNER"]
+          : ["ADMIN", "OWNER"],
     });
   }
 
@@ -56,7 +62,7 @@ export class EventTypeAccessService {
     const teamId = eventType.teamId;
     const eventTypeOwnerId = eventType.userId || null;
 
-    if (authUser.isSystemAdmin) return true;
+    if (authUser.isSystemAdmin && authUser.apiKeyTeamId === undefined) return true;
 
     if (eventTypeOwnerId === authUserId) return true;
 

@@ -691,3 +691,134 @@ test("native seated detail retains accepted team administrator authority", async
   assert.equal(result.status, 200);
   assert.equal(result.body.data.attendees.length, 2);
 });
+
+test("personal owner credential cannot revive revoked team attendee access", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("allowed", personal);
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { accepted: false },
+  });
+  assert.equal((await admitted(personal)).id, owner.id);
+  const result = await detail("allowed", personal);
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+test("retained native Host requires accepted resource membership", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("allowed", personal);
+  const event = await db.eventType.findFirstOrThrow({ where: { slug: "allowed" } });
+  await db.eventType.update({ where: { id: event.id }, data: { userId: other.id } });
+  const membership = await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { role: "MEMBER" },
+  });
+  await db.host.create({ data: { userId: owner.id, eventTypeId: event.id, memberId: membership.id } });
+  assert.equal((await detail("allowed", personal)).body.data.attendees.length, 2);
+  await db.membership.update({ where: { id: membership.id }, data: { accepted: false } });
+  const result = await detail("allowed", personal);
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+  assert.equal(await db.host.count({ where: { eventTypeId: event.id, userId: owner.id } }), 1);
+});
+test("personal resource read observes custom-role action rather than stale ADMIN label", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("allowed", personal);
+  await db.role.create({
+    data: {
+      id: "resource-role",
+      name: "Limited",
+      teamId: team.id,
+      permissions: { create: { resource: "booking", action: "readTeamBookings" } },
+    },
+  });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { customRoleId: "resource-role" },
+  });
+  assert.deepEqual((await detail("allowed", personal)).body.data.attendees, []);
+  await db.rolePermission.create({
+    data: { roleId: "resource-role", resource: "eventType", action: "read" },
+  });
+  assert.equal((await detail("allowed", personal)).body.data.attendees.length, 2);
+});
+test("personal credential cannot delete a team resource after membership revocation", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  const event = await eventToDelete();
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { accepted: false },
+  });
+  assert.equal((await removeEvent(event.id, personal)).status, 404);
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 1);
+});
+test("personal instance-admin key flag cannot replace a resource relationship", async () => {
+  await db.user.update({ where: { id: owner.id }, data: { role: "ADMIN" } });
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  const principal = await admitted(personal);
+  assert.equal(principal.isSystemAdmin, true);
+  assert.equal(principal.apiKeyTeamId, null);
+  await seated("personal", personal);
+  await db.eventType.updateMany({ where: { slug: "personal" }, data: { userId: other.id } });
+  const result = await detail("personal", personal);
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+test("standalone team administrator is not coworker organization administrator", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("personal", personal);
+  await db.eventType.updateMany({ where: { slug: "personal" }, data: { userId: other.id } });
+  await db.membership.create({ data: { userId: other.id, teamId: team.id, accepted: true, role: "MEMBER" } });
+  assert.deepEqual((await detail("personal", personal)).body.data.attendees, []);
+  const org = await db.team.create({ data: { name: "Real organization", isOrganization: true } });
+  for (const [userId, role] of [
+    [owner.id, "OWNER"],
+    [other.id, "MEMBER"],
+  ])
+    await db.membership.create({ data: { userId, role, teamId: org.id, accepted: true } });
+  assert.equal((await detail("personal", personal)).body.data.attendees.length, 2);
+});
+test("managed parent team membership constrains personal owner detail", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("personal", personal);
+  const parent = await db.eventType.findFirstOrThrow({ where: { slug: "allowed" } });
+  await db.eventType.updateMany({ where: { slug: "personal" }, data: { parentId: parent.id } });
+  assert.equal((await detail("personal", personal)).body.data.attendees.length, 2);
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { accepted: false },
+  });
+  assert.deepEqual((await detail("personal", personal)).body.data.attendees, []);
+});
+test("parent organization revocation constrains a leftover accepted child grant", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("allowed", personal);
+  const org = await db.team.create({ data: { name: "Parent organization", isOrganization: true } });
+  await db.team.update({ where: { id: team.id }, data: { parentId: org.id } });
+  const root = await db.membership.create({
+    data: { userId: owner.id, teamId: org.id, accepted: true, role: "MEMBER" },
+  });
+  assert.equal((await detail("allowed", personal)).body.data.attendees.length, 2);
+  await db.membership.update({ where: { id: root.id }, data: { accepted: false } });
+  assert.deepEqual((await detail("allowed", personal)).body.data.attendees, []);
+});
+test("explicit current custom-role delete grant retains owner-only mutation", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  const event = await eventToDelete();
+  await db.role.create({
+    data: {
+      id: "resource-delete",
+      name: "Delete own",
+      teamId: team.id,
+      permissions: { create: { resource: "eventType", action: "delete" } },
+    },
+  });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { role: "MEMBER", customRoleId: "resource-delete" },
+  });
+  assert.equal((await removeEvent(event.id, personal)).status, 200);
+  const unrelated = await eventToDelete(team.id, other.id);
+  assert.equal((await removeEvent(unrelated.id, personal)).status, 403);
+  assert.equal(await db.eventType.count({ where: { id: unrelated.id } }), 1);
+});
