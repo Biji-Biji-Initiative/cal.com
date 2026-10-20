@@ -155,8 +155,16 @@ local self-hosted configuration uses the source's default native setup flow.
 Acceptance uses the actual Next application: version API 200; normal first-boot
 login/setup redirects to setup UI 200; native setup API 200; independent PostgreSQL
 readback of the exact owned data directory and one user/password row; setup replay
-400; then login UI 200. A listening port or SCIM fixture alone is insufficient.
-This does not prove authenticated staff sessions, booking/calendar journeys,
+400; then login UI 200. It also exercises the native NextAuth HTTP flow with
+synthetic credentials: anonymous session; CSRF; wrong-password denial 401 and
+still anonymous; correct-password sign-in; session ID/username/email/role matching
+the independent database row; fresh CSRF; sign-out; anonymous session again.
+Cookies, passwords and CSRF tokens stay in memory, with only booleans and HTTP
+status/body hashes in the receipt. The bounded cookie jar accepts only cookies
+usable on this loopback HTTP origin and refuses unrelated/secure cookie scopes.
+A listening port or SCIM fixture alone is insufficient.
+This proves the independent local native session, not deployed Authentik staff
+sessions, booking/calendar journeys,
 API v2, native IdP/provider behavior, all native feature restoration or a release.
 
 The observed public font download failure is recorded separately; requests to

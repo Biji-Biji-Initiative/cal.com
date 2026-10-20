@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline controls for local app isolation; no application/provider credentials."""
 import importlib.util
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -82,6 +83,68 @@ class LocalAppControls(unittest.TestCase):
             if child.poll() is None:
                 app.stop(child)
             child.stdout.close()
+
+    def test_memory_only_cookie_jar_handles_rotation_chunks_and_expiry(self):
+        jar = app.LocalCookies()
+        jar.capture(["next-auth.csrf-token=fake%7Cproof; Path=/; HttpOnly",
+                     "next-auth.session-token.0=fake-part-one; Path=/; HttpOnly",
+                     "next-auth.session-token.1=fake-part-two; Path=/; HttpOnly"])
+        self.assertIn("next-auth.session-token.0=fake-part-one", jar.header())
+        self.assertIn("next-auth.session-token.1=fake-part-two", jar.header())
+        jar.capture(["next-auth.session-token.0=; Max-Age=0; Path=/",
+                     "next-auth.session-token.1=; Max-Age=0; Path=/"])
+        self.assertNotIn("session-token", jar.header())
+        jar.capture(["next-auth.csrf-token=rotated; Path=/; HttpOnly"])
+        self.assertEqual(jar.header(), "next-auth.csrf-token=rotated")
+        self.assertNotIn("rotated", repr(jar))
+
+    def test_cookie_budget_and_header_injection_are_refused_without_echoing_values(self):
+        for headers in [["fake=secret\r\nInjected: value"], ["fake=" + "x" * 17000],
+                        ["fake=secret; Secure"], ["fake=secret; Domain=foreign.invalid"],
+                        ["fake=secret; Path=/foreign"],
+                        [f"fake{i}=x" for i in range(33)]]:
+            with self.subTest(), self.assertRaisesRegex(RuntimeError, "^invalid_local_cookie$"):
+                app.LocalCookies().capture(headers)
+
+    def test_real_session_contract_requires_denial_exact_database_identity_and_signout(self):
+        expected = {"id": 7, "username": "synthetic-person", "email": "synthetic@example.test", "role": "ADMIN"}
+        payload = {"email_address": expected["email"], "password": "fake-local-password"}
+        paths = []
+        responses = [(200, {}), (200, {"csrfToken": "fake-csrf"}), (401, {"url": "/auth/error"}),
+                     (200, {}), (200, {"url": "/event-types"}),
+                     (200, {"user": expected}), (200, {"csrfToken": "next-fake-csrf"}),
+                     (200, {"url": "/auth/login"}), (200, {})]
+        def request(path, body=None, form=False):
+            paths.append((path, body, form))
+            status, response = responses.pop(0)
+            return status, json.dumps(response).encode()
+        result = app.qualify_local_session(request, payload, expected)
+        self.assertTrue(all(result.values()))
+        self.assertEqual(len(paths), 9)
+        self.assertNotEqual(paths[2][1]["password"], payload["password"])
+        self.assertEqual(paths[4][1]["password"], payload["password"])
+        self.assertTrue(paths[4][2])
+        self.assertEqual(paths[7][1]["csrfToken"], "next-fake-csrf")
+        self.assertNotIn("fake-csrf", json.dumps(result))
+        self.assertNotIn(payload["password"], json.dumps(result))
+
+    def test_session_contract_rejects_accidental_authentication_wrong_user_and_ineffective_signout(self):
+        expected = {"id": 7, "username": "synthetic-person", "email": "synthetic@example.test", "role": "ADMIN"}
+        payload = {"email_address": expected["email"], "password": "fake-local-password"}
+        base = [(200, {}), (200, {"csrfToken": "fake-csrf"}), (401, {}), (200, {}), (200, {}),
+                (200, {"user": expected}), (200, {"csrfToken": "fake-csrf"}), (200, {}), (200, {})]
+        for index, replacement in [(3, (200, {"user": expected})),
+                                   (2, (500, {})), (2, (200, {})),
+                                   (5, (200, {"user": {**expected, "id": 8}})),
+                                   (5, (500, {"user": expected})),
+                                   (8, (200, {"user": expected}))]:
+            responses = list(base)
+            responses[index] = replacement
+            def request(*_args, **_kwargs):
+                status, response = responses.pop(0)
+                return status, json.dumps(response).encode()
+            with self.subTest(index=index), self.assertRaises(RuntimeError):
+                app.qualify_local_session(request, payload, expected)
 
 
 if __name__ == "__main__":

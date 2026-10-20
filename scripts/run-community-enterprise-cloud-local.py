@@ -4,6 +4,7 @@ import argparse
 import ctypes
 import hashlib
 import http.client
+from http.cookies import CookieError, SimpleCookie
 import importlib.util
 import json
 import os
@@ -16,7 +17,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote, urlencode, urlsplit
 
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent.parent
@@ -41,6 +42,78 @@ def local_redirect(location):
     if parsed.scheme or parsed.netloc or parsed.fragment or any(ord(c) < 32 for c in location):
         raise RuntimeError("invalid_local_redirect")
     return location
+
+
+class LocalCookies:
+    """In-memory cookies for the doctor's single fixed loopback origin."""
+
+    def __init__(self):
+        self._cookies = {}
+
+    def capture(self, headers):
+        updated = self._cookies.copy()
+        try:
+            if sum(len(value) for value in headers) > 16384:
+                raise ValueError()
+            for value in headers:
+                if any(ord(c) < 32 or ord(c) > 126 for c in value):
+                    raise ValueError()
+                parsed = SimpleCookie()
+                parsed.load(value)
+                if not parsed:
+                    raise ValueError()
+                for name, cookie in parsed.items():
+                    if not re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", name) or re.search(r"[\s;,]", cookie.value):
+                        raise ValueError()
+                    if cookie["secure"] or cookie["domain"] not in ("", "localhost") or cookie["path"] not in ("", "/"):
+                        raise ValueError()
+                    if cookie["max-age"] and int(cookie["max-age"]) <= 0:
+                        updated.pop(name, None)
+                    else:
+                        updated[name] = cookie.value
+            if len(updated) > 32 or len(self._header(updated)) > 16384:
+                raise ValueError()
+        except (CookieError, ValueError):
+            raise RuntimeError("invalid_local_cookie") from None
+        self._cookies = updated
+
+    @staticmethod
+    def _header(cookies):
+        return "; ".join(name + "=" + value for name, value in cookies.items())
+
+    def header(self):
+        return self._header(self._cookies)
+
+
+def qualify_local_session(request, payload, expected):
+    def anonymous():
+        code, body = request("/api/auth/session")
+        if code != 200 or json.loads(body) != {}:
+            raise RuntimeError("anonymous_session_failed")
+
+    def csrf():
+        code, body = request("/api/auth/csrf")
+        token = json.loads(body).get("csrfToken")
+        if code != 200 or not isinstance(token, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,256}", token):
+            raise RuntimeError("local_csrf_failed")
+        return token
+
+    anonymous()
+    credentials = {"email": payload["email_address"], "password": payload["password"],
+                   "csrfToken": csrf(), "json": "true", "callbackUrl": "/event-types"}
+    if request("/api/auth/callback/credentials", {**credentials, "password": payload["password"] + "-wrong"}, form=True)[0] != 401:
+        raise RuntimeError("bad_password_denial_failed")
+    anonymous()
+    if request("/api/auth/callback/credentials", credentials, form=True)[0] != 200:
+        raise RuntimeError("native_credentials_failed")
+    code, body = request("/api/auth/session")
+    user = json.loads(body).get("user", {})
+    if code != 200 or any(user.get(key) != value for key, value in expected.items()):
+        raise RuntimeError("exact_database_session_failed")
+    if request("/api/auth/signout", {"csrfToken": csrf(), "json": "true", "callbackUrl": "/auth/login"}, form=True)[0] != 200:
+        raise RuntimeError("native_signout_failed")
+    anonymous()
+    return {"anonymous": True, "bad_password_denied": True, "exact_database_user": True, "native_signout": True}
 
 
 def subreaper():
@@ -121,17 +194,24 @@ def execute(args):
         if record["exits"].get(name) != 0:
             raise RuntimeError(name + "_failed")
 
-    def request(path, body=None):
+    cookies = LocalCookies()
+
+    def request(path, body=None, form=False):
+        local_redirect(path)
         stage("http_" + path.replace("/", "_"))
         client = http.client.HTTPConnection("127.0.0.1", args.port, timeout=remaining(240))
         try:
-            data = json.dumps(body).encode() if body is not None else None
-            client.request("POST" if data else "GET", path, data,
-                           {"Content-Type": "application/json"} if data else {})
+            data = (urlencode(body) if form else json.dumps(body)).encode() if body is not None else None
+            headers = {"Content-Type": "application/x-www-form-urlencoded" if form else "application/json"} if data else {}
+            headers["Host"] = f"localhost:{args.port}"
+            if cookies.header():
+                headers["Cookie"] = cookies.header()
+            client.request("POST" if data else "GET", path, data, headers)
             response = client.getresponse()
             content = response.read(2 * 1024 * 1024 + 1)
             if len(content) > 2 * 1024 * 1024:
                 raise RuntimeError("response_budget")
+            cookies.capture(response.headers.get_all("Set-Cookie", []))
             record["probes"].append({"path": path, "method": "POST" if data else "GET",
                                      "status": response.status, "bytes": len(content),
                                      "sha256": hashlib.sha256(content).hexdigest(),
@@ -172,6 +252,7 @@ def execute(args):
             for name in [".env", ".env.local", ".env.development", ".env.development.local", ".env.production", ".env.production.local", ".env.appStore"]:
                 if os.path.lexists(directory / name):
                     raise RuntimeError("existing_environment_file_refused")
+        stage("local_port_preflight")
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", args.port))
         inspected = pg.docker(["image", "inspect", args.image, "--format", "{{json .RepoDigests}}"])
@@ -250,7 +331,7 @@ def execute(args):
                        "email_address": "cloud-local-proof@example.test", "password": secrets.token_urlsafe(24) + "Aa4!"}
             if request("/api/auth/setup", payload)[0] != 200:
                 raise RuntimeError("native_setup_failed")
-            query = """const {Pool}=require('pg');const p=new Pool({connectionString:process.env.DATABASE_URL});(async()=>{const i=(await p.query("SELECT current_setting('data_directory') AS directory,current_user AS actor")).rows[0];const u=(await p.query('SELECT count(*)::int AS n FROM users')).rows[0];const w=(await p.query('SELECT count(*)::int AS n FROM "UserPassword" WHERE length(hash)>30')).rows[0];console.log(JSON.stringify({directory:i.directory,actor:i.actor,users:u.n,password_rows:w.n}));await p.end()})().catch(()=>process.exit(1));"""
+            query = """const {Pool}=require('pg');const p=new Pool({connectionString:process.env.DATABASE_URL});(async()=>{const i=(await p.query("SELECT current_setting('data_directory') AS directory,current_user AS actor")).rows[0];const u=(await p.query('SELECT count(*)::int AS n FROM users')).rows[0];const identity=(await p.query('SELECT id,username,email,role FROM users')).rows[0];const w=(await p.query('SELECT count(*)::int AS n FROM "UserPassword" WHERE length(hash)>30')).rows[0];console.log(JSON.stringify({directory:i.directory,actor:i.actor,users:u.n,password_rows:w.n,identity}));await p.end()})().catch(()=>process.exit(1));"""
             stage("database_readback")
             result = subprocess.run([args.node, "-e", query], cwd=ROOT, env=env, capture_output=True, text=True, timeout=20)
             data = json.loads(result.stdout) if result.returncode == 0 else {}
@@ -261,9 +342,17 @@ def execute(args):
             if request("/api/auth/setup", payload)[0] != 400:
                 raise RuntimeError("setup_replay_guard_failed")
             navigate("/auth/login")
+            identity = data.get("identity", {})
+            if (identity.get("email") != payload["email_address"] or identity.get("username") != payload["username"]
+                    or identity.get("role") != "ADMIN" or not isinstance(identity.get("id"), int)):
+                raise RuntimeError("exact_local_user_failed")
+            record["native_session"] = qualify_local_session(request, payload, identity)
             record["accepted"] = app.poll() is None
     except Exception as error:
+        record["failed_stage"] = record["stage"]
         record["category"] = str(error) if isinstance(error, RuntimeError) else type(error).__name__
+        if isinstance(error, OSError):
+            record["errno"] = error.errno
     finally:
         if app is not None:
             absent, reaped = stop(app)
