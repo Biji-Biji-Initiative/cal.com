@@ -110,7 +110,7 @@ before(async () => {
     "@calcom/features/eventtypes/lib/eventNaming": eventNaming,
     "@calcom/prisma/zod-utils": nativeSource("packages/prisma/zod-utils.ts"),
   });
-  const { PermissionCheckService } = load(
+  const { PermissionCheckService, hasPlatformClientScope } = load(
     path.join(root, "packages/features/community-enterprise/authorization/PermissionCheckService.ts")
   );
   const { MembershipRole } = sourceModules(db).load("packages/prisma/generated/prisma/enums.ts");
@@ -120,6 +120,7 @@ before(async () => {
     ["constructor", "isUserAHost", "doesUserIdHaveAccessToBooking"],
     {
       PermissionCheckService,
+      hasPlatformClientScope,
       MembershipRole,
       BookingRepository: class extends Repository {
         constructor(client) {
@@ -1763,4 +1764,75 @@ test("native managed client read bits cannot authorize private-link writes", asy
     (await db.hashedLink.findUniqueOrThrow({ where: { link: "synthetic-allowed-link" } })).maxUsageCount,
     2
   );
+});
+test("native managed calendar export cannot cross administered organizations", async () => {
+  const f = await managedEvents();
+  const result = await managedRequest("/v2/bookings/foreign/calendar-links", f.headers);
+  assert.equal(result.status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("native managed calendar export requires explicit personal owner association", async () => {
+  const f = await managedEvents();
+  assert.equal((await managedRequest("/v2/bookings/personal/calendar-links", f.headers)).status, 403);
+  await db.platformOAuthClient.update({
+    where: { id: f.client.id },
+    data: { users: { connect: { id: owner.id } } },
+  });
+  assert.equal((await managedRequest("/v2/bookings/personal/calendar-links", f.headers)).status, 200);
+  assert.equal(exportsCalled, 1);
+});
+test("native managed calendar export retains own child and root contracts", async () => {
+  const f = await managedEvents();
+  assert.equal((await managedRequest("/v2/bookings/allowed/calendar-links", f.headers)).status, 200);
+  await db.eventType.update({ where: { id: f.events.allowed.id }, data: { teamId: f.org.id } });
+  assert.equal((await managedRequest("/v2/bookings/allowed/calendar-links", f.headers)).status, 200);
+  assert.equal(exportsCalled, 2);
+});
+test("native managed export rechecks organization changed after booking guard", async (context) => {
+  const f = await managedEvents();
+  afterBookingAdmission(context, () =>
+    db.platformOAuthClient.update({ where: { id: f.client.id }, data: { organizationId: f.otherOrg.id } })
+  );
+  assert.equal((await managedRequest("/v2/bookings/allowed/calendar-links", f.headers)).status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("native managed export rechecks root membership revoked after booking guard", async (context) => {
+  const f = await managedEvents();
+  afterBookingAdmission(context, () =>
+    db.membership.update({
+      where: { userId_teamId: { userId: owner.id, teamId: f.org.id } },
+      data: { accepted: false },
+    })
+  );
+  assert.equal((await managedRequest("/v2/bookings/allowed/calendar-links", f.headers)).status, 403);
+  assert.equal(exportsCalled, 0);
+});
+test("native managed export retains parent scope but rejects explicit foreign team", async () => {
+  const f = await managedEvents();
+  await db.eventType.update({ where: { id: f.events.personal.id }, data: { parentId: f.events.allowed.id } });
+  assert.equal((await managedRequest("/v2/bookings/personal/calendar-links", f.headers)).status, 200);
+  await db.eventType.update({ where: { id: f.events.personal.id }, data: { teamId: foreign.id } });
+  assert.equal((await managedRequest("/v2/bookings/personal/calendar-links", f.headers)).status, 403);
+  assert.equal(exportsCalled, 1);
+});
+test("native managed export cannot borrow a secondary foreign API key", async () => {
+  const f = await managedEvents();
+  const foreignKey = await lifecycle.createApiKey(db, owner.id, { teamId: foreign.id });
+  assert.equal(
+    (
+      await managedRequest("/v2/bookings/foreign/calendar-links", {
+        ...f.headers,
+        Authorization: `Bearer ${foreignKey}`,
+      })
+    ).status,
+    403
+  );
+  assert.equal(exportsCalled, 0);
+});
+test("native managed export rechecks client deleted after booking guard", async (context) => {
+  const f = await managedEvents();
+  afterBookingAdmission(context, () => db.platformOAuthClient.delete({ where: { id: f.client.id } }));
+  assert.equal((await managedRequest("/v2/bookings/allowed/calendar-links", f.headers)).status, 403);
+  assert.equal(exportsCalled, 0);
+  assert.equal(await db.booking.count(), 4);
 });

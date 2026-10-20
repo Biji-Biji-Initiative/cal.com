@@ -503,3 +503,37 @@ optional-route permission/cache checks, legacy versions, full API image/CI and
 original runtime/provider criteria remain open. CAL-05.API stays in progress.
 No unchanged app/SCIM/audit baseline, install, external credential, provider or
 production action was repeated.
+
+## Managed-client scope in native calendar export
+
+Source predecessor `8672d2bd9e7950695e73f02d46ec0862caef5ec1`; eleven exact paths
+(nine code files) were freshly clear and leased. Original ready/inbox and actual
+active reservations were checked before selecting this existing API gap.
+
+The native booking guard and export service now retain the selected client ID.
+The previously proven current-client event predicate moved unchanged into the
+existing shared authorization module and is reused by retained BookingAccessService.
+Native booking queries select the real event owner needed for personal scope.
+Current existing event/read-team membership permission constrains client organizer
+and Host grants, just as explicit personal keys. The primary export transaction
+therefore binds resource scope, active principal, retained policy and actual output.
+Default callers and the event authority's existing behavior remain intact.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old native source | 112 passed, 7 failed: foreign/personal export, post-guard org/root-membership/deleted client, explicit foreign team over parent, secondary foreign key |
+| Fixed native HTTP/domain/PG | 119 passed, zero failures/skips; exit 0 and owned cleanup verified |
+| Positive source contracts | Own child and root exports, explicit personal owner association, managed-parent fallback, real calendar/ICS output and all prior key/role/client event controls retained |
+| Native strict source/import closure and fixture checkJs | Both exit 0 |
+| Affected shared authorization/inventory source checks | 68 passed |
+
+The current client predicate has one implementation. It supplements the existing
+membership and booking relation authority; it does not replace it or grant access
+from a client association alone. All database reads for export use the existing
+primary read-only snapshot. Actual database changes commit between native guard
+and native service, and refused authority never reaches calendar generation.
+
+Client listing still loses selected scope; optional-route permission/cache,
+complete access-token resource coverage, other API versions and original runtime
+criteria remain open. CAL-05.API and the original 39-node programme are not closed.
+No install, unchanged app/SCIM/audit baseline, provider or production action ran.

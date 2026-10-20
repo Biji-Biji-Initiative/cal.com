@@ -53,3 +53,29 @@ export class PermissionCheckService extends PermissionPolicy {
     });
   }
 }
+
+export async function hasPlatformClientScope(
+  client: Pick<PrismaClient, "platformOAuthClient">,
+  clientId: string,
+  resource: { userId: number | null; teamId: number | null; parent?: { teamId: number | null } | null }
+): Promise<boolean> {
+  if (typeof clientId !== "string" || !clientId) return false;
+  const resourceTeamId = resource.teamId ?? resource.parent?.teamId;
+  const scopedClient = await client.platformOAuthClient.findFirst({
+    where: {
+      id: clientId,
+      organization: {
+        isOrganization: true,
+        parentId: null,
+        ...(resourceTeamId == null
+          ? {}
+          : {
+              OR: [{ id: resourceTeamId }, { children: { some: { id: resourceTeamId } } }],
+            }),
+      },
+      ...(resourceTeamId == null ? { users: { some: { id: resource.userId ?? -1 } } } : {}),
+    },
+    select: { id: true },
+  });
+  return scopedClient !== null;
+}

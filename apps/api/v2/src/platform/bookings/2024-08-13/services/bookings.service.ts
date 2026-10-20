@@ -1222,6 +1222,7 @@ export class BookingsService_2024_08_13 {
           userId: user.id,
           bookingUid,
           apiKeyTeamId: user.apiKeyTeamId,
+          apiClientId: user.apiClientId,
           client,
         });
         if (!hasAccess) throw new ForbiddenException("Booking calendar export is unavailable");

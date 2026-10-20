@@ -38,6 +38,7 @@ export class BookingPbacGuard implements CanActivate {
       userId: user.id,
       bookingUid,
       apiKeyTeamId: user.apiKeyTeamId,
+      apiClientId: user.apiClientId,
     });
 
     if (!hasAccess) {

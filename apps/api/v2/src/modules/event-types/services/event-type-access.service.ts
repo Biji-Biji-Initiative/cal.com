@@ -1,4 +1,4 @@
-import { PermissionCheckService } from "@calcom/platform-libraries";
+import { hasPlatformClientScope, PermissionCheckService } from "@calcom/platform-libraries";
 import type { EventType, Prisma } from "@calcom/prisma/client";
 import { Injectable } from "@nestjs/common";
 import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
@@ -70,26 +70,9 @@ export class EventTypeAccessService {
     });
     if (!event) return null;
     const resourceTeamId = event.teamId ?? event.parent?.teamId;
-    if (user.apiClientId !== undefined) {
-      if (typeof user.apiClientId !== "string" || !user.apiClientId) return null;
-      const scopedClient = await client.platformOAuthClient.findFirst({
-        where: {
-          id: user.apiClientId,
-          organization: {
-            isOrganization: true,
-            parentId: null,
-            ...(resourceTeamId == null
-              ? {}
-              : {
-                  OR: [{ id: resourceTeamId }, { children: { some: { id: resourceTeamId } } }],
-                }),
-          },
-          ...(resourceTeamId == null ? { users: { some: { id: event.userId ?? -1 } } } : {}),
-        },
-        select: { id: true },
-      });
-      if (!scopedClient) return null;
-    }
+    if (user.apiClientId !== undefined && !(await hasPlatformClientScope(client, user.apiClientId, event)))
+      return null;
+
     if (
       user.apiKeyTeamId != null &&
       (!Number.isSafeInteger(user.apiKeyTeamId) ||

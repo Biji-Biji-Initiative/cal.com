@@ -501,6 +501,7 @@ export class BookingRepository implements IBookingRepository {
         },
         eventType: {
           select: {
+            userId: true,
             teamId: true,
             parent: {
               select: {
@@ -553,6 +554,7 @@ export class BookingRepository implements IBookingRepository {
         },
         eventType: {
           select: {
+            userId: true,
             teamId: true,
             parent: {
               select: {

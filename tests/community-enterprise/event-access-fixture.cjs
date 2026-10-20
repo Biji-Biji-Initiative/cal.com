@@ -32,7 +32,7 @@ function eventAccessFixture({ native, load, db, root }) {
   const membershipService = Object.assign(new MembershipService(), { membershipsRepository: membership });
   const Teams = native(`${base}modules/teams/teams/teams.repository.ts`, "TeamsRepository", ["getById"]);
   const teams = Object.assign(new Teams(), { dbRead: { prisma: db } });
-  const { PermissionCheckService } = load(
+  const { PermissionCheckService, hasPlatformClientScope } = load(
     path.join(root, "packages/features/community-enterprise/authorization/PermissionCheckService.ts")
   );
   const { EventTypeAccessService } = compile(
@@ -46,7 +46,7 @@ function eventAccessFixture({ native, load, db, root }) {
       "@/modules/teams/teams/teams.repository": { TeamsRepository: Teams },
       "@/modules/prisma/prisma-write.service": { PrismaWriteService: class {} },
       "@nestjs/common": nest,
-      "@calcom/platform-libraries": { PermissionCheckService },
+      "@calcom/platform-libraries": { PermissionCheckService, hasPlatformClientScope },
     }
   );
   const access = new EventTypeAccessService(repository, membership, membershipService, teams, { prisma: db });

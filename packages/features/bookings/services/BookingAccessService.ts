@@ -1,4 +1,7 @@
-import { PermissionCheckService } from "@calcom/features/community-enterprise/authorization/PermissionCheckService";
+import {
+  hasPlatformClientScope,
+  PermissionCheckService,
+} from "@calcom/features/community-enterprise/authorization/PermissionCheckService";
 import type { PrismaClient } from "@calcom/prisma";
 import type { Prisma } from "@calcom/prisma/client";
 import { MembershipRole } from "@calcom/prisma/enums";
@@ -46,13 +49,18 @@ export class BookingAccessService {
     bookingUid,
     bookingId,
     apiKeyTeamId,
+    apiClientId,
     client = this.prismaClient,
   }: {
     userId: number;
     bookingUid?: string;
     bookingId?: number;
     apiKeyTeamId?: number | null;
-    client?: Pick<Prisma.TransactionClient, "booking" | "user" | "membership" | "team">;
+    apiClientId?: string;
+    client?: Pick<
+      Prisma.TransactionClient,
+      "booking" | "user" | "membership" | "team" | "platformOAuthClient"
+    >;
   }): Promise<boolean> {
     const bookingRepo = new BookingRepository(this.prismaClient);
     const permissionCheckService = new PermissionCheckService(client);
@@ -73,6 +81,12 @@ export class BookingAccessService {
     });
     if (!actor || actor.locked !== false) return false;
 
+    if (
+      apiClientId !== undefined &&
+      (!booking.eventType || !(await hasPlatformClientScope(client, apiClientId, booking.eventType)))
+    )
+      return false;
+
     // A team-bound credential restricts the retained user authority even when
     // its owner organizes bookings in several teams or has a personal booking.
     if (apiKeyTeamId !== undefined && apiKeyTeamId !== null) {
@@ -90,7 +104,7 @@ export class BookingAccessService {
         return false;
     }
 
-    if (apiKeyTeamId === null) {
+    if (apiKeyTeamId === null || apiClientId !== undefined) {
       const resourceTeamId = booking.eventType?.teamId ?? booking.eventType?.parent?.teamId;
       if (
         resourceTeamId != null &&
