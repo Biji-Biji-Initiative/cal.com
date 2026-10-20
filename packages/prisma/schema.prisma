@@ -422,6 +422,7 @@ model User {
   lastActiveAt        DateTime?
   eventTypes          EventType[]          @relation("user_eventtype")
   credentials         Credential[]
+  scimIdentities      ScimUserIdentity[]
   teams               Membership[]
   bookings            Booking[]
   schedules           Schedule[]
@@ -755,6 +756,7 @@ model Membership {
   createdAt       DateTime?         @default(now())
   updatedAt       DateTime?         @updatedAt
   Host            Host[]
+  scimGrants      ScimMembershipGrant[]
 
   @@unique([userId, teamId])
   @@index([teamId])
@@ -1789,9 +1791,44 @@ model DSyncData {
   organizationId   Int?                    @unique
   org              OrganizationSettings?   @relation(fields: [organizationId], references: [organizationId], onDelete: Cascade)
   teamGroupMapping DSyncTeamGroupMapping[]
+  scimIdentities   ScimUserIdentity[]
+  scimGrants       ScimMembershipGrant[]
 
   createdAttributeToUsers AttributeToUser[] @relation("createdByDSync")
   updatedAttributeToUsers AttributeToUser[] @relation("updatedByDSync")
+}
+
+// No existing identity or membership is inferred to belong to a directory.
+model ScimUserIdentity {
+  id               String    @id @default(uuid()) @db.Uuid
+  directoryId      String
+  externalId       String
+  userId           Int
+  expectedUserUuid String    @db.Uuid
+  createdAt        DateTime  @default(now())
+  directory        DSyncData @relation(fields: [directoryId], references: [directoryId], onDelete: Restrict, onUpdate: Restrict)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([directoryId, externalId])
+  @@unique([directoryId, userId])
+  @@index([userId])
+}
+
+// Snapshots are fences for future reconciliation, never permission to adopt a local grant.
+model ScimMembershipGrant {
+  id                      String         @id @default(uuid()) @db.Uuid
+  directoryId             String
+  membershipId            Int
+  lastManagedRole         MembershipRole
+  lastManagedAccepted     Boolean
+  lastManagedCustomRoleId String?
+  lastManagedUpdatedAt    DateTime?
+  createdAt               DateTime       @default(now())
+  directory               DSyncData      @relation(fields: [directoryId], references: [directoryId], onDelete: Restrict, onUpdate: Restrict)
+  membership              Membership     @relation(fields: [membershipId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([directoryId, membershipId])
+  @@index([membershipId])
 }
 
 model DSyncTeamGroupMapping {

@@ -47,6 +47,12 @@ class CloudTaskerTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "existing executable"):
                 runner.schema_engine_environment(engine, "node", Path("/synthetic/prisma.js"))
 
+    def test_arbitrary_suite_is_refused_before_docker_or_execution(self):
+        with patch.object(pg, "docker") as docker:
+            with self.assertRaisesRegex(pg.FixtureError, "unsupported_suite"):
+                pg.execute(IMAGE, Path("/synthetic/receipt"), "node", suite="arbitrary")
+            docker.assert_not_called()
+
     def test_mutable_images_and_root_are_refused(self):
         for image in ["postgres:18", "postgres:latest", "sha256:short"]:
             with self.assertRaisesRegex(pg.FixtureError, "local_image_digest_required"):

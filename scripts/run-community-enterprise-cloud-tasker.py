@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the canonical Tasker DB suite with an owned, offline managed-Docker PG18 fixture."""
+"""Run a canonical enterprise DB suite with an owned, offline managed-Docker PG18 fixture."""
 
 import argparse
 import json
@@ -100,7 +100,9 @@ def write_wrappers(directory, container_id, receipt):
         script.chmod(0o700)
 
 
-def execute(image, receipt, node, scratch_parent=None, schema_engine=None):
+def execute(image, receipt, node, scratch_parent=None, schema_engine=None, suite="tasker"):
+    if suite not in ("tasker", "scim-provenance"):
+        raise FixtureError("unsupported_suite")
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", image):
         raise FixtureError("local_image_digest_required")
     if os.getuid() == 0:
@@ -119,7 +121,7 @@ def execute(image, receipt, node, scratch_parent=None, schema_engine=None):
     if not official:
         raise FixtureError("official_postgres_image_required")
     receipt.mkdir(mode=0o700)
-    record = {"image": image, "image_origins": origins, "runner_exit": None, "cleanup_verified": False}
+    record = {"suite": suite, "image": image, "image_origins": origins, "runner_exit": None, "cleanup_verified": False}
     started = time.monotonic()
     container_id = None
     try:
@@ -151,7 +153,7 @@ def execute(image, receipt, node, scratch_parent=None, schema_engine=None):
                 env = os.environ.copy()
                 env.update(PATH=str(Path(node).resolve().parent) + os.pathsep + env["PATH"], TZ="UTC", PYTHONDONTWRITEBYTECODE="1")
                 command = [sys.executable, str(ROOT / "scripts/run-community-enterprise-postgres.py"),
-                           "--suite", "tasker", "--pg-bin", str(wrappers), "--scratch-root", str(scratch)]
+                           "--suite", suite, "--pg-bin", str(wrappers), "--scratch-root", str(scratch)]
                 if schema_engine is not None:
                     command.extend(["--schema-engine", str(schema_engine.resolve())])
                 record["command"] = command
@@ -190,6 +192,7 @@ def execute(image, receipt, node, scratch_parent=None, schema_engine=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--suite", choices=("tasker", "scim-provenance"), default="tasker")
     parser.add_argument("--image", required=True, help="Already-local official PostgreSQL18 sha256 image ID; never pulled here")
     parser.add_argument("--receipt-dir", type=Path, required=True, help="New private receipt directory; must not exist")
     parser.add_argument("--node", default=shutil.which("node"), help="Qualified Node20 executable")
@@ -200,7 +203,7 @@ def main():
     try:
         if not args.node:
             raise FixtureError("qualified_node20_required")
-        result = execute(args.image, args.receipt_dir, args.node, args.scratch_parent, args.schema_engine)
+        result = execute(args.image, args.receipt_dir, args.node, args.scratch_parent, args.schema_engine, args.suite)
     except (FixtureError, OSError, subprocess.SubprocessError) as error:
         result = {"accepted": False, "category": str(error) if isinstance(error, FixtureError) else "local_fixture_error"}
     print(json.dumps(result))
