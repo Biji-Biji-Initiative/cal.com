@@ -175,6 +175,8 @@ async function sourceFixture(run) {
       "apps/web/public/fixture.txt",
     ])
       await write(name);
+    await write("package.json", JSON.stringify({ packageManager: "yarn@4.12.0" }));
+    await write(".yarnrc.yml", "nodeLinker: node-modules\n");
     git("add", ".");
     git("commit", "-m", "fixture source");
     const source = git("rev-parse", "HEAD");
@@ -209,6 +211,77 @@ async function sourceFixture(run) {
   }
 }
 
+function gitNativeRecords(directory, revision) {
+  const output = require("node:child_process")
+    .execFileSync(
+      "git",
+      [
+        "-C",
+        directory,
+        "ls-tree",
+        "-rlz",
+        "--full-tree",
+        revision,
+        "--",
+        "apps",
+        "packages",
+        "package.json",
+        "yarn.lock",
+        ".yarnrc.yml",
+        ".yarn",
+      ],
+      { maxBuffer: 8 * 1024 * 1024 }
+    )
+    .toString();
+  return Object.fromEntries(
+    output
+      .split("\0")
+      .filter(Boolean)
+      .map((line) => {
+        const [metadata, name] = line.split("\t");
+        const [mode, kind, blob, bytes] = metadata.trim().split(/\s+/);
+        assert.equal(kind, "blob");
+        return [name, { mode, blob, bytes: Number(bytes) }];
+      })
+  );
+}
+function fixtureNativePolicy(directory) {
+  const { execFileSync } = require("node:child_process");
+  const hash = (data) => require("node:crypto").createHash("sha256").update(data).digest("hex");
+  const records = gitNativeRecords(directory, "HEAD");
+  const read = (name) => execFileSync("git", ["-C", directory, "show", `HEAD:${name}`]);
+  const requiredSources = Object.fromEntries(
+    Object.entries(records).filter(([name]) => name.startsWith("apps/") || name.startsWith("packages/"))
+  );
+  const nativeMigrations = Object.fromEntries(
+    Object.entries(requiredSources)
+      .filter(([name]) => name.endsWith(".sql"))
+      .map(([name, record]) => [name, { bytes: record.bytes, sha256: hash(read(name)) }])
+  );
+  return {
+    schemaVersion: 1,
+    nativeCommit: "1c193cca8682b33b9866c792186033f7ef886682",
+    nativeTree: "0".repeat(40),
+    requiredSourceCount: Object.keys(requiredSources).length,
+    requiredSources,
+    nativeSchemaSha256: hash(read("packages/prisma/schema.prisma")),
+    nativeMigrationCount: Object.keys(nativeMigrations).length,
+    nativeMigrations,
+    forbiddenActiveMigrations: [],
+    reviewedSourcePorts: {},
+    reviewedAdditionalMigrations: {},
+    rootDependencyClosure: {
+      packageManager: "yarn@4.12.0",
+      generatedArtifacts: [],
+      files: Object.fromEntries(
+        ["package.json", "yarn.lock", ".yarnrc.yml"].map((name) => [
+          name,
+          { ...records[name], sha256: hash(read(name)) },
+        ])
+      ),
+    },
+  };
+}
 function preparerFor(directory, { duringTrace, duringNotices } = {}) {
   const nativeRequire = require;
   const fixtureRequire = (name) => {
@@ -230,19 +303,322 @@ function preparerFor(directory, { duringTrace, duringNotices } = {}) {
   };
   fixtureRequire.resolve = (name, options) => nativeRequire.resolve(name, options);
   const loaded = { exports: {} };
+  const fixturePolicy = fixtureNativePolicy(directory);
   const code = require("node:fs").readFileSync(
     path.resolve(__dirname, "../../scripts/prepare-enterprise-runtime.cjs"),
     "utf8"
   );
-  // Execute the real preparer with real Git/filesystem/tar; only the expensive
-  // dependency trace and notice collection are explicit miniature-fixture seams.
-  new Function("require", "module", "exports", "__dirname", code)(
-    fixtureRequire,
-    loaded,
-    loaded.exports,
-    path.join(directory, "scripts")
+  // Real Git/filesystem/tar and native source validator. This existing miniature
+  // fixture substitutes the trusted policy and expensive trace/notices, and is
+  // not evidence that this reduced repository satisfies the full native policy.
+  new Function(
+    "require",
+    "module",
+    "exports",
+    "__dirname",
+    "fixturePolicy",
+    `${code}\nreadNativePolicy = () => fixturePolicy;`
+  )(fixtureRequire, loaded, loaded.exports, path.join(directory, "scripts"), fixturePolicy);
+  return { ...loaded.exports, fixturePolicy };
+}
+
+test("native baseline pins the complete native source and refuses the reduced programme metadata", async () => {
+  const {
+    parseNativePolicy,
+    validateNativeRecords,
+    validateNativeBaseline,
+  } = require("../../scripts/prepare-enterprise-runtime.cjs");
+  const root = path.resolve(__dirname, "../..");
+  const raw = await fs.readFile(path.join(root, "scripts/native-calcom-baseline.json"), "utf8");
+  const policy = parseNativePolicy(raw);
+  assert.equal(policy.requiredSourceCount, 9430);
+  assert.equal(policy.nativeMigrationCount, 588);
+  assert.equal(policy.rootDependencyClosure, null);
+  assert.deepEqual(policy.reviewedSourcePorts, {});
+  assert.deepEqual(policy.reviewedAdditionalMigrations, {});
+  const native = gitNativeRecords(root, policy.nativeCommit);
+  const digest = validateNativeRecords(policy, native);
+  assert.match(digest, /^[a-f0-9]{64}$/);
+  assert.throws(
+    () => validateNativeRecords(policy, gitNativeRecords(root, "HEAD")),
+    /Missing or changed full-native source/
   );
-  return loaded.exports;
+  await assert.rejects(
+    validateNativeBaseline(root),
+    /ENOENT|Missing or changed full-native|wrong type, mode or size|checksum mismatch/
+  );
+  for (const change of ["missing", "noop", "mode", "extra-sql"]) {
+    const records = structuredClone(native);
+    const name = "packages/prisma/schema.prisma";
+    if (change === "missing") delete records[name];
+    if (change === "noop") records[name].blob = "0".repeat(40);
+    if (change === "mode") records[name].mode = "120000";
+    if (change === "extra-sql") records[policy.forbiddenActiveMigrations[0]] = native[name];
+    assert.throws(
+      () => validateNativeRecords(policy, records),
+      /full-native source|Unapproved active migration/
+    );
+  }
+  const { execFileSync } = require("node:child_process");
+  const script = String.raw`
+import copy,importlib.util,json,pathlib,sys
+root=pathlib.Path(sys.argv[1]);spec=importlib.util.spec_from_file_location('publisher',root/'scripts/publish-enterprise-prebuilt.py')
+m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+policy=m.native_policy();records=json.load(sys.stdin)
+assert m.native_records(policy,records)==sys.argv[2]
+raw=(root/'scripts/native-calcom-baseline.json').read_bytes();name=next(iter(policy['requiredSources']))
+entry=m.native_canonical({name:policy['requiredSources'][name]})[1:-1]
+assert raw.count(entry)==1
+try:m.parse_native_policy(raw.replace(entry,entry+b','+entry,1))
+except m.Refused as error:assert str(error)=='Duplicate JSON key'
+else:raise AssertionError('duplicate native path admitted')
+bad=copy.deepcopy(policy);name='packages/prisma/schema.prisma'
+bad['reviewedSourcePorts'][name]={**bad['requiredSources'][name],'nativeBlob':bad['requiredSources'][name]['blob'],'mode':[],'sha256':'a'*64}
+try:m.parse_native_policy(m.native_canonical(bad)+b'\n')
+except m.Refused as error:assert str(error)=='Unsupported native source mode'
+else:raise AssertionError('non-string override mode admitted')
+try:m.native_proof(policy)
+except m.Refused as error:assert 'Root dependency closure is not reviewed' in str(error)
+else:raise AssertionError('unreviewed root dependency closure admitted')
+print('native-policy-and-records-match')`;
+  assert.equal(
+    execFileSync("python3", ["-B", "-c", script, root, digest], {
+      input: JSON.stringify(native),
+      encoding: "utf8",
+      timeout: 20000,
+    }).trim(),
+    "native-policy-and-records-match"
+  );
+});
+
+test("native baseline policy refuses duplicate paths, malformed ledgers and unreviewed exemptions", async () => {
+  const { parseNativePolicy } = require("../../scripts/prepare-enterprise-runtime.cjs");
+  const raw = await fs.readFile(path.resolve(__dirname, "../../scripts/native-calcom-baseline.json"), "utf8");
+  const original = JSON.parse(raw);
+  const canonical = (value) =>
+    JSON.stringify(value, (_key, item) =>
+      item && typeof item === "object" && !Array.isArray(item)
+        ? Object.fromEntries(
+            Object.keys(item)
+              .sort()
+              .map((key) => [key, item[key]])
+          )
+        : item
+    ) + "\n";
+  assert.throws(
+    () => parseNativePolicy(raw.replace('"schemaVersion":1', '"schemaVersion":1,"schemaVersion":1')),
+    /duplicate keys/
+  );
+  const [name, row] = Object.entries(original.requiredSources)[0];
+  const entry = `${JSON.stringify(name)}:${JSON.stringify(row, Object.keys(row).sort())}`;
+  assert.equal(raw.split(entry).length, 2);
+  assert.throws(() => parseNativePolicy(raw.replace(entry, `${entry},${entry}`)), /duplicate keys/);
+  for (const change of [
+    "unsupported-mode",
+    "unknown-override",
+    "wrong-preimage",
+    "symlink-override",
+    "path-escape",
+    "null-ledger",
+    "root-incomplete",
+    "ignored-exemption",
+  ]) {
+    const policy = structuredClone(original);
+    const name = "packages/prisma/schema.prisma";
+    const row = {
+      ...policy.requiredSources[name],
+      nativeBlob: policy.requiredSources[name].blob,
+      sha256: "a".repeat(64),
+    };
+    if (change === "unsupported-mode") row.mode = "100664";
+    if (change === "wrong-preimage") row.nativeBlob = "0".repeat(40);
+    if (change === "symlink-override") {
+      row.mode = "120000";
+    }
+    policy.reviewedSourcePorts[
+      change === "unknown-override"
+        ? "apps/unknown.ts"
+        : change === "path-escape"
+          ? "packages/../escape"
+          : name
+    ] = row;
+    if (change === "null-ledger") policy.reviewedSourcePorts = null;
+    if (change === "root-incomplete")
+      policy.rootDependencyClosure = { packageManager: "yarn@4.12.0", files: {}, generatedArtifacts: [] };
+    if (change === "ignored-exemption")
+      policy.rootDependencyClosure = {
+        packageManager: "yarn@4.12.0",
+        files: Object.fromEntries(
+          ["package.json", "yarn.lock", ".yarnrc.yml"].map((key) => [
+            key,
+            { ...policy.requiredSources[name], sha256: "a".repeat(64) },
+          ])
+        ),
+        generatedArtifacts: [".yarn/patches"],
+      };
+    assert.throws(() => parseNativePolicy(canonical(policy)), /Invalid|Unsupported|Incomplete|wrong/);
+  }
+});
+
+for (const mutation of [
+  "source-bytes",
+  "source-missing",
+  "source-alias",
+  "ancestor-alias",
+  "link-escape",
+  "extra-sql",
+  "root-pending",
+  "root-lock",
+  "root-patch",
+  "generated-cache-file",
+  "generated-state-directory",
+]) {
+  test(`native baseline actual filesystem refuses ${mutation}`, async () => {
+    await sourceFixture(async ({ directory, write }) => {
+      const preparer = preparerFor(directory);
+      await preparer.validateNativeBaseline(directory);
+      const name = "apps/web/public/fixture.txt";
+      if (mutation === "source-bytes") await write(name, "changed");
+      if (mutation === "source-missing") await fs.unlink(path.join(directory, name));
+      if (mutation === "source-alias") {
+        await fs.unlink(path.join(directory, name));
+        await fs.symlink("../../../../yarn.lock", path.join(directory, name));
+      }
+      if (mutation === "ancestor-alias") {
+        await fs.rename(
+          path.join(directory, "apps/web/public"),
+          path.join(directory, "apps/web/actual-public")
+        );
+        await fs.symlink("actual-public", path.join(directory, "apps/web/public"));
+      }
+      if (mutation === "link-escape") {
+        const target = "../../../../outside";
+        const blob = require("node:crypto")
+          .createHash("sha1")
+          .update(`blob ${Buffer.byteLength(target)}\0${target}`)
+          .digest("hex");
+        preparer.fixturePolicy.requiredSources["packages/prisma/.env"] = {
+          blob,
+          bytes: Buffer.byteLength(target),
+          mode: "120000",
+        };
+        await fs.symlink(target, path.join(directory, "packages/prisma/.env"));
+      }
+      if (mutation === "extra-sql")
+        await write(
+          "packages/prisma/migrations/20260319000000_drop_workflow_tables/migration.sql",
+          "-- forbidden fixture\n"
+        );
+      if (mutation === "root-pending") preparer.fixturePolicy.rootDependencyClosure = null;
+      if (mutation === "root-lock") await write("yarn.lock", "altered lock");
+      if (mutation === "root-patch") await write(".yarn/patches/unknown.patch", "unreviewed patch");
+      if (mutation === "generated-cache-file") {
+        preparer.fixturePolicy.rootDependencyClosure.generatedArtifacts = [".yarn/cache"];
+        await write(".yarn/cache", "not a cache directory");
+      }
+      if (mutation === "generated-state-directory") {
+        preparer.fixturePolicy.rootDependencyClosure.generatedArtifacts = [".yarn/install-state.gz"];
+        await fs.mkdir(path.join(directory, ".yarn/install-state.gz"), { recursive: true });
+      }
+      await assert.rejects(
+        preparer.validateNativeBaseline(directory),
+        /Native|native|ENOENT|Unapproved|Root dependency|Dependency|Unreviewed|Unsupported generated/
+      );
+    });
+  });
+}
+
+test("legacy builder admits the native baseline before any install or compile command", async () => {
+  const recipe = await fs.readFile(path.resolve(__dirname, "../../Dockerfile"), "utf8");
+  const guard = recipe.indexOf("RUN node scripts/prepare-enterprise-runtime.cjs --check-native-baseline");
+  assert.ok(guard > recipe.indexOf("COPY packages ./packages"));
+  for (const command of ["RUN yarn", "RUN npx", "RUN npm"]) {
+    const position = recipe.indexOf(command);
+    if (position >= 0) assert.ok(guard < position);
+  }
+  const { spawnSync } = require("node:child_process");
+  const result = spawnSync(
+    process.execPath,
+    [path.resolve(__dirname, "../../scripts/prepare-enterprise-runtime.cjs"), "--check-native-baseline"],
+    { encoding: "utf8", timeout: 20000 }
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /ENOENT|Native source|full-native source/);
+  assert.doesNotMatch(result.stdout, /Preparing|Tracing|verified/);
+});
+
+test("native baseline hashes a public literal symlink without following its missing environment target", async () => {
+  await sourceFixture(async ({ directory }) => {
+    const preparer = preparerFor(directory);
+    const target = "../../.env";
+    const blob = require("node:crypto")
+      .createHash("sha1")
+      .update(`blob ${Buffer.byteLength(target)}\0${target}`)
+      .digest("hex");
+    preparer.fixturePolicy.requiredSources["packages/prisma/.env"] = {
+      blob,
+      bytes: Buffer.byteLength(target),
+      mode: "120000",
+    };
+    await fs.symlink(target, path.join(directory, "packages/prisma/.env"));
+    await assert.rejects(fs.stat(path.join(directory, "packages/prisma/.env")), { code: "ENOENT" });
+    const proof = await preparer.validateNativeBaseline(directory);
+    assert.equal(proof.migrationCount, 1);
+    assert.match(proof.sourceClosureSha256, /^[a-f0-9]{64}$/);
+  });
+});
+
+for (const mutation of ["clean", "source-noop", "wrong-policy", "root-lock", "extra-sql"]) {
+  test(`native baseline publisher reads actual source Git objects: ${mutation}`, async () => {
+    await sourceFixture(async ({ directory, write, git }) => {
+      const policy = fixtureNativePolicy(directory);
+      const canonical = (value) =>
+        JSON.stringify(value, (_key, item) =>
+          item && typeof item === "object" && !Array.isArray(item)
+            ? Object.fromEntries(
+                Object.keys(item)
+                  .sort()
+                  .map((key) => [key, item[key]])
+              )
+            : item
+        ) + "\n";
+      await write("scripts/native-calcom-baseline.json", canonical(policy));
+      if (mutation === "source-noop") await write("apps/web/public/fixture.txt", "changed source");
+      if (mutation === "wrong-policy")
+        await write(
+          "scripts/native-calcom-baseline.json",
+          canonical({ ...policy, rootDependencyClosure: null })
+        );
+      if (mutation === "root-lock") await write("yarn.lock", "changed dependency");
+      if (mutation === "extra-sql")
+        await write(
+          "packages/prisma/migrations/20260319000000_drop_workflow_tables/migration.sql",
+          "-- unapproved SQL fixture\n"
+        );
+      git("add", ".");
+      git("commit", "-m", "bound native policy fixture");
+      const script = String.raw`
+import importlib.util,json,pathlib,sys
+root=pathlib.Path(sys.argv[1]);spec=importlib.util.spec_from_file_location('publisher',root/'scripts/publish-enterprise-prebuilt.py')
+m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+# Only policy trust is a miniature fixture; Git/source/root/schema/SQL checks run.
+policy=json.load(sys.stdin);m.native_policy=lambda:policy
+expected={'source-noop':'Missing or changed full-native source','wrong-policy':'Application native policy differs',
+          'root-lock':'Dependency companion differs','extra-sql':'Unapproved active migration set'}
+try:
+ proof=m.native_source_baseline(pathlib.Path(sys.argv[2]),sys.argv[3])
+ assert sys.argv[4]=='clean' and proof==m.native_proof(policy)
+except m.Refused as error:
+ assert sys.argv[4]!='clean' and expected[sys.argv[4]] in str(error), 'wrong refusal class'
+print('actual-git-binding-control-passed')`;
+      const result = require("node:child_process").execFileSync(
+        "python3",
+        ["-B", "-c", script, path.resolve(__dirname, "../.."), directory, git("rev-parse", "HEAD"), mutation],
+        { input: JSON.stringify(policy), encoding: "utf8", timeout: 20000 }
+      );
+      assert.equal(result.trim(), "actual-git-binding-control-passed");
+    });
+  });
 }
 
 test("packaging accepts a clean exact source and ignores generated build outputs", async () => {
@@ -371,6 +747,23 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
   git('add','.');git('commit','-m','fixture publisher revision');publisher_sha=git('rev-parse','HEAD')
  build={'schemaVersion':1,'sourceSha':source,'publicOrigin':m.ORIGIN,'buildId':'fixture-build','buildManifestSha256':m.sha(b'{}'),
         'migrationEngineVersion':'6.16.1','operationsTraceFiles':743,'copiedLicenseNotices':760,'traceWarnings':[]}
+ # Explicit trusted-policy/source-binding doubles for miniature OCI/provider cases.
+ # Separate guard tests exercise the production native parser and Git boundary.
+ schema=b'native schema fixture'; sql=b'-- native migration fixture\n'
+ migration='packages/prisma/migrations/20260101000000_fixture/migration.sql'
+ def record(data):return {'mode':'100644','blob':__import__('hashlib').sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest(),'bytes':len(data)}
+ policy={'schemaVersion':1,'nativeCommit':m.NATIVE_COMMIT,'nativeTree':'0'*40,
+  'requiredSourceCount':2,'requiredSources':{'packages/prisma/schema.prisma':record(schema),migration:record(sql)},
+  'nativeSchemaSha256':m.sha(schema),'nativeMigrationCount':1,'nativeMigrations':{migration:{'bytes':len(sql),'sha256':m.sha(sql)}},
+  'forbiddenActiveMigrations':[],'reviewedSourcePorts':{},'reviewedAdditionalMigrations':{},
+  'rootDependencyClosure':{'packageManager':'yarn@4.12.0','files':{},'generatedArtifacts':[]}}
+ m.native_policy=lambda:policy
+ proof=m.native_proof(policy)
+ m.native_source_baseline=lambda _checkout,_source:proof
+ build['nativeBaseline']=proof
+ if scenario=='native-proof-forged':build['nativeBaseline']={**proof,'sourceClosureSha256':'0'*64}
+ if scenario=='native-proof-missing':build.pop('nativeBaseline')
+ if scenario=='native-proof-bool':build['nativeBaseline']={**proof,'migrationCount':True}
  for key,file in m.RECIPES.items(): build[key]=m.sha(m.git_bytes(checkout,source,file))
  config={'os':'linux','architecture':'amd64','config':{'User':'1000:1000','WorkingDir':'/calcom',
   'Entrypoint':['node','/calcom/scripts/enterprise-runtime-entrypoint.cjs'],'Cmd':['web'],'Env':['NODE_ENV=production'],
@@ -396,7 +789,7 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  if scenario=='certificate-regex-dot':config['config']['Env'][-1]='SSL_CERT_FILE=/etc/ssl/certs/ca-certificatesXcrt'
  if scenario=='duplicate-certificate':config['config']['Env'].append('SSL_CERT_FILE='+certificate)
  if scenario=='certificate-unknown-name':config['config']['Env'].append('SSL_CERT_OTHER='+certificate)
- layer_files={'calcom/enterprise-build.json':encoded(build),'calcom/apps/web/.next/BUILD_ID':b'fixture-build',
+ layer_files={'calcom/ops/packages/prisma/schema.prisma':schema,'calcom/ops/'+migration:sql,'calcom/enterprise-build.json':encoded(build),'calcom/apps/web/.next/BUILD_ID':b'fixture-build',
               'calcom/apps/web/.next/build-manifest.json':b'{}'}
  for key,file in m.RECIPES.items():
   if key in ['entrypointSha256','migrationPreflightSha256']:layer_files['calcom/'+file]=m.git_bytes(checkout,source,file)
@@ -495,7 +888,23 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  extra='calcom/node_modules/next/node_modules/extra/package.json'
  if scenario in ['nested-copy-missing','nested-copy-included','removed-copy','opaque-copy']:
   layer_files[extra]=encoded({'name':'extra','version':'2.0.0'})
+ native_schema='calcom/ops/packages/prisma/schema.prisma';native_sql='calcom/ops/'+migration
+ if scenario=='native-schema-wrong':layer_files[native_schema]=b'wrong schema'
+ if scenario=='native-schema-missing':layer_files.pop(native_schema)
+ if scenario=='native-sql-wrong':layer_files[native_sql]=b'wrong SQL'
+ if scenario=='native-sql-missing':layer_files.pop(native_sql)
+ if scenario=='native-sql-extra':layer_files['calcom/ops/packages/prisma/migrations/20260319000000_drop_workflow_tables/migration.sql']=b'-- unapproved migration fixture\n'
+ if scenario=='native-sql-renamed':layer_files[native_sql.replace('_fixture/','_renamed/')]=layer_files.pop(native_sql)
  layers=[layer_files]
+ if scenario=='native-schema-whiteout':layers.append({'calcom/ops/packages/prisma/.wh.schema.prisma':b''})
+ if scenario=='native-sql-whiteout':layers.append({'calcom/ops/packages/prisma/migrations/.wh.20260101000000_fixture':b''})
+ if scenario=='native-sql-opaque':layers.append({'calcom/ops/packages/prisma/migrations/.wh..wh..opq':b''})
+ if scenario=='native-schema-replacement':layers.append({native_schema:schema})
+ if scenario=='native-sql-replacement':layers.append({native_sql:sql})
+ if scenario=='native-sql-stale-lower':layers.append({native_sql:b'changed SQL'})
+ if scenario=='native-extra-removed':
+  layer_files['calcom/ops/packages/prisma/migrations/extra.sql']=b'not active in final layer'
+  layers.append({'calcom/ops/packages/prisma/migrations/.wh.extra.sql':b''})
  if scenario=='app-manifest-whiteout':layers.append({'calcom/apps/web/.wh.package.json':b''})
  if scenario=='app-manifest-ancestor-replaced':layers.append({'calcom/apps/web':b'replaced-directory'})
  if scenario in ['app-manifest-whiteout-replacement','app-manifest-replacement-stale-scan']:
@@ -561,6 +970,10 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
   layer_files.pop(app);alias_entries={app:(tarfile.SYMTYPE if scenario.endswith('-symlink') else tarfile.LNKTYPE,'../../../node_modules/next/package.json')}
  if scenario=='app-manifest-ancestor-alias':alias_entries={'calcom/apps/web':(tarfile.SYMTYPE,'../elsewhere')}
  layer_blobs=[];layer_descriptors=[];config['rootfs']['diff_ids']=[]
+ if scenario in ['native-schema-alias','native-sql-alias','native-sql-hardlink']:
+  key=native_schema if scenario=='native-schema-alias' else native_sql
+  layers[0].pop(key);alias_entries[key]=(tarfile.LNKTYPE if scenario=='native-sql-hardlink' else tarfile.SYMTYPE,'elsewhere')
+ if scenario=='native-sql-ancestor':alias_entries['calcom/ops/packages/prisma/migrations']=(tarfile.SYMTYPE,'elsewhere')
  for layer_number,layer_files in enumerate(layers):
   layerbuf=io.BytesIO()
   with tarfile.open(fileobj=layerbuf,mode='w') as tar:
@@ -619,7 +1032,7 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
    info.linkname='/tmp/fixture-only';tar.addfile(info)
  identity={'schemaVersion':1,'sourceSha':source,'manifestDigest':manifest_digest,'configDigest':config_digest,'completedAt':timestamp,'exitCode':0}
  container={**identity,'publicOrigin':m.ORIGIN,'buildId':build['buildId'],'nativeReceiptSha256':m.sha(b'private native fixture'),
-  'expectedMigrations':596,'appliedMigrations':596,
+  'expectedMigrations':1,'appliedMigrations':1,
   'checks':{k:True for k in ['migration','migrationReplay','nonRootReadOnlyWeb','nativePublicCallback','anonymousSession']}}
  high={'VulnerabilityID':'CVE-fixture','PkgName':'fixture-os','InstalledVersion':os_version,'Severity':'HIGH'}
  os_result={'Target':'Debian GNU/Linux','Class':'os-pkgs','Type':'debian',
@@ -662,7 +1075,8 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  if scenario=='stale-scan':scan['completedAt']='2000-01-01T00:00:00Z'
  if scenario=='incomplete-native':container['checks']['migrationReplay']=False
  if scenario=='failed-native':container['exitCode']=1
- if scenario=='migration-count':container['appliedMigrations']=595
+ if scenario=='migration-count':container['appliedMigrations']=0
+ if scenario=='native-wrong-count':container.update(expectedMigrations=596,appliedMigrations=596)
  if scenario=='container-origin':container['publicOrigin']='http://localhost:3000'
  if scenario=='failed-scan':scan['exitCode']=1
  if scenario=='wrong-scan-image':scan['report']['Metadata']['ImageID']='sha256:'+'0'*64
@@ -720,7 +1134,7 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
    assert args==['crane','blob',m.REGISTRY+'@'+config_digest]
    return response(out=encoded(config)+(b' ' if scenario=='config-readback' else b''))
   raise AssertionError('unexpected command')
- positive=scenario in ['app-manifest','app-manifest-whiteout-replacement','admit','publish','idempotent','gzip','nested-copy-included','removed-copy','opaque-copy','replaced-copy','same-layer-opaque-replacement','fetch','safe-redirect','module-marker','source-revision','database-nanoseconds','created-annotation','created-nanoseconds',
+ positive=scenario in ['native-schema-replacement','native-sql-replacement','native-extra-removed','app-manifest','app-manifest-whiteout-replacement','admit','publish','idempotent','gzip','nested-copy-included','removed-copy','opaque-copy','replaced-copy','same-layer-opaque-replacement','fetch','safe-redirect','module-marker','source-revision','database-nanoseconds','created-annotation','created-nanoseconds',
    'package-alias','alias-next-hashed','alias-absolute','alias-chain','alias-depth40','alias-removed','alias-whiteout-replacement',
    'distroless-home','distroless-certificate','distroless-certificate-actual-shape','status-d-basic','status-d-explicit','status-d-md5sums','status-d-epoch','status-d-replaced','status-d-whiteout-replacement',
    'status-d-uninstalled-record','status-d-transition','fragment-name-only','fragment-version-only','fragment-type-side-effects',
@@ -784,6 +1198,27 @@ with tempfile.TemporaryDirectory(prefix='cal-prebuilt-fixture-') as temp:
  print('fixture-control-passed')
 `;
 for (const scenario of [
+  "native-proof-forged",
+  "native-proof-missing",
+  "native-proof-bool",
+  "native-schema-wrong",
+  "native-schema-missing",
+  "native-sql-wrong",
+  "native-sql-missing",
+  "native-sql-extra",
+  "native-sql-renamed",
+  "native-schema-whiteout",
+  "native-sql-whiteout",
+  "native-sql-opaque",
+  "native-schema-replacement",
+  "native-sql-replacement",
+  "native-sql-stale-lower",
+  "native-extra-removed",
+  "native-schema-alias",
+  "native-sql-alias",
+  "native-sql-hardlink",
+  "native-sql-ancestor",
+  "native-wrong-count",
   "admit",
   "publish",
   "idempotent",
@@ -1010,7 +1445,7 @@ for (const scenario of [
   "database-nanoseconds",
   "database-metadata-hash",
 ]) {
-  test(`prebuilt publisher ${scenario} uses actual source admission with explicit native/provider fixtures`, () => {
+  test(`prebuilt publisher ${scenario} uses actual collector/admission with explicit policy/source/native/provider fixtures`, () => {
     const { execFileSync } = require("node:child_process");
     const output = execFileSync(
       "python3",

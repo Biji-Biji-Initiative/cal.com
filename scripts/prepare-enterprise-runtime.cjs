@@ -1,11 +1,405 @@
 // SPDX-License-Identifier: MIT
 const fs = require("node:fs/promises");
+const fsSync = require("node:fs");
 const path = require("node:path");
 const { execFileSync, spawn } = require("node:child_process");
 const { createHash } = require("node:crypto");
-const { nodeFileTrace } = require("next/dist/compiled/@vercel/nft");
-const { retainNotices } = require("./retain-enterprise-notices.cjs");
 const root = path.resolve(__dirname, "..");
+
+const NATIVE_COMMIT = "1c193cca8682b33b9866c792186033f7ef886682";
+const NATIVE_POLICY_CORE = "7e1a935d7aba6a51cbd6a1a7e38c65b4855ecadd1c804a1d9c69b8879cdb776c";
+const SOURCE_LIMIT = 512 * 1024 * 1024;
+const SOURCE_FILE_LIMIT = 64 * 1024 * 1024;
+const nativeHash = (data) => createHash("sha256").update(data).digest("hex");
+const nativeCanonical = (value) =>
+  JSON.stringify(value, (_key, item) =>
+    item && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(
+          Object.keys(item)
+            .sort()
+            .map((key) => [key, item[key]])
+        )
+      : item
+  );
+function nativeNeed(condition, message) {
+  if (!condition) throw new Error(message);
+}
+function nativeShape(value, keys) {
+  nativeNeed(
+    value !== null &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      Object.keys(value).sort().join(" ") === keys.split(" ").sort().join(" "),
+    "Invalid native baseline object"
+  );
+}
+function nativePath(value) {
+  nativeNeed(
+    typeof value === "string" &&
+      Buffer.byteLength(value) <= 1024 &&
+      /^[\x20-\x7e]+$/.test(value) &&
+      !value.includes("\\") &&
+      !value.startsWith("/") &&
+      value.split("/").every((part) => part && part !== "." && part !== ".."),
+    "Invalid native baseline path"
+  );
+  return value;
+}
+function nativeRecord(value, keys = "blob bytes mode") {
+  nativeShape(value, keys);
+  nativeNeed(
+    typeof value.blob === "string" &&
+      /^[a-f0-9]{40}$/.test(value.blob) &&
+      Number.isSafeInteger(value.bytes) &&
+      value.bytes >= 0 &&
+      value.bytes <= SOURCE_FILE_LIMIT &&
+      ["100644", "100755", "120000"].includes(value.mode),
+    "Invalid native source identity"
+  );
+  if (Object.hasOwn(value, "sha256"))
+    nativeNeed(
+      typeof value.sha256 === "string" && /^[a-f0-9]{64}$/.test(value.sha256),
+      "Invalid native source checksum"
+    );
+}
+function parseNativePolicy(raw) {
+  nativeNeed(Buffer.byteLength(raw) <= 2 * 1024 * 1024, "Native baseline policy exceeds bound");
+  const policy = JSON.parse(raw);
+  nativeNeed(
+    `${nativeCanonical(policy)}\n` === raw,
+    "Native baseline policy must be canonical without duplicate keys"
+  );
+  nativeShape(
+    policy,
+    "schemaVersion nativeCommit nativeTree requiredSourceCount requiredSources nativeSchemaSha256 nativeMigrationCount nativeMigrations forbiddenActiveMigrations reviewedSourcePorts reviewedAdditionalMigrations rootDependencyClosure"
+  );
+  const { reviewedSourcePorts, reviewedAdditionalMigrations, rootDependencyClosure, ...core } = policy;
+  nativeNeed(
+    policy.schemaVersion === 1 &&
+      policy.nativeCommit === NATIVE_COMMIT &&
+      nativeHash(nativeCanonical(core)) === NATIVE_POLICY_CORE,
+    "Native baseline differs from the pinned full source"
+  );
+  for (const entries of [reviewedSourcePorts, reviewedAdditionalMigrations])
+    nativeNeed(
+      entries !== null &&
+        typeof entries === "object" &&
+        !Array.isArray(entries) &&
+        Object.keys(entries).length <= 9430,
+      "Invalid reviewed native ledger"
+    );
+  for (const name of Object.keys(policy.requiredSources)) {
+    nativePath(name);
+    nativeRecord(policy.requiredSources[name]);
+    nativeNeed(name.startsWith("apps/") || name.startsWith("packages/"), "Invalid native source namespace");
+  }
+  for (const [name, record] of Object.entries(reviewedSourcePorts)) {
+    nativePath(name);
+    nativeNeed(
+      Object.hasOwn(policy.requiredSources, name) && !name.startsWith("packages/prisma/migrations/"),
+      "Unsupported native source override"
+    );
+    nativeRecord(record, "nativeBlob blob bytes mode sha256");
+    const original = policy.requiredSources[name];
+    nativeNeed(
+      record.nativeBlob === original.blob && record.mode === original.mode && record.mode !== "120000",
+      "Native override has wrong preimage or mode"
+    );
+  }
+  for (const [name, record] of Object.entries(reviewedAdditionalMigrations)) {
+    nativePath(name);
+    nativeRecord(record, "blob bytes mode sha256");
+    nativeNeed(
+      /^packages\/prisma\/migrations\/\d{14,17}_[A-Za-z0-9_]*\/migration\.sql$/.test(name) &&
+        !Object.hasOwn(policy.requiredSources, name) &&
+        !policy.forbiddenActiveMigrations.includes(name) &&
+        record.mode === "100644",
+      "Unsupported additional migration"
+    );
+  }
+  if (rootDependencyClosure !== null) {
+    nativeShape(rootDependencyClosure, "packageManager files generatedArtifacts");
+    nativeNeed(
+      typeof rootDependencyClosure.packageManager === "string" &&
+        /^yarn@\d+\.\d+\.\d+$/.test(rootDependencyClosure.packageManager),
+      "Invalid reviewed package manager"
+    );
+    const files = rootDependencyClosure.files;
+    nativeNeed(
+      files &&
+        typeof files === "object" &&
+        !Array.isArray(files) &&
+        Object.keys(files).length <= 2000 &&
+        ["package.json", "yarn.lock", ".yarnrc.yml"].every((name) => Object.hasOwn(files, name)),
+      "Incomplete root dependency closure"
+    );
+    for (const [name, record] of Object.entries(files)) {
+      nativePath(name);
+      nativeRecord(record, "blob bytes mode sha256");
+      nativeNeed(
+        (["package.json", "yarn.lock", ".yarnrc.yml"].includes(name) || name.startsWith(".yarn/")) &&
+          record.mode !== "120000",
+        "Unsupported dependency companion"
+      );
+    }
+    nativeNeed(
+      Array.isArray(rootDependencyClosure.generatedArtifacts) &&
+        new Set(rootDependencyClosure.generatedArtifacts).size ===
+          rootDependencyClosure.generatedArtifacts.length &&
+        rootDependencyClosure.generatedArtifacts.every((name) =>
+          [".yarn/cache", ".yarn/unplugged", ".yarn/install-state.gz", ".yarn/build-state.yml"].includes(name)
+        ) &&
+        rootDependencyClosure.generatedArtifacts.every(
+          (name) => !Object.keys(files).some((key) => key === name || key.startsWith(`${name}/`))
+        ),
+      "Unsupported generated-file exception"
+    );
+  }
+  return policy;
+}
+function readNativePolicy() {
+  const filename = path.join(__dirname, "native-calcom-baseline.json");
+  const before = fsSync.lstatSync(filename, { bigint: true });
+  nativeNeed(
+    before.isFile() && before.nlink === 1n && before.size <= 2n * 1024n * 1024n,
+    "Invalid native policy file"
+  );
+  const fd = fsSync.openSync(filename, fsSync.constants.O_RDONLY | fsSync.constants.O_NOFOLLOW);
+  try {
+    const opened = fsSync.fstatSync(fd, { bigint: true });
+    nativeNeed(opened.ino === before.ino && opened.dev === before.dev, "Native policy changed during read");
+    const raw = fsSync.readFileSync(fd, "utf8");
+    const after = fsSync.fstatSync(fd, { bigint: true });
+    nativeNeed(
+      after.size === before.size && after.mtimeNs === before.mtimeNs && after.ctimeNs === before.ctimeNs,
+      "Native policy changed during read"
+    );
+    return parseNativePolicy(raw);
+  } finally {
+    fsSync.closeSync(fd);
+  }
+}
+function nativeRequirements(policy) {
+  const records = { ...policy.requiredSources };
+  for (const [name, record] of Object.entries(policy.reviewedSourcePorts)) records[name] = record;
+  Object.assign(records, policy.reviewedAdditionalMigrations);
+  return records;
+}
+function nativeMigrationHashes(policy) {
+  return Object.fromEntries([
+    ...Object.entries(policy.nativeMigrations).map(([name, value]) => [name, value.sha256]),
+    ...Object.entries(policy.reviewedAdditionalMigrations).map(([name, value]) => [name, value.sha256]),
+  ]);
+}
+function validateNativeRecords(policy, records) {
+  nativeNeed(
+    records !== null &&
+      typeof records === "object" &&
+      !Array.isArray(records) &&
+      Object.keys(records).length <= 200000,
+    "Invalid native source inventory"
+  );
+  for (const [name, record] of Object.entries(records)) {
+    nativePath(name);
+    nativeRecord(record, Object.hasOwn(record, "sha256") ? "blob bytes mode sha256" : "blob bytes mode");
+  }
+  const expected = nativeRequirements(policy);
+  for (const [name, value] of Object.entries(expected)) {
+    const actual = records[name];
+    nativeNeed(
+      actual && actual.mode === value.mode && actual.blob === value.blob && actual.bytes === value.bytes,
+      `Missing or changed full-native source: ${name}`
+    );
+  }
+  const sql = Object.keys(records)
+    .filter((name) => name.startsWith("packages/prisma/migrations/") && name.endsWith(".sql"))
+    .sort();
+  nativeNeed(
+    JSON.stringify(sql) === JSON.stringify(Object.keys(nativeMigrationHashes(policy)).sort()),
+    "Unapproved active migration set"
+  );
+  return nativeHash(
+    nativeCanonical(
+      Object.fromEntries(
+        Object.entries(expected).map(([name, row]) => [
+          name,
+          { blob: row.blob, bytes: row.bytes, mode: row.mode },
+        ])
+      )
+    )
+  );
+}
+async function nativeAncestors(directory, name) {
+  let current = directory;
+  for (const part of name.split("/").slice(0, -1)) {
+    current = path.join(current, part);
+    const stat = await fs.lstat(current);
+    nativeNeed(
+      stat.isDirectory() && !stat.isSymbolicLink(),
+      "Native source ancestor is not a plain directory"
+    );
+  }
+}
+async function nativeFileIdentity(directory, name, expected, budget) {
+  nativePath(name);
+  await nativeAncestors(directory, name);
+  const filename = path.join(directory, name);
+  const before = await fs.lstat(filename, { bigint: true });
+  const git = createHash("sha1").update(`blob ${expected.bytes}\0`);
+  const hash = createHash("sha256");
+  let bytes = 0;
+  const consume = (data) => {
+    bytes += data.length;
+    budget.bytes += data.length;
+    nativeNeed(
+      bytes <= expected.bytes && budget.bytes <= SOURCE_LIMIT && Date.now() <= budget.deadline,
+      "Native source exceeds byte/time bound"
+    );
+    git.update(data);
+    hash.update(data);
+  };
+  if (expected.mode === "120000") {
+    nativeNeed(before.isSymbolicLink(), "Native source symlink was replaced");
+    const target = await fs.readlink(filename, { encoding: "buffer" });
+    const resolved = path.resolve(path.dirname(filename), target.toString("utf8"));
+    nativeNeed(
+      !path.isAbsolute(target.toString("utf8")) &&
+        (resolved === directory || resolved.startsWith(`${directory}${path.sep}`)),
+      "Native source link escapes root"
+    );
+    consume(target); // Compare the public literal link, never read its environment-file target.
+  } else {
+    nativeNeed(
+      before.isFile() &&
+        before.nlink === 1n &&
+        before.size === BigInt(expected.bytes) &&
+        (before.mode & 0o111n ? "100755" : "100644") === expected.mode,
+      "Native source has wrong type, mode or size"
+    );
+    const handle = await fs.open(filename, fsSync.constants.O_RDONLY | fsSync.constants.O_NOFOLLOW);
+    try {
+      const opened = await handle.stat({ bigint: true });
+      nativeNeed(opened.ino === before.ino && opened.dev === before.dev, "Native source changed during open");
+      const buffer = Buffer.alloc(1024 * 1024);
+      for (;;) {
+        const read = await handle.read(buffer, 0, buffer.length, null);
+        if (!read.bytesRead) break;
+        consume(buffer.subarray(0, read.bytesRead));
+      }
+    } finally {
+      await handle.close();
+    }
+  }
+  const after = await fs.lstat(filename, { bigint: true });
+  nativeNeed(
+    after.ino === before.ino &&
+      after.dev === before.dev &&
+      after.mode === before.mode &&
+      after.size === before.size &&
+      after.mtimeNs === before.mtimeNs &&
+      after.ctimeNs === before.ctimeNs &&
+      bytes === expected.bytes,
+    "Native source changed during read"
+  );
+  await nativeAncestors(directory, name);
+  const digest = hash.digest("hex");
+  nativeNeed(!expected.sha256 || digest === expected.sha256, "Native source checksum mismatch");
+  return { blob: git.digest("hex"), bytes, mode: expected.mode, sha256: digest };
+}
+async function nativeNamespaceFiles(directory, prefix, generated = []) {
+  const files = [];
+  let visited = 0;
+  const deadline = Date.now() + 60000;
+  async function visit(name) {
+    nativeNeed(++visited <= 20000 && Date.now() <= deadline, "Native namespace exceeds bound");
+    nativePath(name);
+    await nativeAncestors(directory, name);
+    let stat;
+    try {
+      stat = await fs.lstat(path.join(directory, name));
+    } catch (error) {
+      if (error.code === "ENOENT" && name === prefix) return;
+      throw error;
+    }
+    nativeNeed(!stat.isSymbolicLink(), "Native source namespace contains an alias");
+    if (generated.includes(name)) {
+      nativeNeed(
+        [".yarn/cache", ".yarn/unplugged"].includes(name)
+          ? stat.isDirectory()
+          : stat.isFile() && stat.nlink === 1,
+        "Unsupported generated dependency artifact type"
+      );
+      return;
+    }
+    if (stat.isDirectory()) {
+      for (const entry of await fs.readdir(path.join(directory, name))) await visit(`${name}/${entry}`);
+    } else {
+      nativeNeed(stat.isFile(), "Native namespace contains a special file");
+      files.push(name);
+    }
+  }
+  await visit(prefix);
+  return files;
+}
+async function validateNativeBaseline(directory) {
+  const policy = readNativePolicy();
+  const canonicalRoot = await fs.realpath(directory);
+  const budget = { bytes: 0, deadline: Date.now() + 60000 };
+  const records = {};
+  for (const [name, expected] of Object.entries(nativeRequirements(policy)))
+    records[name] = await nativeFileIdentity(canonicalRoot, name, expected, budget);
+  const sqlFiles = await nativeNamespaceFiles(canonicalRoot, "packages/prisma/migrations");
+  for (const name of sqlFiles.filter((name) => name.endsWith(".sql")))
+    nativeNeed(Object.hasOwn(records, name), "Unapproved active migration set");
+  const sourceClosureSha256 = validateNativeRecords(policy, records);
+  const schemaSha256 = records["packages/prisma/schema.prisma"].sha256;
+  const expectedSchema =
+    policy.reviewedSourcePorts["packages/prisma/schema.prisma"]?.sha256 ?? policy.nativeSchemaSha256;
+  nativeNeed(schemaSha256 === expectedSchema, "Native schema differs from the reviewed baseline");
+  const migrations = nativeMigrationHashes(policy);
+  for (const [name, digest] of Object.entries(migrations))
+    nativeNeed(records[name].sha256 === digest, "Native migration checksum differs");
+  const dependency = policy.rootDependencyClosure;
+  nativeNeed(
+    dependency !== null,
+    "Root dependency closure is not reviewed; native code alone cannot qualify a build"
+  );
+  for (const [name, expected] of Object.entries(dependency.files)) {
+    const actual = await nativeFileIdentity(canonicalRoot, name, expected, budget);
+    nativeNeed(actual.blob === expected.blob, "Dependency companion differs from the reviewed closure");
+  }
+  for (const name of await nativeNamespaceFiles(canonicalRoot, ".yarn", dependency.generatedArtifacts))
+    nativeNeed(Object.hasOwn(dependency.files, name), "Unreviewed package-manager or patch companion");
+  await nativeAncestors(canonicalRoot, "package.json");
+  const manifestHandle = await fs.open(
+    path.join(canonicalRoot, "package.json"),
+    fsSync.constants.O_RDONLY | fsSync.constants.O_NOFOLLOW
+  );
+  let manifest;
+  try {
+    const metadata = await manifestHandle.stat();
+    nativeNeed(
+      metadata.isFile() && metadata.size === dependency.files["package.json"].bytes,
+      "Root manifest changed"
+    );
+    const raw = await manifestHandle.readFile();
+    nativeNeed(nativeHash(raw) === dependency.files["package.json"].sha256, "Root manifest changed");
+    manifest = JSON.parse(raw);
+  } finally {
+    await manifestHandle.close();
+  }
+  nativeNeed(manifest.packageManager === dependency.packageManager, "Wrong reviewed package manager");
+  return {
+    schemaVersion: 1,
+    nativeCommit: policy.nativeCommit,
+    policySha256: nativeHash(`${nativeCanonical(policy)}\n`),
+    sourceClosureSha256,
+    schemaSha256,
+    migrationSetSha256: nativeHash(nativeCanonical(migrations)),
+    migrationCount: Object.keys(migrations).length,
+    rootDependencyClosureSha256: nativeHash(nativeCanonical(dependency)),
+  };
+}
 
 function validateSource(directory, expectedRevision) {
   if (typeof expectedRevision !== "string" || !/^[a-f0-9]{40}$/.test(expectedRevision))
@@ -28,6 +422,9 @@ async function prepare(outputPath, receiptPath) {
     throw new Error("Build context must be outside the checkout");
   const receipt = JSON.parse(await fs.readFile(receiptPath, "utf8"));
   const head = validateSource(root, receipt.source);
+  const nativeBaseline = await validateNativeBaseline(root);
+  const { nodeFileTrace } = require("next/dist/compiled/@vercel/nft");
+  const { retainNotices } = require("./retain-enterprise-notices.cjs");
   if (
     !["install", "generate", "app-registry", "trpc", "assets", "web-build"].every(
       (name) => receipt.results?.[name]?.exit_code === 0
@@ -112,6 +509,7 @@ async function prepare(outputPath, receiptPath) {
   const noticeCount = await retainNotices(output);
   const manifest = {
     schemaVersion: 1,
+    nativeBaseline,
     sourceSha: head,
     publicOrigin: receipt.public_origin,
     buildId: receipt.build_id,
@@ -130,6 +528,10 @@ async function prepare(outputPath, receiptPath) {
   await validateTree(output);
   // Do not write a completion manifest for an invalid or changed preparation.
   validateSource(root, head);
+  nativeNeed(
+    nativeCanonical(await validateNativeBaseline(root)) === nativeCanonical(nativeBaseline),
+    "Native baseline changed during preparation"
+  );
   await fs.writeFile(path.join(output, "enterprise-build.json"), JSON.stringify(manifest, null, 2) + "\n", {
     flag: "wx",
   });
@@ -193,8 +595,20 @@ async function validateTree(directory, base = directory) {
   }
 }
 if (require.main === module)
-  prepare(process.argv[2] || "", process.argv[3] || "").catch((error) => {
+  (process.argv.length === 3 && process.argv[2] === "--check-native-baseline"
+    ? validateNativeBaseline(root).then(() =>
+        console.log("Full native source and reviewed dependency closure verified")
+      )
+    : prepare(process.argv[2] || "", process.argv[3] || "")
+  ).catch((error) => {
     console.error(error.message);
     process.exitCode = 1;
   });
-module.exports = { prepare, validateSource, validateTree };
+module.exports = {
+  prepare,
+  validateSource,
+  validateTree,
+  parseNativePolicy,
+  validateNativeRecords,
+  validateNativeBaseline,
+};

@@ -124,6 +124,175 @@ def git_bytes(checkout, revision, file):
     return result.stdout
 
 
+NATIVE_COMMIT = "1c193cca8682b33b9866c792186033f7ef886682"
+NATIVE_POLICY_CORE = "7e1a935d7aba6a51cbd6a1a7e38c65b4855ecadd1c804a1d9c69b8879cdb776c"
+
+
+def native_canonical(value):
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+def native_path(value):
+    pattern(value, r"[\x20-\x7e]{1,1024}")
+    need(not value.startswith("/") and "\\" not in value
+         and all(part not in {"", ".", ".."} for part in value.split("/")), "Invalid native baseline path")
+    return value
+
+
+def native_record(value, keys="blob bytes mode"):
+    shape(value, keys)
+    pattern(value["blob"], r"[a-f0-9]{40}")
+    integer(value["bytes"], 64 * 1024 * 1024, 0)
+    need(type(value["mode"]) is str and value["mode"] in {"100644", "100755", "120000"}, "Unsupported native source mode")
+    if "sha256" in value:
+        pattern(value["sha256"], SHA)
+
+
+def parse_native_policy(raw):
+    need(len(raw) <= 2 * 1024 * 1024, "Native policy exceeds bound")
+    policy = strict_json(raw)
+    need(native_canonical(policy) + b"\n" == raw, "Noncanonical native policy")
+    shape(policy, "schemaVersion nativeCommit nativeTree requiredSourceCount requiredSources nativeSchemaSha256 nativeMigrationCount nativeMigrations forbiddenActiveMigrations reviewedSourcePorts reviewedAdditionalMigrations rootDependencyClosure")
+    core = {key: value for key, value in policy.items()
+            if key not in {"reviewedSourcePorts", "reviewedAdditionalMigrations", "rootDependencyClosure"}}
+    need(type(policy["schemaVersion"]) is int and policy["schemaVersion"] == 1
+         and policy["nativeCommit"] == NATIVE_COMMIT and sha(native_canonical(core)) == NATIVE_POLICY_CORE,
+         "Native baseline differs from the pinned full source")
+    for name, record in policy["requiredSources"].items():
+        native_path(name)
+        native_record(record)
+        need(name.startswith(("apps/", "packages/")), "Invalid native source namespace")
+    for ledger in [policy["reviewedSourcePorts"], policy["reviewedAdditionalMigrations"]]:
+        need(type(ledger) is dict and len(ledger) <= 9430, "Invalid reviewed native ledger")
+    for name, record in policy["reviewedSourcePorts"].items():
+        native_path(name)
+        native_record(record, "nativeBlob blob bytes mode sha256")
+        original = policy["requiredSources"].get(name)
+        need(original is not None and not name.startswith("packages/prisma/migrations/")
+             and record["nativeBlob"] == original["blob"] and record["mode"] == original["mode"]
+             and record["mode"] != "120000", "Unsupported native source override")
+    for name, record in policy["reviewedAdditionalMigrations"].items():
+        native_path(name)
+        native_record(record, "blob bytes mode sha256")
+        need(re.fullmatch(r"packages/prisma/migrations/\d{14,17}_[A-Za-z0-9_]*/migration\.sql", name)
+             and name not in policy["requiredSources"] and name not in policy["forbiddenActiveMigrations"]
+             and record["mode"] == "100644", "Unsupported additional migration")
+    dependency = policy["rootDependencyClosure"]
+    if dependency is not None:
+        shape(dependency, "packageManager files generatedArtifacts")
+        pattern(dependency["packageManager"], r"yarn@\d+\.\d+\.\d+")
+        files = dependency["files"]
+        need(type(files) is dict and len(files) <= 2000
+             and {"package.json", "yarn.lock", ".yarnrc.yml"} <= files.keys(), "Incomplete root dependency closure")
+        for name, record in files.items():
+            native_path(name)
+            native_record(record, "blob bytes mode sha256")
+            need((name in {"package.json", "yarn.lock", ".yarnrc.yml"} or name.startswith(".yarn/"))
+                 and record["mode"] != "120000", "Unsupported dependency companion")
+        generated = dependency["generatedArtifacts"]
+        need(type(generated) is list and all(type(name) is str for name in generated)
+             and len(generated) == len(set(generated))
+             and set(generated) <= {".yarn/cache", ".yarn/unplugged", ".yarn/install-state.gz", ".yarn/build-state.yml"}
+             and not any(key == name or key.startswith(name + "/") for key in files for name in generated),
+             "Unsupported generated-file exception")
+    return policy
+
+
+def native_policy():
+    file = Path(__file__).with_name("native-calcom-baseline.json")
+    before = file.lstat()
+    need(stat.S_ISREG(before.st_mode) and before.st_nlink == 1 and before.st_size <= 2 * 1024 * 1024,
+         "Invalid native policy file")
+    descriptor = os.open(file, os.O_RDONLY | os.O_NOFOLLOW)
+    with os.fdopen(descriptor, "rb") as stream:
+        opened = os.fstat(stream.fileno())
+        need((opened.st_dev, opened.st_ino) == (before.st_dev, before.st_ino), "Native policy changed during open")
+        raw = stream.read(2 * 1024 * 1024 + 1)
+        after = os.fstat(stream.fileno())
+    need((after.st_size, after.st_mtime_ns, after.st_ctime_ns) ==
+         (before.st_size, before.st_mtime_ns, before.st_ctime_ns), "Native policy changed during read")
+    return parse_native_policy(raw)
+
+
+def native_requirements(policy):
+    return {**policy["requiredSources"], **policy["reviewedSourcePorts"], **policy["reviewedAdditionalMigrations"]}
+
+
+def native_migrations(policy):
+    return {name: row["sha256"] for name, row in
+            {**policy["nativeMigrations"], **policy["reviewedAdditionalMigrations"]}.items()}
+
+
+def native_records(policy, records):
+    need(type(records) is dict and len(records) <= 200000, "Invalid native source inventory")
+    for name, record in records.items():
+        native_path(name)
+        native_record(record)
+    required = native_requirements(policy)
+    for name, expected in required.items():
+        need(records.get(name) == {key: expected[key] for key in ["blob", "bytes", "mode"]},
+             "Missing or changed full-native source")
+    sql = {name for name in records if name.startswith("packages/prisma/migrations/") and name.endswith(".sql")}
+    need(sql == native_migrations(policy).keys(), "Unapproved active migration set")
+    return sha(native_canonical({name: {key: row[key] for key in ["blob", "bytes", "mode"]}
+                                 for name, row in required.items()}))
+
+
+def native_proof(policy):
+    dependency = policy["rootDependencyClosure"]
+    need(dependency is not None, "Root dependency closure is not reviewed; native code alone cannot qualify a build")
+    records = {name: {key: row[key] for key in ["blob", "bytes", "mode"]}
+               for name, row in native_requirements(policy).items()}
+    schema = policy["reviewedSourcePorts"].get("packages/prisma/schema.prisma", {}).get("sha256", policy["nativeSchemaSha256"])
+    return {"schemaVersion": 1, "nativeCommit": policy["nativeCommit"],
+            "policySha256": sha(native_canonical(policy) + b"\n"),
+            "sourceClosureSha256": native_records(policy, records), "schemaSha256": schema,
+            "migrationSetSha256": sha(native_canonical(native_migrations(policy))),
+            "migrationCount": len(native_migrations(policy)),
+            "rootDependencyClosureSha256": sha(native_canonical(dependency))}
+
+
+def native_source_baseline(checkout, source):
+    policy = native_policy()
+    need(git_bytes(checkout, source, "scripts/native-calcom-baseline.json") == native_canonical(policy) + b"\n",
+         "Application native policy differs from publisher policy")
+    result = command(["git", "-C", str(checkout), "ls-tree", "-rlz", "--full-tree", source, "--",
+                      "apps", "packages", ".yarn", "package.json", "yarn.lock", ".yarnrc.yml"])
+    need(result.returncode == 0, "Native source inventory unavailable")
+    records = {}
+    for entry in result.stdout.split(b"\0"):
+        if not entry:
+            continue
+        header, name = entry.split(b"\t", 1)
+        mode, kind, blob, size = header.split()
+        need(kind == b"blob", "Unsupported native tree entry")
+        name = native_path(name.decode("ascii"))
+        need(name not in records, "Duplicate native source path")
+        records[name] = {"mode": mode.decode("ascii"), "blob": blob.decode("ascii"), "bytes": int(size)}
+    native_records(policy, records)
+    proof = native_proof(policy)
+    dependency = policy["rootDependencyClosure"]
+    for name, row in dependency["files"].items():
+        need(records.get(name) == {key: row[key] for key in ["blob", "bytes", "mode"]}
+             and sha(git_bytes(checkout, source, name)) == row["sha256"], "Dependency companion differs from reviewed closure")
+    need({name for name in records if name.startswith(".yarn/")} ==
+         {name for name in dependency["files"] if name.startswith(".yarn/")}, "Unreviewed package-manager or patch companion")
+    need(strict_json(git_bytes(checkout, source, "package.json")).get("packageManager") == dependency["packageManager"],
+         "Wrong reviewed package manager")
+    need(sha(git_bytes(checkout, source, "packages/prisma/schema.prisma")) == proof["schemaSha256"], "Native schema checksum differs")
+    for name, digest in native_migrations(policy).items():
+        need(sha(git_bytes(checkout, source, name)) == digest, "Native migration checksum differs")
+    return proof
+
+
+def native_runtime_spec(build):
+    policy = native_policy()
+    need(native_canonical(build.get("nativeBaseline")) == native_canonical(native_proof(policy)), "Missing or mismatched native baseline proof")
+    files = {"calcom/ops/packages/prisma/schema.prisma": build["nativeBaseline"]["schemaSha256"]}
+    files.update({"calcom/ops/" + name: digest for name, digest in native_migrations(policy).items()})
+    return files
+
+
 def request_schema(receipt, source, actor, now):
     shape(receipt, "schemaVersion repository sourceSha producerActor producedAt publicOrigin artifacts")
     need(type(receipt["schemaVersion"]) is int and receipt["schemaVersion"] == 1, "Unsupported receipt version")
@@ -144,7 +313,7 @@ def request_schema(receipt, source, actor, now):
 
 
 def build_schema(build, source, checkout):
-    shape(build, "schemaVersion sourceSha publicOrigin buildId buildManifestSha256 lockSha256 entrypointSha256 migrationPreflightSha256 dockerfileSha256 migrationEngineVersion operationsTraceFiles copiedLicenseNotices traceWarnings")
+    shape(build, "nativeBaseline schemaVersion sourceSha publicOrigin buildId buildManifestSha256 lockSha256 entrypointSha256 migrationPreflightSha256 dockerfileSha256 migrationEngineVersion operationsTraceFiles copiedLicenseNotices traceWarnings")
     need(type(build["schemaVersion"]) is int and build["schemaVersion"] == 1, "Unsupported build version")
     need(build["sourceSha"] == source and build["publicOrigin"] == ORIGIN, "Build identity mismatch")
     revision_type = command(["git", "-C", str(checkout), "cat-file", "-t", source])
@@ -156,6 +325,7 @@ def build_schema(build, source, checkout):
     integer(build["copiedLicenseNotices"], 1000000)
     need(type(build["traceWarnings"]) is list and len(build["traceWarnings"]) <= 100
          and all(type(v) is str and len(v) <= 2000 for v in build["traceWarnings"]), "Invalid trace warning inventory")
+    need(native_canonical(build["nativeBaseline"]) == native_canonical(native_source_baseline(checkout, source)), "Native build proof differs from application source")
     for field, file in RECIPES.items():
         need(pattern(build[field], SHA) == sha(git_bytes(checkout, source, file)), "Recipe differs from application source")
 
@@ -383,6 +553,7 @@ def dpkg_inventory(files):
 
 
 def image_archive(file, build, layout=None):
+    native_files = native_runtime_spec(build)
     with tarfile.open(file, mode="r:") as tar:
         members = {}
         for member in tar:
@@ -461,6 +632,8 @@ def image_archive(file, build, layout=None):
                     "calcom/scripts/check-enterprise-migration.sql": build["migrationPreflightSha256"],
                     "calcom/apps/web/.next/BUILD_ID": None,
                     "calcom/apps/web/.next/build-manifest.json": build["buildManifestSha256"]}
+        expected.update(native_files)
+        expected_ancestors = {str(parent) for key in expected for parent in Path(key).parents if str(parent) != "."}
         shipped = {}
         package_files = {}
         aliases = {}
@@ -519,12 +692,14 @@ def image_archive(file, build, layout=None):
                         need(len(layer_values) <= 20000 and sum(len(v) for v in layer_values.values()) <= 2 * MAX_JSON, "Installed-component inventory exceeds bound")
                     if entry.issym() or entry.islnk():
                         layer_aliases[name] = ("symlink" if entry.issym() else "hardlink", entry.linkname)
-                    for key in expected:
-                        if name == key:
-                            need(entry.isfile() and entry.size <= MAX_JSON, "Runtime identity file has wrong type/size")
-                            layer_values[key] = filesystem.extractfile(entry).read()
-                        elif key.startswith(name + "/"):
-                            need(entry.isdir(), "Runtime identity ancestor is not a directory")
+                    if name in expected:
+                        need(entry.type in {tarfile.REGTYPE, tarfile.AREGTYPE} and not entry.sparse and entry.size <= MAX_JSON,
+                             "Runtime identity file has wrong type/size")
+                        layer_values[name] = filesystem.extractfile(entry).read()
+                    elif name in expected_ancestors:
+                        need(entry.isdir(), "Runtime identity ancestor is not a directory")
+                    if name in layer_values:
+                        need(sum(len(value) for value in layer_values.values()) <= 2 * MAX_JSON, "Runtime metadata exceeds bound")
                 for inventory in [shipped, package_files, os_files, aliases, final_tree]:
                     for key in list(inventory):
                         if hidden_or_replaced(key, seen, non_directories, whiteouts):
@@ -552,6 +727,9 @@ def image_archive(file, build, layout=None):
                 need(len(os_files) <= 20000 and sum(len(v) for v in os_files.values()) <= 2 * MAX_JSON, "OS inventory exceeds bound")
         identity_paths = {*expected, *package_files, *os_files, "var/lib/dpkg/status", "var/lib/dpkg/status.d"}
         installed_aliases(aliases, final_tree, package_files, identity_paths, deadline)
+        active_sql = {name for name in final_tree if name.startswith("calcom/ops/packages/prisma/migrations/") and name.endswith(".sql")}
+        need(active_sql == {name for name in native_files if name.endswith(".sql")}, "Unapproved shipped migration set")
+        need(sum(len(value) for value in shipped.values()) <= 2 * MAX_JSON, "Runtime identity bytes exceed bound")
         need(set(shipped) == set(expected), "Missing shipped runtime identity files")
         need(strict_json(shipped["calcom/enterprise-build.json"]) == build
              and shipped["calcom/apps/web/.next/BUILD_ID"].decode().strip() == build["buildId"], "Embedded build identity mismatch")
@@ -584,6 +762,8 @@ def native_proofs(container, scan, ledger, source, manifest, config, now, build,
     shape(container["checks"], "migration migrationReplay nonRootReadOnlyWeb nativePublicCallback anonymousSession")
     need(all(v is True for v in container["checks"].values()), "Incomplete native container acceptance")
     integer(container["expectedMigrations"], 100000)
+    native_runtime_spec(build)
+    need(container["expectedMigrations"] == build["nativeBaseline"]["migrationCount"], "Native migration count differs from reviewed set")
     need(type(container["appliedMigrations"]) is int and container["appliedMigrations"] == container["expectedMigrations"], "Incomplete native migration acceptance")
     shape(scan, "schemaVersion sourceSha manifestDigest configDigest completedAt exitCode scanner rawReportSha256 secretScope report releaseApproved")
     proof_identity(scan, source, manifest, config, now)
