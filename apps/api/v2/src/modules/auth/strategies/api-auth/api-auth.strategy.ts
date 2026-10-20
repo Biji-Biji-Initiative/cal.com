@@ -25,6 +25,7 @@ import { UsersRepository, type UserWithProfile } from "@/modules/users/users.rep
 export type ApiAuthGuardUser = UserWithProfile & {
   isSystemAdmin: boolean;
   apiKeyTeamId?: number | null;
+  apiClientId?: string;
 };
 export type ApiAuthGuardRequest = Request & {
   authMethod: AuthMethods;
@@ -203,7 +204,7 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
 
     request.organizationId = client.organizationId;
 
-    return user;
+    return { ...user, apiClientId: client.id };
   }
 
   async authenticateBearerToken(
@@ -292,7 +293,7 @@ export class ApiAuthStrategy extends PassportStrategy(BaseStrategy, "api-auth") 
     const organizationId = this.usersService.getUserMainOrgId(user) as number;
     request.organizationId = organizationId;
 
-    return user;
+    return { ...user, apiClientId: client.id };
   }
 
   async nextAuthStrategy(token: JWT, request: ApiAuthGuardRequest) {

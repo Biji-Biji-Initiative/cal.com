@@ -12,6 +12,7 @@ const { createApiRuntime, fixtureModules } = require("./api-runtime-fixture.cjs"
 const { bookingListing, compile } = require("./booking-listing-fixture.cjs");
 const { eventAccessFixture } = require("./event-access-fixture.cjs");
 const { privateLinksFixture } = require("./private-links-fixture.cjs");
+const { managedClientFixture } = require("./managed-client-fixture.cjs");
 let db,
   runtime,
   lifecycle,
@@ -27,7 +28,8 @@ let db,
   staleSqlReads,
   eventAccess,
   nativeBookings,
-  nativePrivateLinks;
+  nativePrivateLinks,
+  managedClients;
 const api = "apps/api/v2/src/";
 const booking = `${api}platform/bookings/2024-08-13/`;
 
@@ -156,6 +158,7 @@ before(async () => {
       eventAccess = eventAccessFixture({ native, load, db, root });
       const privateLinks = privateLinksFixture({ load, tokens, db, root, eventAccess });
       nativePrivateLinks = privateLinks;
+      managedClients = managedClientFixture({ native, load, tokens, db, root });
       const { OptionalApiAuthGuard } = load(
         path.join(root, api, "modules/auth/guards/optional-api-auth/optional-api-auth.guard.ts")
       );
@@ -271,7 +274,7 @@ before(async () => {
           BookingUidGuard,
           BookingPbacGuard,
           { provide: tokens.TokensRepository, useValue: {} },
-          { provide: tokens.OAuthClientRepository, useValue: {} },
+          ...managedClients.providers,
         ],
       };
     },
@@ -1585,4 +1588,179 @@ test("personal-key organizer cannot export a team's booking without membership",
   assert.equal(await db.membership.count({ where: { userId: other.id, teamId: team.id } }), 0);
   assert.equal((await request("unrelated", personal)).status, 403);
   assert.equal(exportsCalled, 0);
+});
+
+async function managedEvents() {
+  const events = await privateLinkEvents();
+  const org = await db.team.create({ data: { name: "Managed scope", isOrganization: true } });
+  const otherOrg = await db.team.create({ data: { name: "Other managed scope", isOrganization: true } });
+  for (const [child, parent] of [
+    [team, org],
+    [foreign, otherOrg],
+  ]) {
+    await db.team.update({ where: { id: child.id }, data: { parentId: parent.id } });
+    await db.membership.create({
+      data: { userId: owner.id, teamId: parent.id, role: "OWNER", accepted: true },
+    });
+  }
+  await db.user.update({ where: { id: owner.id }, data: { role: "ADMIN" } });
+  const secret = randomBytes(32).toString("hex");
+  const client = await db.platformOAuthClient.create({
+    data: {
+      id: "synthetic-managed-client",
+      name: "Local scope fixture",
+      secret,
+      permissions: 15,
+      organizationId: org.id,
+      redirectUris: [],
+    },
+  });
+  return {
+    events,
+    org,
+    otherOrg,
+    client,
+    headers: { "x-cal-client-id": client.id, "x-cal-secret-key": secret },
+  };
+}
+async function managedRequest(route, headers, method = "GET", body) {
+  const response = await fetch(`${runtime.origin}${route}`, {
+    method,
+    headers: { ...headers, ...(body ? { "Content-Type": "application/json" } : {}) },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+    signal: AbortSignal.timeout(10000),
+  });
+  return { status: response.status, body: await response.json() };
+}
+const privatePath = (id, link = "") => `/v2/event-types/${id}/private-links${link ? "/" + link : ""}`;
+test("native managed client cannot list another administered organization's links", async () => {
+  const f = await managedEvents();
+  assert.equal((await managedRequest(privatePath(f.events.foreign.id), f.headers)).status, 404);
+});
+test("native managed client cannot mutate another administered organization", async () => {
+  const f = await managedEvents(),
+    route = privatePath(f.events.foreign.id, "synthetic-foreign-link");
+  assert.equal(
+    (await managedRequest(privatePath(f.events.foreign.id), f.headers, "POST", { maxUsageCount: 3 })).status,
+    404
+  );
+  assert.equal((await managedRequest(route, f.headers, "PATCH", { maxUsageCount: 9 })).status, 404);
+  assert.equal((await managedRequest(route, f.headers, "DELETE")).status, 404);
+  assert.equal(await db.hashedLink.count(), 3);
+  assert.equal(
+    (await db.hashedLink.findUniqueOrThrow({ where: { link: "synthetic-foreign-link" } })).maxUsageCount,
+    2
+  );
+});
+test("native managed client cannot become its owner's global personal key", async () => {
+  const f = await managedEvents();
+  assert.equal((await managedRequest(privatePath(f.events.personal.id), f.headers)).status, 404);
+});
+test("native managed client retains own-root child CRUD and actual owner assertion", async () => {
+  const f = await managedEvents(),
+    route = privatePath(f.events.allowed.id);
+  assert.equal((await managedRequest(route, f.headers)).status, 200);
+  const created = await managedRequest(route, f.headers, "POST", { maxUsageCount: 3 });
+  assert.equal(created.status, 201);
+  const linkPath = privatePath(f.events.allowed.id, created.body.data.linkId);
+  assert.equal((await managedRequest(linkPath, f.headers, "PATCH", { maxUsageCount: 4 })).status, 200);
+  assert.equal((await managedRequest(linkPath, f.headers, "DELETE")).status, 200);
+  await db.eventType.update({ where: { id: f.events.allowed.id }, data: { userId: other.id } });
+  assert.equal((await managedRequest(route, f.headers)).status, 404);
+});
+test("native managed client retains explicitly associated personal owner", async () => {
+  const f = await managedEvents();
+  await db.platformOAuthClient.update({
+    where: { id: f.client.id },
+    data: { users: { connect: { id: owner.id } } },
+  });
+  assert.equal((await managedRequest(privatePath(f.events.personal.id), f.headers)).status, 200);
+});
+test("native managed scope rechecks client organization after owner guard", async (context) => {
+  const f = await managedEvents();
+  afterOwnerAdmission(context, () =>
+    db.platformOAuthClient.update({ where: { id: f.client.id }, data: { organizationId: f.otherOrg.id } })
+  );
+  assert.equal(
+    (await managedRequest(privatePath(f.events.allowed.id, "synthetic-allowed-link"), f.headers, "DELETE"))
+      .status,
+    404
+  );
+  assert.equal(await db.hashedLink.count(), 3);
+});
+test("native optional booking detail cannot elevate roster across client scope", async () => {
+  const f = await managedEvents();
+  await seated("foreign");
+  const result = await managedRequest("/v2/bookings/foreign", f.headers);
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+test("native optional booking detail retains scoped owner roster", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  const result = await managedRequest("/v2/bookings/allowed", f.headers);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.attendees.length, 2);
+});
+test("actual lagging native client admission cannot revive deleted resource scope", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  const result = await db.$transaction(
+    async (lag) => {
+      await lag.platformOAuthClient.count();
+      const previous = managedClients.clients.dbRead;
+      managedClients.clients.dbRead = { prisma: lag };
+      try {
+        await db.platformOAuthClient.delete({ where: { id: f.client.id } });
+        return await managedRequest("/v2/bookings/allowed", f.headers);
+      } finally {
+        managedClients.clients.dbRead = previous;
+      }
+    },
+    { isolationLevel: "RepeatableRead", timeout: 20000 }
+  );
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+test("native managed client retains its root resource", async () => {
+  const f = await managedEvents();
+  await db.eventType.update({ where: { id: f.events.allowed.id }, data: { teamId: f.org.id } });
+  assert.equal((await managedRequest(privatePath(f.events.allowed.id), f.headers)).status, 200);
+});
+test("native managed parent scope cannot replace an explicit foreign team", async () => {
+  const f = await managedEvents();
+  await db.eventType.update({ where: { id: f.events.personal.id }, data: { parentId: f.events.allowed.id } });
+  assert.equal((await managedRequest(privatePath(f.events.personal.id), f.headers)).status, 200);
+  await db.eventType.update({ where: { id: f.events.personal.id }, data: { teamId: foreign.id } });
+  assert.equal((await managedRequest(privatePath(f.events.personal.id), f.headers)).status, 404);
+});
+test("native selected managed client is not widened by a secondary foreign key", async () => {
+  const f = await managedEvents();
+  const foreignKey = await lifecycle.createApiKey(db, owner.id, { teamId: foreign.id });
+  assert.equal(
+    (
+      await managedRequest(privatePath(f.events.foreign.id), {
+        ...f.headers,
+        Authorization: `Bearer ${foreignKey}`,
+      })
+    ).status,
+    404
+  );
+});
+test("native managed client read bits cannot authorize private-link writes", async () => {
+  const f = await managedEvents();
+  await db.platformOAuthClient.update({ where: { id: f.client.id }, data: { permissions: 1 } });
+  assert.equal((await managedRequest(privatePath(f.events.allowed.id), f.headers)).status, 200);
+  assert.equal(
+    (
+      await managedRequest(privatePath(f.events.allowed.id, "synthetic-allowed-link"), f.headers, "PATCH", {
+        maxUsageCount: 9,
+      })
+    ).status,
+    403
+  );
+  assert.equal(
+    (await db.hashedLink.findUniqueOrThrow({ where: { link: "synthetic-allowed-link" } })).maxUsageCount,
+    2
+  );
 });

@@ -83,6 +83,8 @@ export class PermissionsGuard implements CanActivate {
     ) {
       throw new ForbiddenException("OAuth client does not have the required permissions");
     }
+    if (request.user.apiClientId !== undefined && request.user.apiClientId !== client.id) throw unavailable();
+    request.user.apiClientId = client.id;
     return true;
   }
 

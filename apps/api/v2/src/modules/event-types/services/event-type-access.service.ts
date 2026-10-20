@@ -8,7 +8,10 @@ import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
 import { TeamsRepository } from "@/modules/teams/teams/teams.repository";
 import { EventTypesRepository_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/event-types.repository";
 
-type EventScopeClient = Pick<Prisma.TransactionClient, "eventType" | "user" | "membership" | "team">;
+type EventScopeClient = Pick<
+  Prisma.TransactionClient,
+  "eventType" | "user" | "membership" | "team" | "platformOAuthClient"
+>;
 
 @Injectable()
 export class EventTypeAccessService {
@@ -67,6 +70,26 @@ export class EventTypeAccessService {
     });
     if (!event) return null;
     const resourceTeamId = event.teamId ?? event.parent?.teamId;
+    if (user.apiClientId !== undefined) {
+      if (typeof user.apiClientId !== "string" || !user.apiClientId) return null;
+      const scopedClient = await client.platformOAuthClient.findFirst({
+        where: {
+          id: user.apiClientId,
+          organization: {
+            isOrganization: true,
+            parentId: null,
+            ...(resourceTeamId == null
+              ? {}
+              : {
+                  OR: [{ id: resourceTeamId }, { children: { some: { id: resourceTeamId } } }],
+                }),
+          },
+          ...(resourceTeamId == null ? { users: { some: { id: event.userId ?? -1 } } } : {}),
+        },
+        select: { id: true },
+      });
+      if (!scopedClient) return null;
+    }
     if (
       user.apiKeyTeamId != null &&
       (!Number.isSafeInteger(user.apiKeyTeamId) ||

@@ -459,3 +459,47 @@ The native export still shares the primary read-only authority/output snapshot.
 No unchanged whole app, SCIM or audit baseline, install, external key or production
 action was repeated. Managed-client resource binding, other API/version families
 and original runtime/provider acceptance remain unfinished; CAL-05.API stays open.
+
+## Selected managed-client event resource scope
+
+Source predecessor `94818514781d4481ed2a221a1e4dd659572a5a67`; eight exact clear
+paths were reserved after fresh original ready/inbox/live-reservation inspection.
+
+Native Passport now retains the selected platform client ID for client credentials
+and managed access-token admission. The existing permission guard binds it to the
+currently verified client and rejects a mismatch. The retained event authority
+checks that same current client in its primary transaction: the actual resource
+team must be its root or direct child; a personal event must have an explicitly
+client-associated owner. Current principal/action/membership and owner/Host rules
+still run. An explicit foreign team takes precedence over a managed parent.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old native source | 101 passed, 6 failed: foreign list/mutation; global personal-key shortcut; post-guard org movement; foreign optional roster; deleted client behind lagged native admission |
+| Final native HTTP/domain/PG | 111 passed, zero failures/skips; exit 0 and owned database cleanup verified |
+| Affected native auth PG | 75 passed, zero failures/skips; exit 0 and owned cleanup verified |
+| Affected runtime/session/inventory source checks | 122 passed |
+| Native strict import closure and final fixture checkJs | Both exit 0 |
+
+The added bounded loader executes the native OAuth-client, owner-membership and
+user/profile repositories. Explicit fixture providers now take precedence over
+defaults, so no fake owner lookup or permission result supplies admission. The
+controls use actual Passport, guards, controller, service, repository and SQL.
+Two real organizations are administered by the same principal with ADMIN global
+role, which no longer broadens client resource scope. A real RepeatableRead
+client-reader snapshot survives primary deletion during optional detail dispatch.
+Current primary authority strips roster elevation despite that stale admission.
+
+Root/child CRUD, actual owner assertion, explicitly associated personal owner,
+managed-parent fallback and explicit foreign-team refusal are proven. A secondary
+foreign API key does not widen the selected client. Current read-only client bits
+permit listing and refuse mutation through the existing native permission guard.
+Existing anonymous UID capability and all prior native key/role controls remain.
+
+These resource controls use client-credential HTTP admission; existing managed
+access-token admission regressions pass, but complete access-token resource/bit
+coverage is not claimed. Other native list/export paths still drop client scope;
+optional-route permission/cache checks, legacy versions, full API image/CI and
+original runtime/provider criteria remain open. CAL-05.API stays in progress.
+No unchanged app/SCIM/audit baseline, install, external credential, provider or
+production action was repeated.

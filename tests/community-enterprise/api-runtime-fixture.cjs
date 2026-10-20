@@ -340,7 +340,6 @@ async function createApiRuntime(state, options = {}) {
     imports: [PassportModule],
     controllers,
     providers: [
-      ...extraProviders,
       ApiAuthStrategy,
       NextAuthStrategy,
       NextAuthSessionService,
@@ -361,6 +360,7 @@ async function createApiRuntime(state, options = {}) {
                     : new token(),
             }),
       })),
+      ...extraProviders,
     ],
   }).compile();
   const app = module.createNestApplication({ logger: false });
