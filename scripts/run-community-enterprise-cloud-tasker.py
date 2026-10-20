@@ -101,7 +101,7 @@ def write_wrappers(directory, container_id, receipt):
 
 
 def execute(image, receipt, node, scratch_parent=None, schema_engine=None, suite="tasker"):
-    if suite not in ("tasker", "scim-provenance"):
+    if suite not in ("tasker", "scim-provenance", "scim-identity"):
         raise FixtureError("unsupported_suite")
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", image):
         raise FixtureError("local_image_digest_required")
@@ -192,7 +192,7 @@ def execute(image, receipt, node, scratch_parent=None, schema_engine=None, suite
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--suite", choices=("tasker", "scim-provenance"), default="tasker")
+    parser.add_argument("--suite", choices=("tasker", "scim-provenance", "scim-identity"), default="tasker")
     parser.add_argument("--image", required=True, help="Already-local official PostgreSQL18 sha256 image ID; never pulled here")
     parser.add_argument("--receipt-dir", type=Path, required=True, help="New private receipt directory; must not exist")
     parser.add_argument("--node", default=shutil.which("node"), help="Qualified Node20 executable")
