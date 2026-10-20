@@ -106,6 +106,79 @@ home/Beads database, guess broader scopes or start interactive login. Once an
 approved binding is ready, use its supported SDK/CLI without printing credentials
 and qualify a read-only action against the specifically approved service.
 
+## Full normal Cloud-local application qualification
+
+For ordinary local development, use independent task-local PostgreSQL and crypto
+configuration. The basic app needs no vault reader and no shared DEV database
+DSN. `packages/prisma/docker-compose.yml` supplies the upstream PostgreSQL18
+recipe; the Cloud doctor uses the same official local image through the managed
+Docker socket, with an owned private Unix socket and no container network.
+
+Use the qualified Node20 executable, locked install/custom Prisma generation and
+checksum-qualified schema engine from this worker's existing receipts. No install,
+Corepack bootstrap, external service, production build or hosted migration runs:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/run-community-enterprise-cloud-local.py \
+  --image "$CAL_CLOUD_PG_IMAGE" --node "$CAL_CLOUD_NODE20" \
+  --schema-engine "$CAL_CLOUD_SCHEMA_ENGINE" \
+  --receipt-dir /absolute/private/new-local-app-attempt
+```
+
+The image must already be local and have an official PostgreSQL origin digest.
+The doctor checks Node20 and the installed Prisma/engine pin. It creates a new
+empty database, applies the complete current source schema with the owning
+`yarn prisma db push --skip-generate`, and starts the normal root command:
+
+```sh
+node .yarn/releases/yarn-4.12.0.cjs dev --env-mode=loose -- --hostname 127.0.0.1 --port 3000
+```
+
+The explicit environment mode preserves managed proxy/CA/runtime selectors after
+the doctor strips unrelated Mail, GitHub, model and Infisical/application
+credentials from the child. It neither changes trust nor bypasses network policy.
+Preexisting environment files and an occupied loopback port are refused.
+
+| Required nonempty names | Value/origin class |
+| --- | --- |
+| `DATABASE_URL`, `DATABASE_DIRECT_URL` | Own new local PostgreSQL over its private Unix socket; no shared/native DSN |
+| `NEXTAUTH_SECRET`, `CALENDSO_ENCRYPTION_KEY` | Independently generated task-local values, never copied from a provider or vault |
+| `NEXT_PUBLIC_WEBAPP_URL`, `NEXTAUTH_URL` | Loopback HTTP app origin and its `/api/auth` path |
+
+The standard environment checker also requires all declared names in the common
+and app-store templates (177 and 41 at the qualified revision). The doctor copies
+names only, leaves optional values empty, and supplies the six real local values.
+It does not import template provider values. Existing native Authentik/bridge
+policy flags are not modified to manufacture local acceptance; this independent
+local self-hosted configuration uses the source's default native setup flow.
+
+Acceptance uses the actual Next application: version API 200; normal first-boot
+login/setup redirects to setup UI 200; native setup API 200; independent PostgreSQL
+readback of the exact owned data directory and one user/password row; setup replay
+400; then login UI 200. A listening port or SCIM fixture alone is insufficient.
+This does not prove authenticated staff sessions, booking/calendar journeys,
+API v2, native IdP/provider behavior, all native feature restoration or a release.
+
+The observed public font download failure is recorded separately; requests to
+`fonts.googleapis.com` failed. One standard curl request through the inherited
+managed proxy/trust returned CONNECT403 for the exact public CSS URL.
+`fonts.gstatic.com` is the font-asset origin class, not a proven download here.
+These are public asset requirements, not vault secrets or database destinations.
+
+Each attempt retains private command logs, response status/hash receipts and its
+synthetic database scratch. Owned temporary environment files are removed only
+if inode/content remain unchanged. The Next cache is preserved. Shutdown signals
+only the owned process group and uses a per-process Linux subreaper to reap Turbo
+children; it does not touch PID1 or restart Docker. The receipt preserves the
+actual server shutdown exit separately from the doctor's acceptance exit.
+Unknown container-start results are reconciled by the exact ownership label.
+Source/lock/schema/graph hashes and actual app/container cleanup are checked.
+
+Direct deployed infrastructure access remains a separate qualification. The
+observed setup surface exposes HTTP allowlists and no raw TCP-grant field; that
+is neither a raw-TCP grant nor proof of a denial. Do not project inaccessible
+shared DEV DSNs merely to make basic local startup appear configured.
+
 ## Validation and delivery
 
 ### Local PostgreSQL Tasker qualification without host PostgreSQL tools
