@@ -4,11 +4,13 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { before, beforeEach, after, test } = require("node:test");
 const ts = require("typescript");
+const { randomBytes } = require("node:crypto");
 const nest = require("@nestjs/common");
 const { ConfigService } = require("@nestjs/config");
 const { connectFixture, sourceModules, root } = require("./tasker-fixture.cjs");
 const { createApiRuntime, fixtureModules } = require("./api-runtime-fixture.cjs");
 const { bookingListing, compile } = require("./booking-listing-fixture.cjs");
+const { eventAccessFixture } = require("./event-access-fixture.cjs");
 let db,
   runtime,
   lifecycle,
@@ -21,7 +23,8 @@ let db,
   access,
   listing,
   primarySql,
-  staleSqlReads;
+  staleSqlReads,
+  eventAccess;
 const api = "apps/api/v2/src/";
 const booking = `${api}platform/bookings/2024-08-13/`;
 
@@ -80,7 +83,10 @@ before(async () => {
       ),
     },
     replicaReads: 0,
-    config: new ConfigService({ api: { keyPrefix: "cal_" } }),
+    config: new ConfigService({
+      api: { keyPrefix: "cal_" },
+      next: { authSecret: randomBytes(32).toString("hex") },
+    }),
   };
   const { load } = fixtureModules(state);
   const { PermissionCheckService } = load(
@@ -128,10 +134,17 @@ before(async () => {
       );
       const { BookingUidGuard } = load(path.join(root, booking, "guards/booking-uid.guard.ts"));
       const { BookingPbacGuard } = load(path.join(root, booking, "guards/booking-pbac.guard.ts"));
+      eventAccess = eventAccessFixture({ native, load, db, root });
+      const { OptionalApiAuthGuard } = load(
+        path.join(root, api, "modules/auth/guards/optional-api-auth/optional-api-auth.guard.ts")
+      );
+      const { GetOptionalUser } = load(
+        path.join(root, api, "modules/auth/decorators/get-optional-user/get-optional-user.decorator.ts")
+      );
       const Service = native(
         `${booking}services/bookings.service.ts`,
         "BookingsService_2024_08_13",
-        ["getCalendarLinks", "getBookings"],
+        ["getCalendarLinks", "getBookings", "getBooking"],
         {
           ...nest,
           getAllUserBookings: listing.getAllUserBookings,
@@ -144,6 +157,7 @@ before(async () => {
         }
       );
       const service = new Service();
+      service.eventTypeAccessService = eventAccess.access;
       service.prismaReadService = { prisma: db };
       service.kyselyWriteService = primarySql;
       service.kyselyReadService = {
@@ -168,6 +182,8 @@ before(async () => {
           "getByIdsWithAttendeesWithBookingSeatAndUserAndEvent",
           "getByFromReschedule",
           "getByUid",
+          "getByUidWithAttendeesWithBookingSeatAndUserAndEvent",
+          "getRecurringByUidWithAttendeesAndUserAndEvent",
         ]
       );
       const NativeEvents = native(
@@ -197,7 +213,7 @@ before(async () => {
       const Controller = native(
         `${booking}controllers/bookings.controller.ts`,
         "BookingsController_2024_08_13",
-        ["getCalendarLinks", "getBookings"],
+        ["getCalendarLinks", "getBookings", "getBooking"],
         {
           ...nest,
           ...require("@nestjs/swagger"),
@@ -206,6 +222,11 @@ before(async () => {
           PermissionsGuard,
           BookingUidGuard,
           BookingPbacGuard,
+          OptionalApiAuthGuard,
+          GetOptionalUser,
+          OPTIONAL_X_CAL_CLIENT_ID_HEADER: {},
+          OPTIONAL_X_CAL_SECRET_KEY_HEADER: {},
+          OPTIONAL_API_KEY_OR_ACCESS_TOKEN_HEADER: {},
           GetUser,
           Permissions,
           BOOKING_READ: load(path.join(root, "packages/platform/constants/permissions.ts")).BOOKING_READ,
@@ -218,9 +239,10 @@ before(async () => {
       Controller.prototype.bookingsService = service;
       Controller.prototype.usersService = { getUserMainProfile: () => null };
       return {
-        controllers: [Controller],
+        controllers: [Controller, eventAccess.Controller],
         providers: [
           PermissionsGuard,
+          OptionalApiAuthGuard,
           BookingUidGuard,
           BookingPbacGuard,
           { provide: tokens.TokensRepository, useValue: {} },
@@ -232,12 +254,15 @@ before(async () => {
 });
 
 beforeEach(async () => {
+  await db.$executeRawUnsafe('DROP TRIGGER IF EXISTS require_serializable_native_delete ON "EventType"');
   for (const model of [
     "enterpriseAuditEvent",
     "apiKey",
     "booking",
     "eventType",
     "membership",
+    "rolePermission",
+    "role",
     "team",
     "user",
   ])
@@ -469,4 +494,200 @@ test("revoked and disabled principal are denied on native list", async () => {
   key = await lifecycle.createApiKey(db, owner.id, { teamId: team.id });
   await db.user.update({ where: { id: owner.id }, data: { locked: true } });
   assert.equal((await list()).status, 401);
+});
+
+async function seated(uid = "allowed", token = key) {
+  const event = await db.eventType.findFirstOrThrow({ where: { slug: uid } });
+  await db.eventType.update({
+    where: { id: event.id },
+    data: { userId: owner.id, seatsPerTimeSlot: 2, seatsShowAttendees: false },
+  });
+  const booking = await db.booking.findUniqueOrThrow({ where: { uid } });
+  for (const name of ["First", "Private"]) {
+    const attendee = await db.attendee.create({
+      data: { bookingId: booking.id, name, email: `${name.toLowerCase()}@fixture.test`, timeZone: "UTC" },
+    });
+    await db.bookingSeat.create({
+      data: {
+        bookingId: booking.id,
+        attendeeId: attendee.id,
+        referenceUid: `${uid}-${name}`,
+        data: { responses: { name, email: attendee.email } },
+      },
+    });
+  }
+  return detail(uid, token);
+}
+async function detail(uid, token) {
+  const response = await fetch(`${runtime.origin}/v2/bookings/${uid}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    signal: AbortSignal.timeout(10000),
+  });
+  return { status: response.status, body: await response.json() };
+}
+async function eventToDelete(teamId = team.id, userId = owner.id) {
+  return db.eventType.create({
+    data: { title: "Native mutation", slug: `delete-${teamId}-${userId}`, length: 30, teamId, userId },
+  });
+}
+async function removeEvent(id, token = key) {
+  const response = await fetch(`${runtime.origin}/v2/event-types/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(10000),
+  });
+  return { status: response.status, body: await response.json() };
+}
+test("native seated detail retains same-team owner elevation", async () => {
+  const result = await seated();
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.attendees.length, 2);
+});
+test("foreign team key cannot elevate hidden seated attendee detail", async () => {
+  const result = await seated("foreign");
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+test("team key cannot elevate personal seated attendee detail", async () => {
+  const result = await seated("personal");
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+test("public UID capability remains and public attendee setting stays effective", async () => {
+  await seated();
+  const hidden = await detail("allowed");
+  assert.equal(hidden.status, 200);
+  assert.deepEqual(hidden.body.data.attendees, []);
+  await db.eventType.updateMany({ where: { slug: "allowed" }, data: { seatsShowAttendees: true } });
+  assert.equal((await detail("allowed")).body.data.attendees.length, 2);
+});
+test("personal key retains native seated-owner detail", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  const result = await seated("personal", personal);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.attendees.length, 2);
+});
+test("native delete refuses another team while preserving the row", async () => {
+  const event = await eventToDelete(foreign.id);
+  assert.equal((await removeEvent(event.id)).status, 404);
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 1);
+});
+test("native delete refuses personal scope through team key", async () => {
+  const event = await eventToDelete(null);
+  assert.equal((await removeEvent(event.id)).status, 404);
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 1);
+});
+test("native delete retains owner assertion even for team administrator", async () => {
+  const event = await eventToDelete(team.id, other.id);
+  assert.equal((await removeEvent(event.id)).status, 403);
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 1);
+});
+test("native delete permits scoped owner and personal owner through original route", async () => {
+  const event = await eventToDelete();
+  assert.equal((await removeEvent(event.id)).status, 200);
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 0);
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  const otherEvent = await eventToDelete(null);
+  assert.equal((await removeEvent(otherEvent.id, personal)).status, 200);
+});
+test("revoked or disabled owner cannot mutate through native delete", async () => {
+  const event = await eventToDelete();
+  await db.apiKey.deleteMany();
+  assert.equal((await removeEvent(event.id)).status, 401);
+  key = await lifecycle.createApiKey(db, owner.id, { teamId: team.id });
+  await db.user.update({ where: { id: owner.id }, data: { locked: true } });
+  assert.equal((await removeEvent(event.id)).status, 401);
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 1);
+});
+test("native mutation and policy use a serializable transaction", async () => {
+  const event = await eventToDelete();
+  await db.$executeRawUnsafe(
+    `CREATE OR REPLACE FUNCTION require_serializable_native_delete() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF current_setting('transaction_isolation') <> 'serializable' THEN RAISE EXCEPTION 'native delete requires serializable snapshot'; END IF; RETURN OLD; END $$`
+  );
+  await db.$executeRawUnsafe(
+    'CREATE TRIGGER require_serializable_native_delete BEFORE DELETE ON "EventType" FOR EACH ROW EXECUTE FUNCTION require_serializable_native_delete()'
+  );
+  assert.equal((await removeEvent(event.id)).status, 200);
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 0);
+});
+
+async function admitted(token = key) {
+  const { ApiAuthStrategy } = runtime.load(
+    path.join(root, api, "modules/auth/strategies/api-auth/api-auth.strategy.ts")
+  );
+  const strategy = runtime.module.get(ApiAuthStrategy);
+  return strategy.getSuccessUser(await strategy.apiKeyStrategy(token, {}));
+}
+test("mutation refuses scope membership revoked after actual native admission", async () => {
+  const event = await eventToDelete();
+  const user = await admitted();
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { accepted: false },
+  });
+  await assert.rejects(
+    eventAccess.service.deleteEventType(event.id, user),
+    (error) => error instanceof nest.HttpException && error.getStatus() === 404
+  );
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 1);
+});
+test("personal mutation rechecks owner activation inside transaction", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  const user = await admitted(personal);
+  const event = await eventToDelete(null);
+  await db.user.update({ where: { id: owner.id }, data: { locked: true } });
+  await assert.rejects(
+    eventAccess.service.deleteEventType(event.id, user),
+    (error) => error instanceof nest.HttpException && error.getStatus() === 404
+  );
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 1);
+});
+test("read-only custom-role drift cannot authorize scoped mutation", async () => {
+  const event = await eventToDelete();
+  const user = await admitted();
+  await db.role.create({
+    data: {
+      id: "scope-reader",
+      name: "Reader",
+      teamId: team.id,
+      permissions: { create: { resource: "eventType", action: "read" } },
+    },
+  });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { customRoleId: "scope-reader" },
+  });
+  await assert.rejects(
+    eventAccess.service.deleteEventType(event.id, user),
+    (error) => error instanceof nest.HttpException && error.getStatus() === 404
+  );
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 1);
+});
+test("native mutation retains current owner check after admission", async () => {
+  const event = await eventToDelete();
+  const user = await admitted();
+  await db.eventType.update({ where: { id: event.id }, data: { userId: other.id } });
+  await assert.rejects(
+    eventAccess.service.deleteEventType(event.id, user),
+    (error) => error instanceof nest.HttpException && error.getStatus() === 403
+  );
+  assert.equal(await db.eventType.count({ where: { id: event.id } }), 1);
+});
+test("managed mutation uses parent scope and refuses explicit foreign team", async () => {
+  const parent = await db.eventType.findFirstOrThrow({ where: { slug: "allowed" } });
+  const managed = await eventToDelete(null);
+  await db.eventType.update({ where: { id: managed.id }, data: { parentId: parent.id } });
+  assert.equal((await removeEvent(managed.id)).status, 200);
+  const conflicting = await eventToDelete(foreign.id);
+  await db.eventType.update({ where: { id: conflicting.id }, data: { parentId: parent.id } });
+  assert.equal((await removeEvent(conflicting.id)).status, 404);
+  assert.equal(await db.eventType.count({ where: { id: conflicting.id } }), 1);
+});
+
+test("native seated detail retains accepted team administrator authority", async () => {
+  await seated();
+  await db.eventType.updateMany({ where: { slug: "allowed" }, data: { userId: other.id } });
+  const result = await detail("allowed", key);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.attendees.length, 2);
 });

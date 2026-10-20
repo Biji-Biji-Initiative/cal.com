@@ -8,21 +8,21 @@ import {
 import type { GetEventTypesQuery_2024_06_14, SortOrderType } from "@calcom/platform-types";
 import type { EventType } from "@calcom/prisma/client";
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { AuthOptionalUser } from "@/modules/auth/decorators/get-optional-user/get-optional-user.decorator";
+import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
+import { EventTypeAccessService } from "@/modules/event-types/services/event-type-access.service";
+import { MembershipsRepository } from "@/modules/memberships/memberships.repository";
+import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
+import { SelectedCalendarsRepository } from "@/modules/selected-calendars/selected-calendars.repository";
+import { DatabaseTeamEventType } from "@/modules/teams/event-types/services/output-team-event-types.service";
+import { UsersService } from "@/modules/users/services/users.service";
+import { UsersRepository, UserWithProfile } from "@/modules/users/users.repository";
 import { DEFAULT_EVENT_TYPES } from "@/platform/event-types/event-types_2024_06_14/constants/constants";
 import { EventTypesRepository_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/event-types.repository";
 import { DatabaseEventType } from "@/platform/event-types/event-types_2024_06_14/services/output-event-types.service";
 import { InputEventTransformed_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/transformed";
 import { CustomField, SystemField } from "@/platform/event-types/event-types_2024_06_14/transformers";
 import { SchedulesRepository_2024_06_11 } from "@/platform/schedules/schedules_2024_06_11/schedules.repository";
-import { AuthOptionalUser } from "@/modules/auth/decorators/get-optional-user/get-optional-user.decorator";
-import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
-import { EventTypeAccessService } from "@/modules/event-types/services/event-type-access.service";
-import { MembershipsRepository } from "@/modules/memberships/memberships.repository";
-import { DatabaseTeamEventType } from "@/modules/teams/event-types/services/output-team-event-types.service";
-import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
-import { SelectedCalendarsRepository } from "@/modules/selected-calendars/selected-calendars.repository";
-import { UsersService } from "@/modules/users/services/users.service";
-import { UsersRepository, UserWithProfile } from "@/modules/users/users.repository";
 
 @Injectable()
 export class EventTypesService_2024_06_14 {
@@ -348,15 +348,23 @@ export class EventTypesService_2024_06_14 {
     };
   }
 
-  async deleteEventType(eventTypeId: number, userId: number) {
-    const existingEventType = await this.eventTypesRepository.getEventTypeById(eventTypeId);
-    if (!existingEventType) {
-      throw new NotFoundException(`Event type with ID=${eventTypeId} does not exist.`);
-    }
-
-    this.checkUserOwnsEventType(userId, existingEventType);
-
-    return this.eventTypesRepository.deleteEventType(eventTypeId);
+  async deleteEventType(eventTypeId: number, user: ApiAuthGuardUser) {
+    return this.dbWrite.prisma.$transaction(
+      async (tx) => {
+        const existingEventType = await this.eventTypesRepository.getEventTypeById(eventTypeId, tx);
+        if (!existingEventType) {
+          throw new NotFoundException(`Event type with ID=${eventTypeId} does not exist.`);
+        }
+        this.checkUserOwnsEventType(user.id, existingEventType);
+        if (
+          !(await this.eventTypeAccessService.isWithinApiKeyScope(user, eventTypeId, tx, "eventType.delete"))
+        ) {
+          throw new NotFoundException(`Event type with ID=${eventTypeId} does not exist.`);
+        }
+        return this.eventTypesRepository.deleteEventType(eventTypeId, tx);
+      },
+      { isolationLevel: "Serializable" }
+    );
   }
 
   checkUserOwnsEventType(userId: number, eventType: Pick<EventType, "id" | "userId">) {

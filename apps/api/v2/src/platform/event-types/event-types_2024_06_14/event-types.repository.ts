@@ -1,9 +1,9 @@
 import type { SortOrderType } from "@calcom/platform-types";
 import type { Prisma } from "@calcom/prisma/client";
 import { Injectable } from "@nestjs/common";
-import { InputEventTransformed_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/transformed";
 import { PrismaReadService } from "@/modules/prisma/prisma-read.service";
 import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
+import { InputEventTransformed_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/transformed";
 
 @Injectable()
 export class EventTypesRepository_2024_06_14 {
@@ -137,8 +137,11 @@ export class EventTypesRepository_2024_06_14 {
     });
   }
 
-  async getEventTypeById(eventTypeId: number) {
-    return this.dbRead.prisma.eventType.findUnique({
+  async getEventTypeById(
+    eventTypeId: number,
+    client: Pick<Prisma.TransactionClient, "eventType"> = this.dbRead.prisma
+  ) {
+    return client.eventType.findUnique({
       where: { id: eventTypeId },
       include: {
         users: this.usersInclude,
@@ -209,8 +212,11 @@ export class EventTypesRepository_2024_06_14 {
     });
   }
 
-  async deleteEventType(eventTypeId: number) {
-    return this.dbWrite.prisma.eventType.delete({ where: { id: eventTypeId } });
+  async deleteEventType(
+    eventTypeId: number,
+    client: Pick<Prisma.TransactionClient, "eventType"> = this.dbWrite.prisma
+  ) {
+    return client.eventType.delete({ where: { id: eventTypeId } });
   }
 
   async isUserHostOfEventType(userId: number, eventTypeId: number) {

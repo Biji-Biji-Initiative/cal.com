@@ -1,11 +1,12 @@
-import { EventTypesRepository_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/event-types.repository";
+import { PermissionCheckService } from "@calcom/platform-libraries";
+import type { EventType, Prisma } from "@calcom/prisma/client";
+import { Injectable } from "@nestjs/common";
 import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
 import { MembershipsRepository } from "@/modules/memberships/memberships.repository";
 import { MembershipsService } from "@/modules/memberships/services/memberships.service";
+import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
 import { TeamsRepository } from "@/modules/teams/teams/teams.repository";
-import { Injectable } from "@nestjs/common";
-
-import type { EventType } from "@calcom/prisma/client";
+import { EventTypesRepository_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/event-types.repository";
 
 @Injectable()
 export class EventTypeAccessService {
@@ -13,10 +14,43 @@ export class EventTypeAccessService {
     private readonly eventTypesRepository: EventTypesRepository_2024_06_14,
     private readonly membershipsRepository: MembershipsRepository,
     private readonly membershipsService: MembershipsService,
-    private readonly teamsRepository: TeamsRepository
+    private readonly teamsRepository: TeamsRepository,
+    private readonly dbWrite: PrismaWriteService
   ) {}
 
+  async isWithinApiKeyScope(
+    user: ApiAuthGuardUser,
+    eventTypeId: number,
+    client: Pick<Prisma.TransactionClient, "eventType" | "user" | "membership" | "team"> = this.dbWrite
+      .prisma,
+    permission: "eventType.read" | "eventType.delete" = "eventType.read"
+  ): Promise<boolean> {
+    if (!Number.isSafeInteger(user.id) || user.id <= 0) return false;
+    const actor = await client.user.findUnique({ where: { id: user.id }, select: { locked: true } });
+    if (!actor || actor.locked !== false) return false;
+    if (user.apiKeyTeamId == null) return true;
+    if (
+      !Number.isSafeInteger(user.apiKeyTeamId) ||
+      user.apiKeyTeamId <= 0 ||
+      !Number.isSafeInteger(eventTypeId) ||
+      eventTypeId <= 0
+    )
+      return false;
+    const event = await client.eventType.findUnique({
+      where: { id: eventTypeId },
+      select: { teamId: true, parent: { select: { teamId: true } } },
+    });
+    if (!event || (event.teamId ?? event.parent?.teamId) !== user.apiKeyTeamId) return false;
+    return new PermissionCheckService(client).checkPermission({
+      userId: user.id,
+      teamId: user.apiKeyTeamId,
+      permission,
+      fallbackRoles: ["ADMIN", "OWNER"],
+    });
+  }
+
   async userIsEventTypeAdminOrOwner(authUser: ApiAuthGuardUser, eventType: EventType): Promise<boolean> {
+    if (!(await this.isWithinApiKeyScope(authUser, eventType.id))) return false;
     const authUserId = authUser.id;
     const eventTypeId = eventType.id;
     const teamId = eventType.teamId;

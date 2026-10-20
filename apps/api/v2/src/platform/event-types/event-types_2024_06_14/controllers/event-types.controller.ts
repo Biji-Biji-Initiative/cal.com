@@ -216,9 +216,9 @@ export class EventTypesController_2024_06_14 {
   })
   async deleteEventType(
     @Param("eventTypeId") eventTypeId: number,
-    @GetUser("id") userId: number
+    @GetUser() user: ApiAuthGuardUser
   ): Promise<DeleteEventTypeOutput_2024_06_14> {
-    const eventType = await this.eventTypesService.deleteEventType(eventTypeId, userId);
+    const eventType = await this.eventTypesService.deleteEventType(eventTypeId, user);
 
     return {
       status: SUCCESS_STATUS,

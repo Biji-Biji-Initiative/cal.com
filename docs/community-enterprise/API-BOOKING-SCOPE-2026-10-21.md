@@ -130,3 +130,52 @@ hydration still require separate acceptance. The retained API hydrates selected
 IDs after the listing snapshot; this increment does not claim atomic cancellation
 of already admitted reads or writes. Live identity/provider/serving-image gates
 remain separate and do not block the next authorized source slice.
+
+## Seated detail elevation and native deletion continuation
+
+Existing CAL-05.API, source predecessor
+`adecb225f9cff06f638b0348a47b4f04dda276f3`. Fresh inbox and exact-path conflict
+checks admitted the next narrow leases; the previous ten leases were released.
+
+A team key still gained private seated-attendee visibility through the event
+owner's identity in another team or a personal event. The retained
+`EventTypeAccessService` now checks current actor activation, exact key/resource
+team (including managed parent ownership) and the existing permission policy
+before native owner/host/admin elevation. Its policy is re-exported through the
+owning platform library, as required for native API imports. Public UID detail
+continues to return its public representation; explicit public attendee settings,
+personal-owner and accepted team-admin detail controls remain effective.
+
+Modern DELETE `/v2/event-types/:eventTypeId` formerly discarded the principal's
+scope and passed only its user ID. It now passes the full server-authenticated
+principal. The retained service checks the original owner assertion and current
+principal/scope/action permission, then invokes the retained repository delete in
+one serializable primary transaction. Existing repository methods accept that
+transaction client while their default callers retain their prior connections.
+Foreign/personal team-key scope receives the same not-found response as missing
+resources. Being an administrator still does not replace the existing owner
+requirement for deletion.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Corrected old-source controls | 31 passed, 5 failed: two hidden-attendee elevations, two out-of-scope real deletes, and the database trigger requiring serializable deletion |
+| New native HTTP/domain/PG suite | 42 passed, zero failures/skips; actual runner exit 0 and owned database container removed |
+| Current-state mutation controls | After actual native API-key authentication: revoked membership, read-only custom-role drift, disabled personal owner and changed event owner refuse deletion and preserve the row |
+| Native transaction proof | Actual PostgreSQL BEFORE DELETE trigger rejects a non-serializable write; the native route passes with the transaction-bound service/repository/policy |
+| Native strict source/import-closure types | Exit 0 against the actual added policy export and modified source/generated types |
+| CJS checkJs | Exit 0, including typed exception predicates and the new bounded event fixture |
+
+The first old-source attempt had an additional anonymous-detail failure because
+its fixture omitted the required local session secret. A generated, memory-only
+task-local secret corrected that prerequisite before the five genuine source
+failures were recorded. Both receipts are preserved. No external credential,
+provider, schema edit, install or full application baseline was required.
+
+The fixture executes the native detail/output/attendee-seat paths, full retained
+event access class, native membership/team repository bodies, actual principal
+admission, and real synthetic event deletion. Public/foreign/personal representations
+and row preservation are asserted. Other event-type versions/mutations and
+personal-key host/team membership boundaries remain unfinished, as does the
+post-list hydration gap. Key revocation already admitted in flight is not claimed
+atomically canceled. Full API assembly, provider/identity/deployed acceptance and
+original programme gates remain separate; CAL-05.API is still `in_progress`.

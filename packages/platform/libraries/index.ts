@@ -204,6 +204,7 @@ export async function verifyPhoneNumber(
 }
 
 export { authenticateApiKey } from "@calcom/features/community-enterprise/api-keys/ApiKeyAuthentication";
+export { PermissionCheckService } from "@calcom/features/community-enterprise/authorization/PermissionCheckService";
 export { readAuthentikSessionConfig } from "@calcom/features/community-enterprise/identity/AuthentikConfig";
 export { refreshAuthentikToken } from "@calcom/features/community-enterprise/identity/AuthentikIdentity";
 export {
