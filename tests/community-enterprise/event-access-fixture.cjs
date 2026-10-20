@@ -86,6 +86,6 @@ function eventAccessFixture({ native, load, db, root }) {
   );
   nest.Controller("v2/event-types")(Controller);
   Controller.prototype.eventTypesService = service;
-  return { access, service, Controller };
+  return { access, service, Controller, readers: [repository, membership, teams] };
 }
 module.exports = { eventAccessFixture };

@@ -1,7 +1,10 @@
 import { MembershipRole } from "@calcom/platform-libraries";
+import type { Prisma } from "@calcom/prisma/client";
 import { Injectable } from "@nestjs/common";
 import { PrismaReadService } from "@/modules/prisma/prisma-read.service";
 import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
+
+type MembershipClient = Pick<Prisma.TransactionClient, "membership">;
 
 @Injectable()
 export class MembershipsRepository {
@@ -80,12 +83,17 @@ export class MembershipsRepository {
     return this.findMembershipByTeamId(orgId, userId);
   }
 
-  async isUserOrganizationAdmin(userId: number, organizationId: number) {
-    const adminMembership = await this.dbRead.prisma.membership.findFirst({
+  async isUserOrganizationAdmin(
+    userId: number,
+    organizationId: number,
+    client: MembershipClient = this.dbRead.prisma
+  ) {
+    const adminMembership = await client.membership.findFirst({
       where: {
         userId,
         teamId: organizationId,
         accepted: true,
+        customRoleId: null,
         OR: [{ role: "ADMIN" }, { role: "OWNER" }],
       },
     });
@@ -93,11 +101,12 @@ export class MembershipsRepository {
     return !!adminMembership;
   }
 
-  async getOrgIdsWhereUserIsAdminOrOwner(userId: number) {
-    const userOrgAdminMemberships = await this.dbRead.prisma.membership.findMany({
+  async getOrgIdsWhereUserIsAdminOrOwner(userId: number, client: MembershipClient = this.dbRead.prisma) {
+    const userOrgAdminMemberships = await client.membership.findMany({
       where: {
         userId: userId,
         accepted: true,
+        customRoleId: null,
         role: {
           in: ["OWNER", "ADMIN"],
         },
@@ -128,12 +137,17 @@ export class MembershipsRepository {
     return membership;
   }
 
-  async getUserAdminOrOwnerTeamMembership(userId: number, teamId: number) {
-    return this.dbRead.prisma.membership.findFirst({
+  async getUserAdminOrOwnerTeamMembership(
+    userId: number,
+    teamId: number,
+    client: MembershipClient = this.dbRead.prisma
+  ) {
+    return client.membership.findFirst({
       where: {
         userId: userId,
         teamId: teamId,
         accepted: true,
+        customRoleId: null,
         role: {
           in: ["OWNER", "ADMIN"],
         },
@@ -141,8 +155,12 @@ export class MembershipsRepository {
     });
   }
 
-  async getUserMembershipInOneOfOrgs(userId: number, orgIds: number[]) {
-    return this.dbRead.prisma.membership.findFirst({
+  async getUserMembershipInOneOfOrgs(
+    userId: number,
+    orgIds: number[],
+    client: MembershipClient = this.dbRead.prisma
+  ) {
+    return client.membership.findFirst({
       where: {
         userId: userId,
         accepted: true,
@@ -156,8 +174,12 @@ export class MembershipsRepository {
     });
   }
 
-  async getUserMembershipInOneOfOrgsTeams(userId: number, orgIds: number[]) {
-    return this.dbRead.prisma.membership.findFirst({
+  async getUserMembershipInOneOfOrgsTeams(
+    userId: number,
+    orgIds: number[],
+    client: MembershipClient = this.dbRead.prisma
+  ) {
+    return client.membership.findFirst({
       where: {
         userId: userId,
         accepted: true,

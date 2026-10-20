@@ -258,3 +258,47 @@ This closes the selected attendee/seat masking loss. Other post-snapshot booking
 fields, native relation freshness, other mutation/version families, managed-client
 resource binding and external/runtime programme gates remain open. The complete
 API leaf and original 39-node goal are not complete.
+
+## Current primary event authorization snapshot
+
+Source predecessor `0619a282a508a0c222197dd2139d70d2522f7808`; nine newly clear exact
+paths were leased after the previous increment's four leases were released.
+
+The retained event authority mixed current primary scope checks with an owner
+from a lagging descriptor and Host/admin queries using read repositories. Actual
+PostgreSQL repeatable-read old snapshots demonstrated four stale-relation grants;
+a custom read role also inherited builtin administration from its stored ADMIN
+label. These were authorization decisions on real native methods/data, with no
+mock permission booleans or synthesized query results.
+
+Read authorization now gets the current actor/resource and runs the retained
+owner, Host/assignment, team and organization relation checks within one primary,
+read-only RepeatableRead transaction. Existing native repository methods accept
+the explicit transaction client while keeping their default callers intact.
+Builtin administrator queries require `customRoleId: null`; the existing shared
+policy still checks explicit resource permission. Current actor role is checked
+before an already verified non-key system-admin flag can grant its legacy access.
+The serializable mutation transaction continues to use the same scope helper
+without being replaced by a read-only transaction.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old-source controls | 58 passed, 5 failed: changed owner, removed Host, demoted team/org administrator, custom-role ADMIN-label inheritance |
+| Fixed native HTTP/domain/PG suite | 64 passed, zero failures/skips; runner exit 0 and owned PG container removal verified |
+| Real transaction mode | Native relation call executes a PostgreSQL query asserting `repeatable read` and `transaction_read_only = on`; native admin output remains correct |
+| Native strict source/import-closure typing | Exit 0 |
+| Expanded fixture checkJs | Exit 0 |
+
+The stale-reader fixture opens a real database snapshot, commits changes through
+the primary client, then dispatches HTTP while native read repositories continue
+to use that old snapshot. The current authority refuses the stale grant. A missed
+org-client forwarding call caused one intermediate negative to fail and was
+corrected; all failure/success and patch-attempt receipts remain private. The
+fixture never substitutes authorization results or native SQL bodies.
+
+All previous owner/host/custom-role/public UID, export, list, seat masking and
+serializable delete controls remain green. No install, schema, full application
+baseline, provider or production action was required. CAL-05.API and the original
+39-node goal remain in progress: complete native client/resource scope, other
+routes/versions, remaining output fields and original runtime/provider gates need
+separate acceptance.

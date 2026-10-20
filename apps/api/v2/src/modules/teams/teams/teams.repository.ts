@@ -17,8 +17,8 @@ export class TeamsRepository {
     });
   }
 
-  async getById(teamId: number) {
-    return this.dbRead.prisma.team.findUnique({
+  async getById(teamId: number, client: Pick<Prisma.TransactionClient, "team"> = this.dbRead.prisma) {
+    return client.team.findUnique({
       where: { id: teamId },
     });
   }

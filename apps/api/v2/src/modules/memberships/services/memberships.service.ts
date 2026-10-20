@@ -1,8 +1,7 @@
-import { MembershipsRepository } from "@/modules/memberships/memberships.repository";
+import type { Membership, Prisma } from "@calcom/prisma/client";
 import { Injectable } from "@nestjs/common";
 import { intersectionBy } from "lodash";
-
-import type { Membership } from "@calcom/prisma/client";
+import { MembershipsRepository } from "@/modules/memberships/memberships.repository";
 
 @Injectable()
 export class MembershipsService {
@@ -24,9 +23,14 @@ export class MembershipsService {
     );
   }
 
-  async isUserOrgAdminOrOwnerOfAnotherUser(userId: number, anotherUserId: number) {
+  async isUserOrgAdminOrOwnerOfAnotherUser(
+    userId: number,
+    anotherUserId: number,
+    client?: Pick<Prisma.TransactionClient, "membership">
+  ) {
     const orgIdsWhereUserIsAdminOrOwner = await this.membershipsRepository.getOrgIdsWhereUserIsAdminOrOwner(
-      userId
+      userId,
+      client
     );
 
     if (orgIdsWhereUserIsAdminOrOwner.length === 0) {
@@ -35,14 +39,16 @@ export class MembershipsService {
 
     const anotherUserOrgMembership = await this.membershipsRepository.getUserMembershipInOneOfOrgs(
       anotherUserId,
-      orgIdsWhereUserIsAdminOrOwner
+      orgIdsWhereUserIsAdminOrOwner,
+      client
     );
 
     if (anotherUserOrgMembership) return true;
 
     const anotherUserOrgTeamMembership = await this.membershipsRepository.getUserMembershipInOneOfOrgsTeams(
       anotherUserId,
-      orgIdsWhereUserIsAdminOrOwner
+      orgIdsWhereUserIsAdminOrOwner,
+      client
     );
 
     return !!anotherUserOrgTeamMembership;

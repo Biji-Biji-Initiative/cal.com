@@ -946,3 +946,139 @@ test("native list preserves explicitly public attendee setting", async () => {
   const result = await list("bookingUid=allowed", token);
   assert.equal(row(result).attendees.length, 2);
 });
+
+async function laggedReaders(change, request) {
+  return db.$transaction(
+    async (lag) => {
+      await lag.eventType.count();
+      const readers = [nativeBookings.bookingsRepository, ...eventAccess.readers];
+      const previous = readers.map((reader) => reader.dbRead);
+      readers.forEach((reader) => {
+        reader.dbRead = { prisma: lag };
+      });
+      try {
+        await change();
+        return await request();
+      } finally {
+        readers.forEach((reader, index) => {
+          reader.dbRead = previous[index];
+        });
+      }
+    },
+    { isolationLevel: "RepeatableRead", timeout: 20000 }
+  );
+}
+test("stale native owner descriptor cannot elevate current member", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("allowed", personal);
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { role: "MEMBER" },
+  });
+  const result = await laggedReaders(
+    () => db.eventType.updateMany({ where: { slug: "allowed" }, data: { userId: other.id } }),
+    () => detail("allowed", personal)
+  );
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+test("stale native Host query cannot revive a removed host", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("allowed", personal);
+  const event = await db.eventType.findFirstOrThrow({ where: { slug: "allowed" } });
+  await db.eventType.update({ where: { id: event.id }, data: { userId: other.id } });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { role: "MEMBER" },
+  });
+  await db.host.create({ data: { eventTypeId: event.id, userId: owner.id } });
+  const result = await laggedReaders(
+    () => db.host.deleteMany({ where: { eventTypeId: event.id } }),
+    () => detail("allowed", personal)
+  );
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+  assert.equal(await db.host.count(), 0);
+});
+test("stale native team-admin query cannot revive demoted role", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("allowed", personal);
+  await db.eventType.updateMany({ where: { slug: "allowed" }, data: { userId: other.id } });
+  const result = await laggedReaders(
+    () =>
+      db.membership.update({
+        where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+        data: { role: "MEMBER" },
+      }),
+    () => detail("allowed", personal)
+  );
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+test("stale native organization-admin query cannot revive demoted role", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("personal", personal);
+  await db.eventType.updateMany({ where: { slug: "personal" }, data: { userId: other.id } });
+  const org = await db.team.create({ data: { name: "Current organization", isOrganization: true } });
+  for (const [userId, role] of [
+    [owner.id, "ADMIN"],
+    [other.id, "MEMBER"],
+  ])
+    await db.membership.create({ data: { userId, role, teamId: org.id, accepted: true } });
+  const result = await laggedReaders(
+    () =>
+      db.membership.update({
+        where: { userId_teamId: { userId: owner.id, teamId: org.id } },
+        data: { role: "MEMBER" },
+      }),
+    () => detail("personal", personal)
+  );
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+test("custom read-role cannot inherit builtin administration from ADMIN storage label", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("allowed", personal);
+  await db.eventType.updateMany({ where: { slug: "allowed" }, data: { userId: other.id } });
+  await db.role.create({
+    data: {
+      id: "read-not-admin",
+      name: "Read event types",
+      teamId: team.id,
+      permissions: { create: { resource: "eventType", action: "read" } },
+    },
+  });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { customRoleId: "read-not-admin" },
+  });
+  const result = await detail("allowed", personal);
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data.attendees, []);
+});
+
+test("native relation queries share a real primary read-only repeatable-read snapshot", async (context) => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await seated("allowed", personal);
+  await db.eventType.updateMany({ where: { slug: "allowed" }, data: { userId: other.id } });
+  const repo = eventAccess.access.eventTypesRepository;
+  const original = repo.isUserHostOfEventType;
+  let observed = 0;
+  repo.isUserHostOfEventType = async (...args) => {
+    const client = args[2];
+    assert.ok(client);
+    const [mode] =
+      await client.$queryRaw`SELECT current_setting('transaction_isolation') AS isolation, current_setting('transaction_read_only') AS read_only`;
+    assert.equal(mode.isolation, "repeatable read");
+    assert.equal(mode.read_only, "on");
+    observed++;
+    return original.apply(repo, args);
+  };
+  context.after(() => {
+    repo.isUserHostOfEventType = original;
+  });
+  const result = await detail("allowed", personal);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.attendees.length, 2);
+  assert.equal(observed, 1);
+});

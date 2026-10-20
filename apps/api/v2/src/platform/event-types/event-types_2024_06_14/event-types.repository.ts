@@ -219,8 +219,12 @@ export class EventTypesRepository_2024_06_14 {
     return client.eventType.delete({ where: { id: eventTypeId } });
   }
 
-  async isUserHostOfEventType(userId: number, eventTypeId: number) {
-    const eventType = await this.dbRead.prisma.eventType.findFirst({
+  async isUserHostOfEventType(
+    userId: number,
+    eventTypeId: number,
+    client: Pick<Prisma.TransactionClient, "eventType"> = this.dbRead.prisma
+  ) {
+    const eventType = await client.eventType.findFirst({
       where: {
         id: eventTypeId,
         hosts: { some: { userId: userId } },
@@ -230,8 +234,12 @@ export class EventTypesRepository_2024_06_14 {
     return !!eventType;
   }
 
-  async isUserAssignedToEventType(userId: number, eventTypeId: number) {
-    const eventType = await this.dbRead.prisma.eventType.findFirst({
+  async isUserAssignedToEventType(
+    userId: number,
+    eventTypeId: number,
+    client: Pick<Prisma.TransactionClient, "eventType"> = this.dbRead.prisma
+  ) {
+    const eventType = await client.eventType.findFirst({
       where: {
         id: eventTypeId,
         users: { some: { id: userId } },

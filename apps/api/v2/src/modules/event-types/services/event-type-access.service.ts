@@ -8,6 +8,8 @@ import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
 import { TeamsRepository } from "@/modules/teams/teams/teams.repository";
 import { EventTypesRepository_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/event-types.repository";
 
+type EventScopeClient = Pick<Prisma.TransactionClient, "eventType" | "user" | "membership" | "team">;
+
 @Injectable()
 export class EventTypeAccessService {
   constructor(
@@ -21,19 +23,30 @@ export class EventTypeAccessService {
   async isWithinApiKeyScope(
     user: ApiAuthGuardUser,
     eventTypeId: number,
-    client: Pick<Prisma.TransactionClient, "eventType" | "user" | "membership" | "team"> = this.dbWrite
-      .prisma,
+    client: EventScopeClient = this.dbWrite.prisma,
     permission: "eventType.read" | "eventType.delete" = "eventType.read"
   ): Promise<boolean> {
-    if (!Number.isSafeInteger(user.id) || user.id <= 0) return false;
-    const actor = await client.user.findUnique({ where: { id: user.id }, select: { locked: true } });
-    if (!actor || actor.locked !== false) return false;
-    if (!Number.isSafeInteger(eventTypeId) || eventTypeId <= 0) return false;
+    return (await this.getCurrentEventType(user, eventTypeId, client, permission)) !== null;
+  }
+
+  private async getCurrentEventType(
+    user: ApiAuthGuardUser,
+    eventTypeId: number,
+    client: EventScopeClient,
+    permission: "eventType.read" | "eventType.delete"
+  ) {
+    if (!Number.isSafeInteger(user.id) || user.id <= 0) return null;
+    const actor = await client.user.findUnique({
+      where: { id: user.id },
+      select: { locked: true, role: true },
+    });
+    if (!actor || actor.locked !== false) return null;
+    if (!Number.isSafeInteger(eventTypeId) || eventTypeId <= 0) return null;
     const event = await client.eventType.findUnique({
       where: { id: eventTypeId },
-      select: { teamId: true, parent: { select: { teamId: true } } },
+      select: { id: true, userId: true, teamId: true, parent: { select: { teamId: true } } },
     });
-    if (!event) return false;
+    if (!event) return null;
     const resourceTeamId = event.teamId ?? event.parent?.teamId;
     if (
       user.apiKeyTeamId != null &&
@@ -41,68 +54,79 @@ export class EventTypeAccessService {
         user.apiKeyTeamId <= 0 ||
         resourceTeamId !== user.apiKeyTeamId)
     )
-      return false;
-    if (resourceTeamId == null) return true;
-    // A retained owner or Host relation must not revive a revoked team grant.
-    return new PermissionCheckService(client).checkPermission({
-      userId: user.id,
-      teamId: resourceTeamId,
-      permission,
-      fallbackRoles:
-        user.apiKeyTeamId == null && permission === "eventType.read"
-          ? ["MEMBER", "ADMIN", "OWNER"]
-          : ["ADMIN", "OWNER"],
-    });
+      return null;
+    if (
+      resourceTeamId != null &&
+      !(await new PermissionCheckService(client).checkPermission({
+        userId: user.id,
+        teamId: resourceTeamId,
+        permission,
+        fallbackRoles:
+          user.apiKeyTeamId == null && permission === "eventType.read"
+            ? ["MEMBER", "ADMIN", "OWNER"]
+            : ["ADMIN", "OWNER"],
+      }))
+    )
+      return null;
+    return { actor, event };
   }
 
   async userIsEventTypeAdminOrOwner(authUser: ApiAuthGuardUser, eventType: EventType): Promise<boolean> {
-    if (!(await this.isWithinApiKeyScope(authUser, eventType.id))) return false;
-    const authUserId = authUser.id;
-    const eventTypeId = eventType.id;
-    const teamId = eventType.teamId;
-    const eventTypeOwnerId = eventType.userId || null;
-
-    if (authUser.isSystemAdmin && authUser.apiKeyTeamId === undefined) return true;
-
-    if (eventTypeOwnerId === authUserId) return true;
-
-    if (eventTypeId) {
-      const isHostOrAssigned = await this.isUserHostOrAssignedToEventType(authUserId, eventTypeId);
-      if (isHostOrAssigned) return true;
-    }
-
-    if (teamId) {
-      const isTeamOrParentOrgAdmin = await this.isUserTeamAdminOrParentOrgAdmin(authUserId, teamId);
-      if (isTeamOrParentOrgAdmin) return true;
-    }
-
-    if (eventTypeOwnerId) {
-      const isOrgAdminOrOwnerOfEventOwner = await this.isUserOrgAdminOrOwnerOfEventOwner(
-        authUserId,
-        eventTypeOwnerId
-      );
-      if (isOrgAdminOrOwnerOfEventOwner) return true;
-    }
-
-    return false;
+    return this.dbWrite.prisma.$transaction(
+      async (client) => {
+        await client.$executeRaw`SET TRANSACTION READ ONLY`;
+        const current = await this.getCurrentEventType(authUser, eventType.id, client, "eventType.read");
+        if (!current) return false;
+        const authUserId = authUser.id;
+        const { id: eventTypeId, teamId, userId: eventTypeOwnerId } = current.event;
+        if (authUser.isSystemAdmin && authUser.apiKeyTeamId === undefined && current.actor.role === "ADMIN")
+          return true;
+        if (eventTypeOwnerId === authUserId) return true;
+        if (await this.isUserHostOrAssignedToEventType(authUserId, eventTypeId, client)) return true;
+        if (teamId && (await this.isUserTeamAdminOrParentOrgAdmin(authUserId, teamId, client))) return true;
+        if (
+          eventTypeOwnerId &&
+          (await this.isUserOrgAdminOrOwnerOfEventOwner(authUserId, eventTypeOwnerId, client))
+        )
+          return true;
+        return false;
+      },
+      { isolationLevel: "RepeatableRead" }
+    );
   }
 
-  private async isUserHostOrAssignedToEventType(authUserId: number, eventTypeId: number): Promise<boolean> {
+  private async isUserHostOrAssignedToEventType(
+    authUserId: number,
+    eventTypeId: number,
+    client: EventScopeClient
+  ): Promise<boolean> {
     const [isUserHost, isUserAssigned] = await Promise.all([
-      this.eventTypesRepository.isUserHostOfEventType(authUserId, eventTypeId),
-      this.eventTypesRepository.isUserAssignedToEventType(authUserId, eventTypeId),
+      this.eventTypesRepository.isUserHostOfEventType(authUserId, eventTypeId, client),
+      this.eventTypesRepository.isUserAssignedToEventType(authUserId, eventTypeId, client),
     ]);
     return isUserHost || isUserAssigned;
   }
 
-  private async isUserTeamAdminOrParentOrgAdmin(authUserId: number, teamId: number): Promise<boolean> {
-    const membership = await this.membershipsRepository.getUserAdminOrOwnerTeamMembership(authUserId, teamId);
+  private async isUserTeamAdminOrParentOrgAdmin(
+    authUserId: number,
+    teamId: number,
+    client: EventScopeClient
+  ): Promise<boolean> {
+    const membership = await this.membershipsRepository.getUserAdminOrOwnerTeamMembership(
+      authUserId,
+      teamId,
+      client
+    );
     if (membership) return true;
 
-    const team = await this.teamsRepository.getById(teamId);
+    const team = await this.teamsRepository.getById(teamId, client);
     const parentOrgId = team?.parentId ?? null;
     if (parentOrgId) {
-      const isOrgAdmin = await this.membershipsRepository.isUserOrganizationAdmin(authUserId, parentOrgId);
+      const isOrgAdmin = await this.membershipsRepository.isUserOrganizationAdmin(
+        authUserId,
+        parentOrgId,
+        client
+      );
       if (isOrgAdmin) return true;
     }
 
@@ -111,8 +135,9 @@ export class EventTypeAccessService {
 
   private async isUserOrgAdminOrOwnerOfEventOwner(
     authUserId: number,
-    eventTypeOwnerId: number
+    eventTypeOwnerId: number,
+    client: EventScopeClient
   ): Promise<boolean> {
-    return this.membershipsService.isUserOrgAdminOrOwnerOfAnotherUser(authUserId, eventTypeOwnerId);
+    return this.membershipsService.isUserOrgAdminOrOwnerOfAnotherUser(authUserId, eventTypeOwnerId, client);
   }
 }
