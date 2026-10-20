@@ -15,6 +15,7 @@ import { GetUser } from "@/modules/auth/decorators/get-user/get-user.decorator";
 import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
 import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
 import { PermissionsGuard } from "@/modules/auth/guards/permissions/permissions.guard";
+import type { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
 import { EventTypeOwnershipGuard } from "@/modules/event-types/guards/event-type-ownership.guard";
 
 @Controller({
@@ -33,9 +34,9 @@ export class EventTypesPrivateLinksController {
   async createPrivateLink(
     @Param("eventTypeId", ParseIntPipe) eventTypeId: number,
     @Body() body: CreatePrivateLinkInput,
-    @GetUser("id") userId: number
+    @GetUser() user: ApiAuthGuardUser
   ): Promise<CreatePrivateLinkOutput> {
-    const privateLink = await this.privateLinksService.createPrivateLink(eventTypeId, userId, body);
+    const privateLink = await this.privateLinksService.createPrivateLink(eventTypeId, user, body);
 
     return {
       status: SUCCESS_STATUS,
@@ -49,9 +50,10 @@ export class EventTypesPrivateLinksController {
   @ApiHeader(API_KEY_OR_ACCESS_TOKEN_HEADER)
   @ApiOperation({ summary: "Get all private links for an event type" })
   async getPrivateLinks(
-    @Param("eventTypeId", ParseIntPipe) eventTypeId: number
+    @Param("eventTypeId", ParseIntPipe) eventTypeId: number,
+    @GetUser() user: ApiAuthGuardUser
   ): Promise<GetPrivateLinksOutput> {
-    const privateLinks = await this.privateLinksService.getPrivateLinks(eventTypeId);
+    const privateLinks = await this.privateLinksService.getPrivateLinks(eventTypeId, user);
 
     return {
       status: SUCCESS_STATUS,
@@ -67,10 +69,11 @@ export class EventTypesPrivateLinksController {
   async updatePrivateLink(
     @Param("eventTypeId", ParseIntPipe) eventTypeId: number,
     @Param("linkId") linkId: string,
-    @Body() body: UpdatePrivateLinkBody
+    @Body() body: UpdatePrivateLinkBody,
+    @GetUser() user: ApiAuthGuardUser
   ): Promise<UpdatePrivateLinkOutput> {
     const updateInput = { ...body, linkId };
-    const privateLink = await this.privateLinksService.updatePrivateLink(eventTypeId, updateInput);
+    const privateLink = await this.privateLinksService.updatePrivateLink(eventTypeId, updateInput, user);
 
     return {
       status: SUCCESS_STATUS,
@@ -85,9 +88,10 @@ export class EventTypesPrivateLinksController {
   @ApiOperation({ summary: "Delete a private link for an event type" })
   async deletePrivateLink(
     @Param("eventTypeId", ParseIntPipe) eventTypeId: number,
-    @Param("linkId") linkId: string
+    @Param("linkId") linkId: string,
+    @GetUser() user: ApiAuthGuardUser
   ): Promise<DeletePrivateLinkOutput> {
-    await this.privateLinksService.deletePrivateLink(eventTypeId, linkId);
+    await this.privateLinksService.deletePrivateLink(eventTypeId, linkId, user);
 
     return {
       status: SUCCESS_STATUS,

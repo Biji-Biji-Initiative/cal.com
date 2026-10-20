@@ -26,7 +26,8 @@ let db,
   primarySql,
   staleSqlReads,
   eventAccess,
-  nativeBookings;
+  nativeBookings,
+  nativePrivateLinks;
 const api = "apps/api/v2/src/";
 const booking = `${api}platform/bookings/2024-08-13/`;
 
@@ -138,6 +139,7 @@ before(async () => {
       const { BookingPbacGuard } = load(path.join(root, booking, "guards/booking-pbac.guard.ts"));
       eventAccess = eventAccessFixture({ native, load, db, root });
       const privateLinks = privateLinksFixture({ load, tokens, db, root, eventAccess });
+      nativePrivateLinks = privateLinks;
       const { OptionalApiAuthGuard } = load(
         path.join(root, api, "modules/auth/guards/optional-api-auth/optional-api-auth.guard.ts")
       );
@@ -260,6 +262,7 @@ before(async () => {
 
 beforeEach(async () => {
   await db.$executeRawUnsafe('DROP TRIGGER IF EXISTS require_serializable_native_delete ON "EventType"');
+  await db.$executeRawUnsafe('DROP TRIGGER IF EXISTS require_serializable_private_link ON "HashedLink"');
   for (const model of [
     "enterpriseAuditEvent",
     "apiKey",
@@ -1224,4 +1227,101 @@ test("native private-link HEAD uses read action for a read-only owner role", asy
   });
   assert.equal(response.status, 200);
   assert.equal(await response.text(), "");
+});
+
+function afterOwnerAdmission(context, change) {
+  const original = eventAccess.access.userOwnsEventType.bind(eventAccess.access);
+  let changed = false;
+  eventAccess.access.userOwnsEventType = async (...args) => {
+    const allowed = await original(...args);
+    if (!args[3] && allowed && !changed) {
+      changed = true;
+      await change();
+    }
+    return allowed;
+  };
+  context.after(() => {
+    eventAccess.access.userOwnsEventType = original;
+  });
+}
+test("native private-link create rechecks revoked membership after owner guard", async (context) => {
+  const events = await privateLinkEvents();
+  afterOwnerAdmission(context, () =>
+    db.membership.update({
+      where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+      data: { accepted: false },
+    })
+  );
+  assert.equal((await privateLink("POST", events.allowed.id, "", { maxUsageCount: 3 })).status, 404);
+  assert.equal(await db.hashedLink.count(), 3);
+});
+test("native private-link update rechecks moved resource after owner guard", async (context) => {
+  const events = await privateLinkEvents();
+  afterOwnerAdmission(context, () =>
+    db.eventType.update({
+      where: { id: events.allowed.id },
+      data: { teamId: foreign.id },
+    })
+  );
+  assert.equal(
+    (await privateLink("PATCH", events.allowed.id, "synthetic-allowed-link", { maxUsageCount: 9 })).status,
+    404
+  );
+  assert.equal(
+    (await db.hashedLink.findUniqueOrThrow({ where: { link: "synthetic-allowed-link" } })).maxUsageCount,
+    2
+  );
+});
+test("native private-link delete rechecks actual owner after owner guard", async (context) => {
+  const events = await privateLinkEvents();
+  afterOwnerAdmission(context, () =>
+    db.eventType.update({
+      where: { id: events.allowed.id },
+      data: { userId: other.id },
+    })
+  );
+  assert.equal((await privateLink("DELETE", events.allowed.id, "synthetic-allowed-link")).status, 404);
+  assert.equal(await db.hashedLink.count(), 3);
+});
+test("native private-link list rechecks disabled principal after owner guard", async (context) => {
+  const events = await privateLinkEvents();
+  afterOwnerAdmission(context, () => db.user.update({ where: { id: owner.id }, data: { locked: true } }));
+  const result = await privateLink("GET", events.allowed.id);
+  assert.equal(result.status, 404);
+  assert.equal(result.body.data, undefined);
+});
+test("native private-link writes execute inside PostgreSQL serializable transaction", async () => {
+  const events = await privateLinkEvents();
+  await db.$executeRawUnsafe(
+    `CREATE OR REPLACE FUNCTION require_serializable_private_link() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF current_setting('transaction_isolation') <> 'serializable' THEN RAISE EXCEPTION 'private link mutation requires serializable snapshot'; END IF; IF TG_OP = 'DELETE' THEN RETURN OLD; END IF; RETURN NEW; END $$`
+  );
+  await db.$executeRawUnsafe(
+    'CREATE TRIGGER require_serializable_private_link BEFORE INSERT OR UPDATE OR DELETE ON "HashedLink" FOR EACH ROW EXECUTE FUNCTION require_serializable_private_link()'
+  );
+  const created = await privateLink("POST", events.allowed.id, "", { maxUsageCount: 3 });
+  assert.equal(created.status, 201);
+  const id = created.body.data.linkId;
+  assert.equal((await privateLink("PATCH", events.allowed.id, id, { maxUsageCount: 4 })).status, 200);
+  assert.equal((await privateLink("DELETE", events.allowed.id, id)).status, 200);
+});
+test("native private-link listing shares a primary read-only owner snapshot", async (context) => {
+  const events = await privateLinkEvents();
+  const original = nativePrivateLinks.repo.listByEventTypeId.bind(nativePrivateLinks.repo);
+  let observed = 0;
+  nativePrivateLinks.repo.listByEventTypeId = async (id, client) => {
+    assert.ok(client, "native repository must receive the authority transaction");
+    const [mode] =
+      await client.$queryRaw`SELECT current_setting('transaction_isolation') AS isolation, current_setting('transaction_read_only') AS readonly`;
+    assert.equal(mode.isolation, "repeatable read");
+    assert.equal(mode.readonly, "on");
+    observed++;
+    return original(id, client);
+  };
+  context.after(() => {
+    nativePrivateLinks.repo.listByEventTypeId = original;
+  });
+  const result = await privateLink("GET", events.allowed.id);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.data.length, 1);
+  assert.equal(observed, 1);
 });

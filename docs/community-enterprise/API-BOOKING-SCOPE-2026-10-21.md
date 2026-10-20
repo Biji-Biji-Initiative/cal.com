@@ -332,3 +332,37 @@ next bounded source slice must share current authorization and native mutation
 in a transaction. Managed-client resource scopes, other route/version families,
 full CI and original runtime/provider gates remain separate unfinished criteria.
 No install, whole-app/SCIM/audit baseline or production action was repeated.
+
+## Native private-link transactional authority
+
+Source predecessor `d800c01990d51ca602f0f7561e8d0eea8f4fd5c2`; seven exact paths
+were freshly clear and leased. Native ready/inbox and real reservations were
+checked after releasing the preceding increment's leases.
+
+The actual controller now retains the authenticated principal through the native
+service. The service reuses EventTypeAccessService's owner/action/key/resource
+check inside the same primary transaction as the existing HashedLink repository
+operation: Serializable for writes, read-only RepeatableRead for listing. The
+repository accepts the explicit transaction client; its default callers keep
+their existing behavior. Update rereads use that same client, and create selects
+only output fields. Existing input/output and event/link binding remain intact.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old source | 74 passed, 6 failed; all newly added controls discriminate the race or absent native transaction |
+| Fixed native HTTP/domain/PG | 80 passed, zero failures/skips, exit 0; owned PG cleanup verified |
+| Changes after the real owner guard | Create refuses revoked membership; update refuses moved resource; delete refuses changed owner; list refuses disabled principal; rows preserved |
+| Actual database mode | HashedLink INSERT/UPDATE/DELETE trigger requires Serializable; native list repository query observes RepeatableRead and read-only mode |
+| Native strict source/import closure and fixture checkJs | Both exit 0 |
+
+The sequencing hook calls the real native owner guard, commits a real database
+change, then allows native HTTP dispatch to continue. It supplies neither
+authorization decisions nor repository rows. All previous positive owner/role,
+foreign-link, native key revocation and output controls remain green. The typed
+service no longer needs its prior any casts for actual generated-client data.
+
+This closes the selected guard-to-service transactional gap. Admission token
+validity is still established by the native authentication path; this evidence
+does not claim every other API/client/version or concurrent revocation boundary.
+CAL-05.API and the original 39-node programme remain in progress. No install,
+whole application baseline, external key, provider or production action occurred.

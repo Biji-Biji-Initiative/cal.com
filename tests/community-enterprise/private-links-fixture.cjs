@@ -37,11 +37,17 @@ function privateLinksFixture({ load, tokens, db, root, eventAccess }) {
       PrivateLinksOutputService,
     },
     "@calcom/platform-libraries/private-links": helpers,
+    "@/modules/event-types/services/event-type-access.service": {
+      EventTypeAccessService: eventAccess.access.constructor,
+    },
+    "@/modules/prisma/prisma-write.service": { PrismaWriteService: tokens.PrismaWriteService },
   });
   const service = new PrivateLinksService(
     new PrivateLinksInputService(),
     new PrivateLinksOutputService(),
-    repo
+    repo,
+    eventAccess.access,
+    { prisma: db }
   );
   const { EventTypeOwnershipGuard } = compile(
     `${api}modules/event-types/guards/event-type-ownership.guard.ts`,
@@ -82,6 +88,7 @@ function privateLinksFixture({ load, tokens, db, root, eventAccess }) {
     }
   );
   return {
+    repo,
     Controller: EventTypesPrivateLinksController,
     providers: [
       EventTypeOwnershipGuard,

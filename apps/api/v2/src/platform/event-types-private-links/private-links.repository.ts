@@ -1,20 +1,30 @@
+import type { Prisma } from "@calcom/prisma/client";
+import { Injectable } from "@nestjs/common";
 import { PrismaReadService } from "@/modules/prisma/prisma-read.service";
 import { PrismaWriteService } from "@/modules/prisma/prisma-write.service";
-import { Injectable } from "@nestjs/common";
 
 @Injectable()
 export class PrivateLinksRepository {
-  constructor(private readonly dbRead: PrismaReadService, private readonly dbWrite: PrismaWriteService) {}
+  constructor(
+    private readonly dbRead: PrismaReadService,
+    private readonly dbWrite: PrismaWriteService
+  ) {}
 
-  async listByEventTypeId(eventTypeId: number) {
-    return this.dbRead.prisma.hashedLink.findMany({
+  async listByEventTypeId(
+    eventTypeId: number,
+    client: Pick<Prisma.TransactionClient, "hashedLink"> = this.dbRead.prisma
+  ) {
+    return client.hashedLink.findMany({
       where: { eventTypeId },
       select: { link: true, expiresAt: true, maxUsageCount: true, usageCount: true },
     });
   }
 
-  async findWithEventTypeDetails(linkId: string) {
-    return this.dbRead.prisma.hashedLink.findUnique({
+  async findWithEventTypeDetails(
+    linkId: string,
+    client: Pick<Prisma.TransactionClient, "hashedLink"> = this.dbRead.prisma
+  ) {
+    return client.hashedLink.findUnique({
       where: { link: linkId },
       select: {
         link: true,
@@ -27,9 +37,11 @@ export class PrivateLinksRepository {
 
   async create(
     eventTypeId: number,
-    link: { link: string; expiresAt: Date | null; maxUsageCount?: number | null }
+    link: { link: string; expiresAt: Date | null; maxUsageCount?: number | null },
+    client: Pick<Prisma.TransactionClient, "hashedLink"> = this.dbWrite.prisma
   ) {
-    return this.dbWrite.prisma.hashedLink.create({
+    return client.hashedLink.create({
+      select: { link: true, expiresAt: true, maxUsageCount: true, usageCount: true },
       data: {
         eventTypeId,
         link: link.link,
@@ -41,9 +53,10 @@ export class PrivateLinksRepository {
 
   async update(
     eventTypeId: number,
-    link: { link: string; expiresAt: Date | null; maxUsageCount?: number | null }
+    link: { link: string; expiresAt: Date | null; maxUsageCount?: number | null },
+    client: Pick<Prisma.TransactionClient, "hashedLink"> = this.dbWrite.prisma
   ) {
-    return this.dbWrite.prisma.hashedLink.updateMany({
+    return client.hashedLink.updateMany({
       where: { eventTypeId, link: link.link },
       data: {
         expiresAt: link.expiresAt,
@@ -52,7 +65,11 @@ export class PrivateLinksRepository {
     });
   }
 
-  async delete(eventTypeId: number, linkId: string) {
-    return this.dbWrite.prisma.hashedLink.deleteMany({ where: { eventTypeId, link: linkId } });
+  async delete(
+    eventTypeId: number,
+    linkId: string,
+    client: Pick<Prisma.TransactionClient, "hashedLink"> = this.dbWrite.prisma
+  ) {
+    return client.hashedLink.deleteMany({ where: { eventTypeId, link: linkId } });
   }
 }
