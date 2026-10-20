@@ -11,6 +11,11 @@ const identityRoot = "packages/features/community-enterprise/identity";
 const contracts = ["ScimProvisioningContract.ts", "ScimRequestContract.ts"].map(
   (name) => `${identityRoot}/${name}`
 );
+const runtimeScimFiles = [
+  "ScimGroupMembershipService.ts",
+  "ScimIdentityService.ts",
+  "ScimMembershipProvenance.ts",
+].map((name) => `${identityRoot}/${name}`);
 const report = inventory(root);
 
 function fixture(overrides) {
@@ -91,9 +96,9 @@ for (const file of contracts) {
   }
 }
 
-test("tracked API v2 and identity source contain no direct SCIM adapter", () => {
+test("SCIM database services are inventoried while direct API and IdP HTTP dispatch remain absent", () => {
   assert.deepEqual(report.apiScimRouteCandidates, []);
-  assert.deepEqual(report.identityRuntimeScimMarkers, []);
+  assert.deepEqual(report.identityRuntimeScimMarkers, runtimeScimFiles);
   assert.deepEqual(report.identityRuntimeDirectHttp, []);
 });
 
@@ -103,5 +108,5 @@ test("local session checks are recorded separately from IdP revocation", () => {
       "packages/features/community-enterprise/identity/AuthentikIdentity.ts"
     )
   );
-  assert.deepEqual(report.identityRuntimeScimMarkers, []);
+  assert.deepEqual(report.identityRuntimeScimMarkers, runtimeScimFiles);
 });

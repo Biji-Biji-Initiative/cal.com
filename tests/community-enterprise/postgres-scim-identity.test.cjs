@@ -286,3 +286,11 @@ test("an unaudited preexisting mapping cannot be silently adopted as reviewed au
   await assert.rejects(service.bind(request()), denied);
   assert.equal(await db.enterpriseAuditEvent.count(), 0);
 });
+
+for (const state of [{ pendingPayment: true }, { isPlatform: true }]) {
+  test(`current organization ${Object.keys(state)[0]} cannot supply SCIM authority`, async () => {
+    await db.team.update({ where: { id: organization.id }, data: state });
+    await assert.rejects(service.bind(request()), denied);
+    assert.equal(await count(), 0);
+  });
+}

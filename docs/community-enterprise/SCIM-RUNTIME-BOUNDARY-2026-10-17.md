@@ -1,10 +1,43 @@
 # SCIM and IdP revocation source boundary — 2026-10-17
 
-This checkpoint records the exact source boundary for `CAL-04.SCIM` and
-`CAL-04.REVOCATION`. It is a review aid for the task graph, not a claim that
-Authentik is configured or that an HTTP/database runtime has been exercised.
+This file retains the October 17 source checkpoint and the subsequent bounded
+source/database acceptance. It supports `CAL-04.SCIM` and `CAL-04.REVOCATION`;
+both tasks retain their real provider and application acceptance gates.
 
-## What is implemented in this tree
+## Current source/database checkpoint — 2026-10-20
+
+The additive `ScimUserIdentity` and `ScimMembershipGrant` migration landed in
+`0f2ac6956f`. Eleven real isolated PostgreSQL 18 tests cover exact scoped keys,
+restrictive references, rollback/replay refusal, empty provenance without
+inferred backfill, and preservation of existing users, custom roles and bookings.
+
+`ScimIdentityService.ts` provides exact reviewed operator binding/resolution
+under current organization, directory, tenant, operator, user UUID and accepted
+membership checks. Original organization/directory/tenant audit provenance is
+required on subsequent resolution. Source delivery `d9ef369c7e` passed fifteen
+isolated PostgreSQL tests, including actual lock-wait operator revocation,
+competing mappings and atomic audit failure. The child-team grant integration
+adds pending-payment/platform-root refusals and keeps the same transaction open
+through the mapped team/member/provenance write.
+
+`ScimGroupMembershipService.ts` is an add-only operator adapter for an exact
+existing directory/group mapping to a direct child team. It creates only a
+native accepted `MEMBER` with provenance and audit in one transaction. Existing
+local memberships are preserved; ambiguous provenance, privileged/custom roles
+and role/acceptance/nullable-timestamp drift are refused by
+`ScimMembershipProvenance.ts`. Ten isolated PostgreSQL grant tests exercise
+these boundaries, rollback, replay and competing absent-member requests.
+The source guard has nine additional focused controls.
+
+The bounded inventory now reports these three SCIM source modules. The two
+original request/provisioning contracts remain write-free. Direct API v2 SCIM
+routes and IdP HTTP dispatch remain absent in the inspected scope. No hosted
+schema migration, native service injection, SCIM token issuance, provider
+dispatch, remove/deprovision operation, session revocation or 60-second
+multi-replica acceptance is claimed. Local fixture evidence does not authorize
+application database execution.
+
+## Historical source contract — 2026-10-17
 
 `packages/features/community-enterprise/identity/ScimProvisioningContract.ts`
 contains a write-free SCIM value and plan boundary. Its source-level checks
@@ -21,10 +54,10 @@ unlinked, rebound, or issuer-mismatched local identity. Those checks do not
 query Authentik, consume SCIM events, or prove an IdP application-access
 change reaches every replica within 60 seconds.
 
-## What the bounded inventory found
+## Historical bounded inventory — 2026-10-17
 
 The companion inventory and test inspect tracked `apps/api/v2/src` and
-`packages/features/community-enterprise/identity` source. On this revision:
+`packages/features/community-enterprise/identity` source. On the recorded October 17 revision:
 
 | Boundary | Result |
 | --- | --- |
@@ -42,12 +75,13 @@ models and UI strings are not treated as an Authentik SCIM runtime because
 they do not provide direct evidence of this enterprise route, token boundary,
 or deprovision worker.
 
-## Acceptance consequence
+## Remaining acceptance
 
 `CAL-04.SCIM` remains **open**. The source contract is useful evidence, but
 runtime acceptance still needs a scoped Authentik SCIM credential, discovery
 and User/Group dispatch, persisted membership provenance, disable/deprovision
-handoff, and real database/API checks.
+handoff, and real application API/database checks. The local PostgreSQL acceptance above
+qualifies its explicit source boundaries only.
 
 `CAL-04.REVOCATION` remains **open** with no runtime evidence. Its required
 proof still includes disabling a user and removing application access at the

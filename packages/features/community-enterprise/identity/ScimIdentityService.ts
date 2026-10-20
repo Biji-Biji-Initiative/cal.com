@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 import { ErrorCode } from "@calcom/lib/errorCodes";
 import { ErrorWithCode } from "@calcom/lib/errors";
-import { Prisma, type PrismaClient } from "@calcom/prisma/client";
+import { Prisma, type PrismaClient, type ScimUserIdentity } from "@calcom/prisma/client";
 import { z } from "zod";
 import { digest } from "./IdentityLinkPlan";
 
@@ -34,6 +34,7 @@ const refused = () =>
     "SCIM identity requires current exact directory, operator and organization membership authority"
   );
 const action = "identity.scim.bound";
+type BoundIdentity = Pick<ScimUserIdentity, "id" | "userId" | "expectedUserUuid">;
 
 // Reviewed operator workflow only. A future authenticated adapter must not turn
 // a userName/email or caller-supplied tenant into permission to bind an identity.
@@ -41,20 +42,47 @@ export class ScimIdentityService {
   constructor(private readonly db: PrismaClient) {}
 
   bind(input: unknown) {
-    return this.run(bindingSchema.parse(input));
+    return this.run(bindingSchema.parse(input), async (_tx, identity) => identity);
   }
 
   resolve(input: unknown) {
-    return this.run(scopeSchema.parse(input));
+    return this.run(scopeSchema.parse(input), async (_tx, identity) => identity);
   }
 
-  private run(request: z.infer<typeof scopeSchema> | z.infer<typeof bindingSchema>) {
+  withResolvedIdentity<T>(
+    input: unknown,
+    teamId: number,
+    consume: (tx: Prisma.TransactionClient, identity: BoundIdentity) => Promise<T>
+  ): Promise<T> {
+    return this.run(scopeSchema.parse(input), consume, id.parse(teamId));
+  }
+
+  private run<T>(
+    request: z.infer<typeof scopeSchema> | z.infer<typeof bindingSchema>,
+    consume: (tx: Prisma.TransactionClient, identity: BoundIdentity) => Promise<T>,
+    teamId?: number
+  ): Promise<T> {
     const binding = "userId" in request ? request : null;
     return this.db.$transaction(
       async (tx) => {
         // Match existing organization/member writers before locking users. The
         // directory lock also serializes competing absent-key/rebind decisions.
         await tx.$queryRaw`SELECT id FROM "Team" WHERE id = ${request.organizationId} FOR SHARE`;
+        if (teamId !== undefined) {
+          if (teamId === request.organizationId) throw refused();
+          await tx.$queryRaw`SELECT id FROM "Team" WHERE id = ${teamId} FOR SHARE`;
+          const team = await tx.team.findUnique({
+            where: { id: teamId },
+            select: { parentId: true, isOrganization: true, pendingPayment: true, isPlatform: true },
+          });
+          if (
+            team?.parentId !== request.organizationId ||
+            team.isOrganization ||
+            team.pendingPayment ||
+            team.isPlatform
+          )
+            throw refused();
+        }
         await tx.$queryRaw`SELECT true AS acquired FROM pg_advisory_xact_lock(hashtext('cal.scim.identity'), hashtext(${request.directoryId}))`;
         const existing = await tx.scimUserIdentity.findUnique({
           where: {
@@ -74,7 +102,7 @@ export class ScimIdentityService {
         await tx.$queryRaw`SELECT id FROM "DSyncData" WHERE "directoryId" = ${request.directoryId} FOR SHARE`;
         const organization = await tx.team.findUnique({
           where: { id: request.organizationId },
-          select: { isOrganization: true, parentId: true },
+          select: { isOrganization: true, parentId: true, pendingPayment: true, isPlatform: true },
         });
         const directory = await tx.dSyncData.findUnique({
           where: { directoryId: request.directoryId },
@@ -93,6 +121,8 @@ export class ScimIdentityService {
         if (
           !organization?.isOrganization ||
           organization.parentId !== null ||
+          organization.pendingPayment ||
+          organization.isPlatform ||
           directory?.organizationId !== request.organizationId ||
           directory.tenant !== request.tenant ||
           !actor ||
@@ -129,7 +159,7 @@ export class ScimIdentityService {
         }
         if (!binding) {
           if (!existing) throw refused();
-          return existing;
+          return consume(tx, existing);
         }
         const other = await tx.scimUserIdentity.findUnique({
           where: { directoryId_userId: { directoryId: request.directoryId, userId: user.id } },
@@ -153,7 +183,7 @@ export class ScimIdentityService {
             details.bindingId !== existing.id
           )
             throw refused();
-          return existing;
+          return consume(tx, existing);
         }
         const result =
           existing ??
@@ -177,7 +207,7 @@ export class ScimIdentityService {
           },
           select: { id: true },
         });
-        return result;
+        return consume(tx, result);
       },
       { isolationLevel: "Serializable", timeout: 10000, maxWait: 5000 }
     );
