@@ -108,6 +108,50 @@ and qualify a read-only action against the specifically approved service.
 
 ## Validation and delivery
 
+### Local PostgreSQL Tasker qualification without host PostgreSQL tools
+
+`scripts/run-community-enterprise-cloud-tasker.py` adapts the existing canonical
+PostgreSQL runner, with no application credentials, installs, migrations or native
+service access. First verify the managed local Docker socket using the Cloud
+runtime's explicit local-socket check. Keep registry credentials and proxy/CA
+settings unchanged. Pull the source-required official PostgreSQL 18 image once:
+
+```sh
+env -u DOCKER_HOST -u DOCKER_CONTEXT -u DOCKER_TLS -u DOCKER_TLS_VERIFY -u DOCKER_CERT_PATH \
+  docker --host=unix:///var/run/docker.sock pull postgres:18
+CAL_CLOUD_PG_IMAGE="$(env -u DOCKER_HOST -u DOCKER_CONTEXT -u DOCKER_TLS -u DOCKER_TLS_VERIFY -u DOCKER_CERT_PATH \
+  docker --host=unix:///var/run/docker.sock image inspect postgres:18 --format '{{.Id}}')"
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/run-community-enterprise-cloud-tasker.py \
+  --image "$CAL_CLOUD_PG_IMAGE" --node "$CAL_CLOUD_NODE20" \
+  --schema-engine "$CAL_CLOUD_SCHEMA_ENGINE" \
+  --receipt-dir /workspace/scratch/cal-tasker-first-run
+```
+
+Set `CAL_CLOUD_NODE20` to the already-qualified Node20 executable and
+`CAL_CLOUD_SCHEMA_ENGINE` to the separately checksum-verified public schema engine.
+These are public tool paths, not credentials. The canonical runner checks that
+an explicit engine's version matches the installed Prisma engine commit before
+using it in its clean child environment. If the normal installed engine cache is
+already qualified, omit `--schema-engine`. No dependency reinstall or generation
+is part of this check.
+
+The receipt directory must be new; use a different path for a subsequent attempt.
+The adapter refuses mutable image tags, images without official Postgres origin,
+Node versions outside 20 and PostgreSQL versions outside 18. It never pulls an
+image itself. The fixture uses an unprivileged UID, bounded CPU/memory/PIDs, no
+network, a read-only root filesystem and only its newly created scratch mount
+plus synthetic account metadata. It mounts no host home, source or credentials.
+Short scratch roots avoid PostgreSQL's 107-byte Unix-socket path limit.
+
+The unchanged Tasker suite connects over that private Unix socket. PostgreSQL and
+test logs stay in the private receipt directory; stdout contains only lifecycle,
+exit/count and cleanup evidence. Removal is fenced by the exact created container
+ID and ownership label, including reconciliation after an unknown start response.
+Do not replace a cleanup error with an absence claim. Coordinate the integration
+slot before a run and release it after actual cleanup. A 49-test native PostgreSQL
+fixture pass proves that fixture's SQL/client behavior; it does not prove serving
+application, existing-data migration, Infisical, Kubernetes or provider acceptance.
+
 Run the helper's offline controls without any real credential:
 
 ```sh

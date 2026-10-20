@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shlex
 import os
 from pathlib import Path
@@ -14,11 +15,28 @@ import tempfile
 from urllib.parse import quote
 
 
+def schema_engine_environment(engine, node, prisma):
+    if engine is None:
+        return {}
+    engine = engine.resolve()
+    if not engine.is_file() or not os.access(engine, os.X_OK):
+        raise ValueError("Schema engine must be an existing executable")
+    expected = subprocess.check_output(
+        [node, "-e", "const r=require('node:module').createRequire(process.argv[1]);process.stdout.write(r('@prisma/engines-version').enginesVersion)", str(prisma.resolve())],
+        text=True, timeout=10,
+    ).strip()
+    actual = subprocess.check_output([str(engine), "--version"], text=True, timeout=10).strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", expected) or actual != "schema-engine-cli " + expected:
+        raise ValueError("Schema engine does not match the installed Prisma engine commit")
+    return {"PRISMA_SCHEMA_ENGINE_BINARY": str(engine)}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pg-bin", type=Path, help="Directory containing initdb and pg_ctl")
     parser.add_argument("--scratch-root", type=Path, help="Parent for the disposable fixture")
     parser.add_argument("--prisma-cli", type=Path, help="Explicit installed Prisma CLI; its version must match the repo pin")
+    parser.add_argument("--schema-engine", type=Path, help="Verified offline schema engine; must match the installed Prisma engine commit")
     parser.add_argument("--suite", choices=("bookings", "built-web", "teams", "hosts", "team-journey", "identity-link", "api-keys", "api-auth", "api-key-http", "calendar-boundary", "migration-preflight", "onboarding-journey", "organizations", "organization-journey", "invitations", "invitation-journey", "member-lifecycle", "member-journey", "scheduling-handoff", "handoff-journey", "provider-lifecycle", "provider-journey", "tasker", "tasker-runtime", "api-assembled", "custom-roles", "custom-role-journey"), default="bookings")
     parser.add_argument("--concurrency", action="store_true", help="Run the additional deterministic booking-conflict acceptance probe")
     parser.add_argument("--accepted-organization-member", action="store_true", help="Run onboarding for a member admitted through the native organization service")
@@ -65,6 +83,10 @@ def main() -> int:
     print(f"Schema CLI: Prisma {actual} at {prisma}", flush=True)
     environment = {name: os.environ[name] for name in ("PATH", "HOME", "USER", "LANG", "NODE_PATH") if name in os.environ}
     environment["PRISMA_GENERATE_SKIP_AUTOINSTALL"] = "true"
+    try:
+        environment.update(schema_engine_environment(args.schema_engine, node, prisma))
+    except (ValueError, OSError, subprocess.SubprocessError):
+        parser.error("The explicit schema engine is unavailable or does not match the installed Prisma")
     if args.suite == "api-assembled":
         environment["CAL_ENTERPRISE_API_NODE_IMAGE"] = args.api_node_image
         environment["CAL_ENTERPRISE_API_REDIS_IMAGE"] = args.api_redis_image
