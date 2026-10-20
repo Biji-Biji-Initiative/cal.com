@@ -24,16 +24,35 @@ export class EventTypeAccessService {
     user: ApiAuthGuardUser,
     eventTypeId: number,
     client: EventScopeClient = this.dbWrite.prisma,
-    permission: "eventType.read" | "eventType.delete" = "eventType.read"
+    permission: "eventType.read" | "eventType.update" | "eventType.delete" = "eventType.read"
   ): Promise<boolean> {
     return (await this.getCurrentEventType(user, eventTypeId, client, permission)) !== null;
+  }
+
+  async userOwnsEventType(
+    user: ApiAuthGuardUser,
+    eventTypeId: number,
+    permission: "eventType.read" | "eventType.update" = "eventType.read",
+    client?: EventScopeClient
+  ): Promise<boolean> {
+    if (client) {
+      const current = await this.getCurrentEventType(user, eventTypeId, client, permission);
+      return current !== null && current.event.userId === user.id;
+    }
+    return this.dbWrite.prisma.$transaction(
+      async (client) => {
+        await client.$executeRaw`SET TRANSACTION READ ONLY`;
+        return this.userOwnsEventType(user, eventTypeId, permission, client);
+      },
+      { isolationLevel: "RepeatableRead" }
+    );
   }
 
   private async getCurrentEventType(
     user: ApiAuthGuardUser,
     eventTypeId: number,
     client: EventScopeClient,
-    permission: "eventType.read" | "eventType.delete"
+    permission: "eventType.read" | "eventType.update" | "eventType.delete"
   ) {
     if (!Number.isSafeInteger(user.id) || user.id <= 0) return null;
     const actor = await client.user.findUnique({

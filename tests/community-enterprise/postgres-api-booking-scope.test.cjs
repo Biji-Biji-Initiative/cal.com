@@ -11,6 +11,7 @@ const { connectFixture, sourceModules, root } = require("./tasker-fixture.cjs");
 const { createApiRuntime, fixtureModules } = require("./api-runtime-fixture.cjs");
 const { bookingListing, compile } = require("./booking-listing-fixture.cjs");
 const { eventAccessFixture } = require("./event-access-fixture.cjs");
+const { privateLinksFixture } = require("./private-links-fixture.cjs");
 let db,
   runtime,
   lifecycle,
@@ -136,6 +137,7 @@ before(async () => {
       const { BookingUidGuard } = load(path.join(root, booking, "guards/booking-uid.guard.ts"));
       const { BookingPbacGuard } = load(path.join(root, booking, "guards/booking-pbac.guard.ts"));
       eventAccess = eventAccessFixture({ native, load, db, root });
+      const privateLinks = privateLinksFixture({ load, tokens, db, root, eventAccess });
       const { OptionalApiAuthGuard } = load(
         path.join(root, api, "modules/auth/guards/optional-api-auth/optional-api-auth.guard.ts")
       );
@@ -241,8 +243,9 @@ before(async () => {
       Controller.prototype.bookingsService = service;
       Controller.prototype.usersService = { getUserMainProfile: () => null };
       return {
-        controllers: [Controller, eventAccess.Controller],
+        controllers: [Controller, eventAccess.Controller, privateLinks.Controller],
         providers: [
+          ...privateLinks.providers,
           PermissionsGuard,
           OptionalApiAuthGuard,
           BookingUidGuard,
@@ -1081,4 +1084,144 @@ test("native relation queries share a real primary read-only repeatable-read sna
   assert.equal(result.status, 200);
   assert.equal(result.body.data.attendees.length, 2);
   assert.equal(observed, 1);
+});
+
+async function privateLinkEvents() {
+  const result = {};
+  for (const slug of ["allowed", "foreign", "personal"]) {
+    const event = await db.eventType.findFirstOrThrow({ where: { slug } });
+    result[slug] = await db.eventType.update({ where: { id: event.id }, data: { userId: owner.id } });
+    await db.hashedLink.create({
+      data: { eventTypeId: event.id, link: `synthetic-${slug}-link`, maxUsageCount: 2 },
+    });
+  }
+  return result;
+}
+async function privateLink(method, eventId, linkId = "", body, token = key) {
+  const response = await fetch(
+    `${runtime.origin}/v2/event-types/${eventId}/private-links${linkId ? "/" + linkId : ""}`,
+    {
+      method,
+      headers: { Authorization: `Bearer ${token}`, ...(body ? { "Content-Type": "application/json" } : {}) },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+      signal: AbortSignal.timeout(10000),
+    }
+  );
+  return { status: response.status, body: await response.json() };
+}
+test("native private-link list refuses another administered team", async () => {
+  const events = await privateLinkEvents();
+  const result = await privateLink("GET", events.foreign.id);
+  assert.equal(result.status, 404);
+  assert.equal(await db.hashedLink.count(), 3);
+});
+test("native private-link writes refuse foreign team scope and preserve rows", async () => {
+  const events = await privateLinkEvents();
+  assert.equal((await privateLink("POST", events.foreign.id, "", { maxUsageCount: 1 })).status, 404);
+  assert.equal(
+    (await privateLink("PATCH", events.foreign.id, "synthetic-foreign-link", { maxUsageCount: 9 })).status,
+    404
+  );
+  assert.equal((await privateLink("DELETE", events.foreign.id, "synthetic-foreign-link")).status, 404);
+  const link = await db.hashedLink.findUniqueOrThrow({ where: { link: "synthetic-foreign-link" } });
+  assert.equal(link.maxUsageCount, 2);
+  assert.equal(await db.hashedLink.count(), 3);
+});
+test("native private-link team key cannot reach personal resource", async () => {
+  const events = await privateLinkEvents();
+  assert.equal((await privateLink("GET", events.personal.id)).status, 404);
+});
+test("native private-link personal key obeys revoked resource membership", async () => {
+  const events = await privateLinkEvents();
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { accepted: false },
+  });
+  assert.equal((await privateLink("GET", events.allowed.id, "", undefined, personal)).status, 404);
+});
+test("native private-link read role cannot update through ADMIN storage label", async () => {
+  const events = await privateLinkEvents();
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await db.role.create({
+    data: {
+      id: "link-reader",
+      name: "Link reader",
+      teamId: team.id,
+      permissions: { create: { resource: "eventType", action: "read" } },
+    },
+  });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { customRoleId: "link-reader" },
+  });
+  assert.equal((await privateLink("GET", events.allowed.id, "", undefined, personal)).status, 200);
+  assert.equal(
+    (await privateLink("PATCH", events.allowed.id, "synthetic-allowed-link", { maxUsageCount: 9 }, personal))
+      .status,
+    404
+  );
+  assert.equal(
+    (await db.hashedLink.findUniqueOrThrow({ where: { link: "synthetic-allowed-link" } })).maxUsageCount,
+    2
+  );
+});
+test("native private-link owner lifecycle and foreign link binding stay intact", async () => {
+  const events = await privateLinkEvents();
+  const listed = await privateLink("GET", events.allowed.id);
+  assert.equal(listed.status, 200);
+  assert.equal(listed.body.data.length, 1);
+  const created = await privateLink("POST", events.allowed.id, "", { maxUsageCount: 3 });
+  assert.equal(created.status, 201);
+  const linkId = created.body.data.linkId;
+  assert.equal((await privateLink("PATCH", events.allowed.id, linkId, { maxUsageCount: 4 })).status, 200);
+  assert.equal((await db.hashedLink.findUniqueOrThrow({ where: { link: linkId } })).maxUsageCount, 4);
+  assert.equal(
+    (await privateLink("PATCH", events.allowed.id, "synthetic-foreign-link", { maxUsageCount: 8 })).status,
+    404
+  );
+  assert.equal((await privateLink("DELETE", events.allowed.id, linkId)).status, 200);
+  assert.equal(await db.hashedLink.count({ where: { link: linkId } }), 0);
+});
+test("native private-link team administrator cannot replace actual owner", async () => {
+  const events = await privateLinkEvents();
+  await db.eventType.update({ where: { id: events.allowed.id }, data: { userId: other.id } });
+  assert.equal((await privateLink("GET", events.allowed.id)).status, 404);
+});
+test("native private-link revoked key and disabled owner cannot reach service", async () => {
+  const events = await privateLinkEvents();
+  await db.apiKey.deleteMany();
+  assert.equal((await privateLink("GET", events.allowed.id)).status, 401);
+  key = await lifecycle.createApiKey(db, owner.id, { teamId: team.id });
+  await db.user.update({ where: { id: owner.id }, data: { locked: true } });
+  assert.equal((await privateLink("DELETE", events.allowed.id, "synthetic-allowed-link")).status, 401);
+  assert.equal(await db.hashedLink.count(), 3);
+});
+
+test("native owner scope refuses missing internal principal identity", async () => {
+  const events = await privateLinkEvents();
+  assert.equal(await eventAccess.access.userOwnsEventType({}, events.allowed.id), false);
+});
+test("native private-link HEAD uses read action for a read-only owner role", async () => {
+  const events = await privateLinkEvents();
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  await db.role.create({
+    data: {
+      id: "head-reader",
+      name: "Read link metadata",
+      teamId: team.id,
+      permissions: { create: { resource: "eventType", action: "read" } },
+    },
+  });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { customRoleId: "head-reader" },
+  });
+  const response = await fetch(`${runtime.origin}/v2/event-types/${events.allowed.id}/private-links`, {
+    method: "HEAD",
+    headers: { Authorization: `Bearer ${personal}` },
+    signal: AbortSignal.timeout(10000),
+  });
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), "");
 });

@@ -1,5 +1,3 @@
-import { EventTypesService_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/services/event-types.service";
-import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
 import {
   BadRequestException,
   CanActivate,
@@ -9,10 +7,12 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { Request } from "express";
+import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
+import { EventTypeAccessService } from "@/modules/event-types/services/event-type-access.service";
 
 @Injectable()
 export class EventTypeOwnershipGuard implements CanActivate {
-  constructor(private readonly eventTypesService: EventTypesService_2024_06_14) {}
+  constructor(private readonly eventTypeAccessService: EventTypeAccessService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
@@ -31,9 +31,8 @@ export class EventTypeOwnershipGuard implements CanActivate {
     if (!Number.isInteger(eventTypeId) || eventTypeId <= 0) {
       throw new BadRequestException("Invalid eventTypeId param.");
     }
-    const eventType = await this.eventTypesService.getUserEventType(user.id, eventTypeId);
-    if (!eventType) {
-      // Mirrors EventTypesService behavior: NotFound when not owned or not present
+    const permission = ["GET", "HEAD"].includes(request.method) ? "eventType.read" : "eventType.update";
+    if (!(await this.eventTypeAccessService.userOwnsEventType(user, eventTypeId, permission))) {
       throw new NotFoundException(`Event type with id ${eventTypeId} not found`);
     }
 

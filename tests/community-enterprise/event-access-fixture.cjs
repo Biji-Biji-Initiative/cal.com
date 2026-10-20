@@ -10,6 +10,7 @@ function eventAccessFixture({ native, load, db, root }) {
   const Repository = native(`${events}event-types.repository.ts`, "EventTypesRepository_2024_06_14", [
     "usersInclude",
     "getEventTypeById",
+    "getUserEventType",
     "deleteEventType",
     "isUserHostOfEventType",
     "isUserAssignedToEventType",
@@ -52,7 +53,7 @@ function eventAccessFixture({ native, load, db, root }) {
   const Service = native(
     `${events}services/event-types.service.ts`,
     "EventTypesService_2024_06_14",
-    ["deleteEventType", "checkUserOwnsEventType"],
+    ["deleteEventType", "checkUserOwnsEventType", "getUserEventType"],
     nest
   );
   const service = Object.assign(new Service(), {

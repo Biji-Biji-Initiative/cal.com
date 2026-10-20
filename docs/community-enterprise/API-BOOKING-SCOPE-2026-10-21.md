@@ -302,3 +302,33 @@ baseline, provider or production action was required. CAL-05.API and the origina
 39-node goal remain in progress: complete native client/resource scope, other
 routes/versions, remaining output fields and original runtime/provider gates need
 separate acceptance.
+
+## Native private-link owner admission
+
+Source predecessor `b361db0ac76807eb1d33640cda2d0dfbca427766`; eight exact paths
+were clear and leased. The original CAL-05.API leaf remains in progress.
+
+The native private-link ownership guard previously checked an owner lookup alone,
+losing the admitted key's team scope, current membership and action permission.
+It now uses the same retained event authority's current primary owner snapshot.
+GET/HEAD requires eventType.read; mutation admission requires eventType.update.
+The original owner-only assertion remains: another team administrator cannot
+manage the owner's links. Invalid internal principals fail closed.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old native source | 67 passed, 5 failed: foreign-team list/mutations, team-key personal event, revoked personal membership and custom read-role write |
+| Fixed native HTTP/domain/PG suite | 74 passed, zero failures/skips; exit 0 and owned container cleanup verified |
+| Positive and binding controls | Actual native create/list/update/delete; foreign link remains unchanged; read-only role GET/HEAD; non-owner administrator refused; revoked key/disabled owner refused |
+| Native strict source/import closure and fixture checkJs | Both exit 0 |
+
+The fixture compiles the actual native controller, guard, input/output services,
+repository and link helpers against the tracked 103-model PostgreSQL schema.
+The actual native HashedLink model is present; this slice needs no restoration,
+provider credentials or external keys. No authorization outcome is substituted.
+
+This is admission evidence. A mutation can still race admission and write; the
+next bounded source slice must share current authorization and native mutation
+in a transaction. Managed-client resource scopes, other route/version families,
+full CI and original runtime/provider gates remain separate unfinished criteria.
+No install, whole-app/SCIM/audit baseline or production action was repeated.

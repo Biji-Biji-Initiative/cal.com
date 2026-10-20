@@ -17,7 +17,9 @@
     "../../apps/api/v2/src/modules/event-types/services/event-type-access.service.ts",
     "../../apps/api/v2/src/platform/event-types/event-types_2024_06_14/event-types.repository.ts",
     "../../apps/api/v2/src/platform/event-types/event-types_2024_06_14/services/event-types.service.ts",
-    "../../apps/api/v2/src/platform/event-types/event-types_2024_06_14/controllers/event-types.controller.ts"
+    "../../apps/api/v2/src/platform/event-types/event-types_2024_06_14/controllers/event-types.controller.ts",
+    "../../apps/api/v2/src/modules/event-types/guards/event-type-ownership.guard.ts",
+    "../../apps/api/v2/src/platform/event-types-private-links/controllers/event-types-private-links.controller.ts"
   ],
   "include": ["../../packages/types/*.d.ts"],
   "exclude": []
