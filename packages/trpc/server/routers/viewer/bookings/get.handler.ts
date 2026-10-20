@@ -89,7 +89,7 @@ type BookingsUnionQuery = SelectQueryBuilder<
 >;
 
 type GetBookingsOptions = {
-  user: { id: number; email: string; orgId?: number | null };
+  user: { id: number; email: string; orgId?: number | null; apiKeyTeamId?: number | null };
   filters: TGetInputSchema["filters"];
   prisma: PrismaClient;
   kysely: Kysely<DB>;
@@ -114,7 +114,8 @@ export async function getBookings(options: GetBookingsOptions) {
     take > 1000 ||
     !Number.isSafeInteger(skip) ||
     skip < 0 ||
-    (user.orgId != null && !validId(user.orgId))
+    (user.orgId != null && !validId(user.orgId)) ||
+    (user.apiKeyTeamId != null && !validId(user.apiKeyTeamId))
   ) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid booking listing bounds" });
   }
@@ -166,7 +167,13 @@ async function getBookingsInSnapshot({
     fallbackRoles: [MembershipRole.ADMIN, MembershipRole.OWNER],
     orgId: user.orgId ?? undefined,
   });
-  const visible = visibleBookingsQuery(kysely, user.id, teamIdsWithBookingPermission);
+  let visible = visibleBookingsQuery(kysely, user.id, teamIdsWithBookingPermission);
+  // Credential scope must constrain the visibility base as well as the page,
+  // so recurring metadata cannot traverse a different team in the same series.
+  if (user.apiKeyTeamId != null) {
+    if (!teamIdsWithBookingPermission.includes(user.apiKeyTeamId)) throw new TRPCError({ code: "FORBIDDEN" });
+    visible = filterBookingIdentities(visible, kysely, { teamIds: [user.apiKeyTeamId] });
+  }
   let queryUnion = filterBookingIdentities(visible, kysely, filters ?? {});
   queryUnion = addStatusesQueryFilters(queryUnion, bookingListingByStatus);
   queryUnion = filterBookingAttendees(queryUnion, filters ?? {});

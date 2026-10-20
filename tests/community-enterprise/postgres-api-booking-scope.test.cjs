@@ -8,7 +8,20 @@ const nest = require("@nestjs/common");
 const { ConfigService } = require("@nestjs/config");
 const { connectFixture, sourceModules, root } = require("./tasker-fixture.cjs");
 const { createApiRuntime, fixtureModules } = require("./api-runtime-fixture.cjs");
-let db, runtime, lifecycle, owner, other, team, foreign, key, exportsCalled, access;
+const { bookingListing, compile } = require("./booking-listing-fixture.cjs");
+let db,
+  runtime,
+  lifecycle,
+  owner,
+  other,
+  team,
+  foreign,
+  key,
+  exportsCalled,
+  access,
+  listing,
+  primarySql,
+  staleSqlReads;
 const api = "apps/api/v2/src/";
 const booking = `${api}platform/bookings/2024-08-13/`;
 
@@ -91,7 +104,16 @@ before(async () => {
   );
   access = new BookingAccessService(db);
   lifecycle = load(path.join(root, "packages/features/community-enterprise/api-keys/ApiKeyLifecycle.ts"));
+  listing = bookingListing(db);
+  const { KyselyWriteService } = load(path.join(root, api, "modules/kysely/kysely-write.service.ts"));
+  const url = new URL("postgresql://cal_enterprise_test@localhost/postgres");
+  url.searchParams.set("host", process.env.CAL_ENTERPRISE_TEST_SOCKET);
+  url.searchParams.set("port", "55439");
+  primarySql = new KyselyWriteService(new ConfigService({ db: { writeUrl: url.toString() } }));
   runtime = await createApiRuntime(state, {
+    configure(app) {
+      app.useGlobalPipes(new nest.ValidationPipe({ whitelist: true, transform: true }));
+    },
     platformLibraries: { BookingAccessService },
     extend({ load, tokens }) {
       const { ApiAuthGuard } = load(path.join(root, api, "modules/auth/guards/api-auth/api-auth.guard.ts"));
@@ -109,9 +131,11 @@ before(async () => {
       const Service = native(
         `${booking}services/bookings.service.ts`,
         "BookingsService_2024_08_13",
-        ["getCalendarLinks"],
+        ["getCalendarLinks", "getBookings"],
         {
           ...nest,
+          getAllUserBookings: listing.getAllUserBookings,
+          getPagination: load(path.join(root, api, "lib/pagination/pagination.ts")).getPagination,
           getTranslation: async () => (key) => key,
           getCalendarLinks: ({ booking }) => {
             exportsCalled++;
@@ -120,10 +144,31 @@ before(async () => {
         }
       );
       const service = new Service();
+      service.prismaReadService = { prisma: db };
+      service.kyselyWriteService = primarySql;
+      service.kyselyReadService = {
+        kysely: new Proxy(primarySql.kysely, {
+          get(target, name) {
+            if (name === "transaction") staleSqlReads++;
+            const value = Reflect.get(target, name);
+            return typeof value === "function" ? value.bind(target) : value;
+          },
+        }),
+      };
+      const Input = native(`${booking}services/input.service.ts`, "InputBookingsService_2024_08_13", [
+        "transformGetBookingsFilters",
+        "transformGetBookingsSort",
+      ]);
+      service.inputService = new Input();
       const NativeBookingRepository = native(
         `${booking}repositories/bookings.repository.ts`,
         "BookingsRepository_2024_08_13",
-        ["getByUidWithAttendeesAndUserAndEvent"]
+        [
+          "getByUidWithAttendeesAndUserAndEvent",
+          "getByIdsWithAttendeesWithBookingSeatAndUserAndEvent",
+          "getByFromReschedule",
+          "getByUid",
+        ]
       );
       const NativeEvents = native(
         "apps/api/v2/src/platform/event-types/event-types_2024_06_14/event-types.repository.ts",
@@ -132,13 +177,31 @@ before(async () => {
       );
       service.bookingsRepository = Object.assign(new NativeBookingRepository(), { dbRead: { prisma: db } });
       service.eventTypesRepository = Object.assign(new NativeEvents(), { dbRead: { prisma: db } });
+      const types = load(path.join(root, "packages/platform/types/index.ts"));
+      const output = compile(`${booking}services/output.service.ts`, {
+        "@/platform/bookings/2024-08-13/repositories/bookings.repository": {
+          BookingsRepository_2024_08_13: NativeBookingRepository,
+        },
+        "@/lib/safe-parse/default-responses-booking": load(
+          path.join(root, api, "lib/safe-parse/default-responses-booking.ts")
+        ),
+        "@/lib/safe-parse/safe-parse": load(path.join(root, api, "lib/safe-parse/safe-parse.ts")),
+        "@nestjs/common": nest,
+        "class-transformer": require("class-transformer"),
+        luxon: require("luxon"),
+        zod: require("zod"),
+        "@calcom/platform-libraries": listing.schemas,
+        "@calcom/platform-types": types,
+      });
+      service.outputService = new output.OutputBookingsService_2024_08_13(service.bookingsRepository);
       const Controller = native(
         `${booking}controllers/bookings.controller.ts`,
         "BookingsController_2024_08_13",
-        ["getCalendarLinks"],
+        ["getCalendarLinks", "getBookings"],
         {
           ...nest,
           ...require("@nestjs/swagger"),
+          GetBookingsInput_2024_08_13: types.GetBookingsInput_2024_08_13,
           ApiAuthGuard,
           PermissionsGuard,
           BookingUidGuard,
@@ -153,6 +216,7 @@ before(async () => {
       nest.Controller("v2/bookings")(Controller);
       // The bounded controller has its original method/decorators and service.
       Controller.prototype.bookingsService = service;
+      Controller.prototype.usersService = { getUserMainProfile: () => null };
       return {
         controllers: [Controller],
         providers: [
@@ -197,6 +261,8 @@ beforeEach(async () => {
         userId,
         eventTypeId: event.id,
         title: uid,
+        responses: { name: "Fixture", email: "guest@fixture.test" },
+        metadata: {},
         startTime: new Date(0),
         endTime: new Date(3600000),
       },
@@ -204,9 +270,11 @@ beforeEach(async () => {
   }
   key = await lifecycle.createApiKey(db, owner.id, { teamId: team.id });
   exportsCalled = 0;
+  staleSqlReads = 0;
 });
 after(async () => {
   if (runtime) await runtime.app.close();
+  if (primarySql) await primarySql.onModuleDestroy();
   if (db) await db.$disconnect();
 });
 
@@ -299,4 +367,106 @@ test("invalid internal scope never becomes an omitted Prisma filter", async () =
       await access.doesUserIdHaveAccessToBooking({ userId: owner.id, bookingUid: "allowed", apiKeyTeamId }),
       false
     );
+});
+
+async function list(query = "", token = key) {
+  const response = await fetch(`${runtime.origin}/v2/bookings?status=past&${query}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(10000),
+  });
+  return { status: response.status, body: await response.json() };
+}
+const uids = (result) => result.body.data.map((booking) => booking.uid).sort();
+const sqlList = (changes = {}) =>
+  listing.getBookings({
+    user: { id: owner.id, email: owner.email, apiKeyTeamId: team.id, ...changes },
+    filters: {},
+    prisma: db,
+    kysely: primarySql.kysely,
+    bookingListingByStatus: ["past"],
+    take: 100,
+    skip: 0,
+  });
+test("native list intersects team key with rows and count", async () => {
+  const result = await list();
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["allowed", "unrelated"]);
+  assert.equal(result.body.pagination.totalItems, 2);
+});
+test("native list pagination cannot count or page through foreign bookings", async () => {
+  const result = await list("take=1&skip=1");
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["unrelated"]);
+  assert.equal(result.body.pagination.totalItems, 2);
+});
+test("foreign team and event filters restrict rather than replace credential scope", async () => {
+  const event = await db.eventType.findFirstOrThrow({ where: { slug: "foreign" } });
+  for (const query of [
+    `teamId=${foreign.id}`,
+    `eventTypeId=${event.id}`,
+    "bookingUid=foreign",
+    "bookingUid=personal",
+  ]) {
+    const result = await list(query);
+    assert.equal(result.status, 200);
+    assert.deepEqual(uids(result), []);
+    assert.equal(result.body.pagination.totalItems, 0);
+  }
+});
+test("mixed requested teams cannot widen the key", async () => {
+  const result = await list(`teamsIds=${team.id},${foreign.id}`);
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["allowed", "unrelated"]);
+});
+test("query input cannot replace server-authenticated key scope", async () => {
+  const result = await list(`apiKeyTeamId=${foreign.id}`);
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["allowed", "unrelated"]);
+});
+test("personal list retains native owner/admin visibility and refuses unrelated owner", async () => {
+  const personal = await lifecycle.createApiKey(db, owner.id, {});
+  assert.deepEqual(uids(await list("", personal)), ["allowed", "foreign", "personal", "unrelated"]);
+  const unrelated = await lifecycle.createApiKey(db, other.id, {});
+  assert.deepEqual(uids(await list("", unrelated)), ["unrelated"]);
+});
+test("list uses primary native Kysely rather than a stale read authority", async () => {
+  assert.equal((await list()).status, 200);
+  assert.equal(staleSqlReads, 0);
+});
+test("current snapshot scope membership is required even for organizer", async () => {
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: team.id } },
+    data: { accepted: false },
+  });
+  await assert.rejects(sqlList(), { code: "FORBIDDEN" });
+});
+test("invalid internal list scope fails closed before SQL filters", async () => {
+  for (const apiKeyTeamId of [0, -1, NaN, 1.5])
+    await assert.rejects(sqlList({ apiKeyTeamId }), { code: "BAD_REQUEST" });
+});
+test("managed list includes parent scope and refuses conflicting direct team", async () => {
+  const parent = await db.eventType.findFirstOrThrow({ where: { slug: "allowed" } });
+  await db.eventType.updateMany({
+    where: { slug: { in: ["personal", "foreign"] } },
+    data: { parentId: parent.id },
+  });
+  const result = await list();
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["allowed", "personal", "unrelated"]);
+});
+test("recurring metadata excludes foreign member of same series", async () => {
+  await db.booking.updateMany({
+    where: { uid: { in: ["allowed", "foreign"] } },
+    data: { recurringEventId: "synthetic-shared-series" },
+  });
+  const result = await sqlList();
+  assert.equal(result.totalCount, 2);
+  assert.equal(result.recurringInfo[0].count, 1);
+});
+test("revoked and disabled principal are denied on native list", async () => {
+  await db.apiKey.deleteMany();
+  assert.equal((await list()).status, 401);
+  key = await lifecycle.createApiKey(db, owner.id, { teamId: team.id });
+  await db.user.update({ where: { id: owner.id }, data: { locked: true } });
+  assert.equal((await list()).status, 401);
 });

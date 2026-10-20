@@ -81,3 +81,52 @@ detail elevation, mutation and managed-client resource scopes still need their
 own discriminating acceptance. Key revocation/disabled-owner proof here is an
 actual new-route test, not a claim of production offboarding. Deployment, live
 identity/provider acceptance and native schema restoration remain distinct gates.
+
+## Native listing continuation after cf06057a
+
+The next admitted increment retains the same worker, branch and original API
+leaf. Exact paths were freshly conflict-free and leased after releasing the
+export increment. Source predecessor is
+`cf06057a91627d610f654f02c2ee1c46f205a693`.
+
+Native GET `/v2/bookings` discarded the authenticated key's team ID while
+constructing the service principal. It now carries that server-owned restriction
+through the existing booking service and `getAllUserBookings` wrapper. The service
+uses the existing native `KyselyWriteService` so authorization uses primary state.
+Inside the retained repeatable-read listing snapshot, the current permission
+policy must authorize the exact team and the existing team-resource predicate
+constrains the visibility base. Requested identities further restrict it. Counts,
+pages, managed children and recurring-series metadata use that same base; no new
+permission engine or request-controlled grant is added.
+
+The expanded bounded fixture executes real native controller methods/decorators,
+DTO transformation, Passport, service, shared wrapper, full retained SQL query,
+policy, parsers, primary Kysely provider, native output transformation and Prisma
+hydration against owned PostgreSQL 18. It excludes unrelated routes/bootstrap;
+application-global connection and diagnostic logging are substituted. Its HTTP
+validation uses whitelist/transform. SQL policy, joins, data and authorization
+are real. The nonrecurring output path is executed; full public booking/seat,
+provider and production behavior is not claimed tested by this fixture.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old native list source, expanded suite | 15 passed, 10 failed; foreign/personal rows, counts/pages, filters, managed conflicts, current membership, invalid scope and recurring metadata discriminate the gap |
+| Fixed native HTTP/SQL PG suite | 25 passed, zero failures/skips: 13 retained export controls and 12 added listing controls; actual runner exit 0, owned container removed |
+| Affected retained query PG suite | 40 passed, zero failures/skips; unscoped native listing contracts retained, actual runner exit 0 and owned container removed |
+| Native strict source/import-closure typing | Exit 0; source-owned config now explicitly includes the changed service, wrapper and query |
+| CJS checkJs | Exit 0 for expanded fixture/helper |
+
+The existing reproduction command above runs the expanded `api-booking-scope`
+suite. The affected query regression uses the same owned runner/options with
+`--suite bookings`. Its database identity, template copy, actual SQL and cleanup
+checks remain unchanged. No full app/SCIM/audit baseline, install or provider action
+was repeated. The earlier whole-repository type deadline is retained; full CI
+success is still not claimed. That task's build/generation prerequisites are not
+rerun for this increment; changed native source/imports are type-checked directly.
+
+CAL-05.API stays `in_progress`. Authenticated detail elevation, mutation resource
+scopes, managed OAuth-client resource intersection and concurrent post-query
+hydration still require separate acceptance. The retained API hydrates selected
+IDs after the listing snapshot; this increment does not claim atomic cancellation
+of already admitted reads or writes. Live identity/provider/serving-image gates
+remain separate and do not block the next authorized source slice.

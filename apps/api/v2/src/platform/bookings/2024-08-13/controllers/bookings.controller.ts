@@ -284,6 +284,7 @@ export class BookingsController_2024_08_13 {
       email: user.email,
       id: user.id,
       orgId: profile?.organizationId ?? undefined,
+      apiKeyTeamId: user.apiKeyTeamId,
     });
 
     return {

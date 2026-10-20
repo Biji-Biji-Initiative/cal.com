@@ -10,7 +10,10 @@
     "../../apps/api/v2/src/platform/bookings/2024-08-13/controllers/bookings.controller.ts",
     "../../packages/features/bookings/services/BookingAccessService.ts",
     "../../packages/types/business-days-plugin.d.ts",
-    "../../packages/types/window.d.ts"
+    "../../packages/types/window.d.ts",
+    "../../apps/api/v2/src/platform/bookings/2024-08-13/services/bookings.service.ts",
+    "../../packages/features/bookings/lib/getAllUserBookings.ts",
+    "../../packages/trpc/server/routers/viewer/bookings/get.handler.ts"
   ],
   "include": ["../../packages/types/*.d.ts"],
   "exclude": []

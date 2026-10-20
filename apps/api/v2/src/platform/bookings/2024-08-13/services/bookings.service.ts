@@ -40,13 +40,6 @@ import {
 import { Request } from "express";
 import { DateTime } from "luxon";
 import { z } from "zod";
-import { CalendarLink } from "@/platform/bookings/2024-08-13/outputs/calendar-links.output";
-import { BookingsRepository_2024_08_13 } from "@/platform/bookings/2024-08-13/repositories/bookings.repository";
-import { ErrorsBookingsService_2024_08_13 } from "@/platform/bookings/2024-08-13/services/errors.service";
-import { InputBookingsService_2024_08_13 } from "@/platform/bookings/2024-08-13/services/input.service";
-import { OutputBookingsService_2024_08_13 } from "@/platform/bookings/2024-08-13/services/output.service";
-import { PlatformBookingsService } from "@/platform/bookings/shared/platform-bookings.service";
-import { EventTypesRepository_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/event-types.repository";
 import { getPagination } from "@/lib/pagination/pagination";
 import { RecurringBookingService } from "@/lib/services/recurring-booking.service";
 import { RegularBookingService } from "@/lib/services/regular-booking.service";
@@ -54,7 +47,7 @@ import { AuthOptionalUser } from "@/modules/auth/decorators/get-optional-user/ge
 import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
 import { BookingSeatRepository } from "@/modules/booking-seat/booking-seat.repository";
 import { EventTypeAccessService } from "@/modules/event-types/services/event-type-access.service";
-import { KyselyReadService } from "@/modules/kysely/kysely-read.service";
+import { KyselyWriteService } from "@/modules/kysely/kysely-write.service";
 import { OAuthClientRepository } from "@/modules/oauth-clients/oauth-client.repository";
 import { OAuthClientUsersService } from "@/modules/oauth-clients/services/oauth-clients-users.service";
 import { PrismaReadService } from "@/modules/prisma/prisma-read.service";
@@ -62,6 +55,13 @@ import { TeamsEventTypesRepository } from "@/modules/teams/event-types/teams-eve
 import { TeamsRepository } from "@/modules/teams/teams/teams.repository";
 import { UsersService } from "@/modules/users/services/users.service";
 import { UsersRepository } from "@/modules/users/users.repository";
+import { CalendarLink } from "@/platform/bookings/2024-08-13/outputs/calendar-links.output";
+import { BookingsRepository_2024_08_13 } from "@/platform/bookings/2024-08-13/repositories/bookings.repository";
+import { ErrorsBookingsService_2024_08_13 } from "@/platform/bookings/2024-08-13/services/errors.service";
+import { InputBookingsService_2024_08_13 } from "@/platform/bookings/2024-08-13/services/input.service";
+import { OutputBookingsService_2024_08_13 } from "@/platform/bookings/2024-08-13/services/output.service";
+import { PlatformBookingsService } from "@/platform/bookings/shared/platform-bookings.service";
+import { EventTypesRepository_2024_06_14 } from "@/platform/event-types/event-types_2024_06_14/event-types.repository";
 
 export const BOOKING_REASSIGN_PERMISSION_ERROR = "You do not have permission to reassign this booking";
 
@@ -96,7 +96,7 @@ export class BookingsService_2024_08_13 {
     private readonly bookingSeatRepository: BookingSeatRepository,
     private readonly eventTypesRepository: EventTypesRepository_2024_06_14,
     private readonly prismaReadService: PrismaReadService,
-    private readonly kyselyReadService: KyselyReadService,
+    private readonly kyselyWriteService: KyselyWriteService,
     private readonly usersService: UsersService,
     private readonly usersRepository: UsersRepository,
     private readonly platformBookingsService: PlatformBookingsService,
@@ -637,7 +637,7 @@ export class BookingsService_2024_08_13 {
 
   async getBookings(
     queryParams: GetBookingsInput_2024_08_13,
-    user: { email: string; id: number; orgId?: number },
+    user: { email: string; id: number; orgId?: number; apiKeyTeamId?: number | null },
     userIds?: number[]
   ) {
     if (queryParams.attendeeEmail) {
@@ -658,7 +658,7 @@ export class BookingsService_2024_08_13 {
       ctx: {
         user,
         prisma: this.prismaReadService.prisma as unknown as PrismaClient,
-        kysely: this.kyselyReadService.kysely,
+        kysely: this.kyselyWriteService.kysely,
       },
       sort: this.inputService.transformGetBookingsSort(queryParams),
     });
