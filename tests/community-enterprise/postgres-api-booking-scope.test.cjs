@@ -141,6 +141,14 @@ before(async () => {
   runtime = await createApiRuntime(state, {
     configure(app) {
       app.useGlobalPipes(new nest.ValidationPipe({ whitelist: true, transform: true }));
+      const { TRPCExceptionFilter } = compile("apps/api/v2/src/filters/trpc-exception.filter.ts", {
+        "@/lib/extract-user-context": compile("apps/api/v2/src/lib/extract-user-context.ts"),
+        "@/lib/filterReqHeaders": compile("apps/api/v2/src/lib/filterReqHeaders.ts"),
+        "@nestjs/common": nest,
+        "@calcom/platform-constants": compile("packages/platform/constants/api.ts"),
+        "@calcom/platform-libraries": { TRPCError: require("@trpc/server").TRPCError },
+      });
+      app.useGlobalFilters(new TRPCExceptionFilter());
     },
     platformLibraries: { BookingAccessService },
     extend({ load, tokens }) {
@@ -265,7 +273,10 @@ before(async () => {
       nest.Controller("v2/bookings")(Controller);
       // The bounded controller has its original method/decorators and service.
       Controller.prototype.bookingsService = service;
-      Controller.prototype.usersService = { getUserMainProfile: () => null };
+      const NativeUsers = native(`${api}modules/users/services/users.service.ts`, "UsersService", [
+        "getUserMainProfile",
+      ]);
+      Controller.prototype.usersService = new NativeUsers();
       return {
         controllers: [Controller, eventAccess.Controller, privateLinks.Controller],
         providers: [
@@ -1835,4 +1846,156 @@ test("native managed export rechecks client deleted after booking guard", async 
   assert.equal((await managedRequest("/v2/bookings/allowed/calendar-links", f.headers)).status, 403);
   assert.equal(exportsCalled, 0);
   assert.equal(await db.booking.count(), 4);
+});
+
+const managedList = (fixture, query = "") =>
+  managedRequest(`/v2/bookings?status=past&${query}`, fixture.headers);
+test("native managed list constrains actual rows and counts to current client", async () => {
+  const f = await managedEvents(),
+    result = await managedList(f);
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["allowed", "unrelated"]);
+  assert.equal(result.body.pagination.totalItems, 2);
+});
+test("native managed list page cannot traverse another administered scope", async () => {
+  const f = await managedEvents(),
+    result = await managedList(f, "take=1&skip=1");
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["unrelated"]);
+  assert.equal(result.body.pagination.totalItems, 2);
+});
+test("native managed list caller identity filters cannot widen current client", async () => {
+  const f = await managedEvents();
+  for (const query of [
+    `teamsIds=${foreign.id}`,
+    `eventTypeIds=${f.events.foreign.id}`,
+    "bookingUid=foreign",
+  ]) {
+    const result = await managedList(f, query);
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body.data, []);
+    assert.equal(result.body.pagination.totalItems, 0);
+  }
+});
+test("native managed list retains explicitly associated personal owner", async () => {
+  const f = await managedEvents();
+  await db.platformOAuthClient.update({
+    where: { id: f.client.id },
+    data: { users: { connect: { id: owner.id } } },
+  });
+  const result = await managedList(f);
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["allowed", "personal", "unrelated"]);
+  assert.equal(result.body.pagination.totalItems, 3);
+});
+test("native managed list retains root and managed parent but refuses conflicting team", async () => {
+  const f = await managedEvents();
+  await db.eventType.update({ where: { id: f.events.allowed.id }, data: { teamId: f.org.id } });
+  await db.eventType.update({ where: { id: f.events.personal.id }, data: { parentId: f.events.allowed.id } });
+  assert.deepEqual(uids(await managedList(f)), ["allowed", "personal", "unrelated"]);
+  await db.eventType.update({ where: { id: f.events.personal.id }, data: { teamId: foreign.id } });
+  assert.deepEqual(uids(await managedList(f)), ["allowed", "unrelated"]);
+});
+function afterListPermission(context, change) {
+  const { PermissionsGuard } = runtime.load(
+    path.join(root, api, "modules/auth/guards/permissions/permissions.guard.ts")
+  );
+  const guard = runtime.module.get(PermissionsGuard),
+    original = guard.canActivate.bind(guard);
+  let changed = false;
+  guard.canActivate = async (ctx) => {
+    const allowed = await original(ctx);
+    if (allowed && !changed) {
+      changed = true;
+      await change();
+    }
+    return allowed;
+  };
+  context.after(() => {
+    guard.canActivate = original;
+  });
+}
+test("native managed list uses organization changed after permission admission", async (context) => {
+  const f = await managedEvents();
+  afterListPermission(context, () =>
+    db.platformOAuthClient.update({ where: { id: f.client.id }, data: { organizationId: f.otherOrg.id } })
+  );
+  const result = await managedList(f);
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["foreign"]);
+  assert.equal(result.body.pagination.totalItems, 1);
+});
+test("native managed list refuses client deleted after permission admission", async (context) => {
+  const f = await managedEvents();
+  afterListPermission(context, () => db.platformOAuthClient.delete({ where: { id: f.client.id } }));
+  const result = await managedList(f);
+  assert.equal(result.status, 403);
+  assert.equal(result.body.data, undefined);
+});
+test("native managed list cannot retain team organizers after root revocation", async (context) => {
+  const f = await managedEvents();
+  afterListPermission(context, () =>
+    db.membership.update({
+      where: { userId_teamId: { userId: owner.id, teamId: f.org.id } },
+      data: { accepted: false },
+    })
+  );
+  const result = await managedList(f);
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.data, []);
+  assert.equal(result.body.pagination.totalItems, 0);
+});
+test("native managed list refuses disabled principal in its actual read snapshot", async (context) => {
+  const f = await managedEvents();
+  afterListPermission(context, () => db.user.update({ where: { id: owner.id }, data: { locked: true } }));
+  assert.equal((await managedList(f)).status, 403);
+});
+test("native managed list rejects a non-organization client root", async (context) => {
+  const f = await managedEvents();
+  afterListPermission(context, () =>
+    db.team.update({ where: { id: f.org.id }, data: { isOrganization: false } })
+  );
+  assert.equal((await managedList(f)).status, 403);
+});
+test("retained listing series metadata cannot traverse a foreign client member", async () => {
+  const f = await managedEvents();
+  await db.booking.updateMany({
+    where: { uid: { in: ["allowed", "foreign"] } },
+    data: { recurringEventId: "synthetic-client-series" },
+  });
+  const result = await sqlList({ apiKeyTeamId: undefined, apiClientId: f.client.id });
+  assert.equal(result.totalCount, 2);
+  assert.equal(result.recurringInfo.length, 1);
+  assert.equal(result.recurringInfo[0].count, 1);
+});
+test("retained listing rescheduler lookup stays within selected client visibility", async () => {
+  const f = await managedEvents();
+  await db.booking.update({ where: { uid: "allowed" }, data: { fromReschedule: "foreign" } });
+  await db.booking.update({
+    where: { uid: "foreign" },
+    data: { rescheduledBy: "foreign-client-private@fixture.test" },
+  });
+  const result = await sqlList({ apiKeyTeamId: undefined, apiClientId: f.client.id });
+  assert.equal(result.bookings.find((booking) => booking.uid === "allowed").rescheduler, null);
+});
+test("retained listing invalid internal client marker fails closed", async () => {
+  await managedEvents();
+  for (const apiClientId of ["", null, 123])
+    await assert.rejects(sqlList({ apiKeyTeamId: undefined, apiClientId }), { code: "BAD_REQUEST" });
+});
+
+test("native managed list uses selected client instead of another default profile", async () => {
+  const f = await managedEvents();
+  await db.profile.create({
+    data: {
+      uid: "synthetic-other-profile",
+      username: "other-default",
+      organizationId: f.otherOrg.id,
+      userId: owner.id,
+    },
+  });
+  const result = await managedList(f);
+  assert.equal(result.status, 200);
+  assert.deepEqual(uids(result), ["allowed", "unrelated"]);
+  assert.equal(result.body.pagination.totalItems, 2);
 });

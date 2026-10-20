@@ -3,6 +3,7 @@ import getAllUserBookings from "@calcom/features/bookings/lib/getAllUserBookings
 import {
   filterBookingAttendees,
   filterBookingIdentities,
+  filterPlatformClientBookings,
   visibleBookingsQuery,
 } from "@calcom/features/community-enterprise/authorization/BookingVisibility";
 import { KyselyPermissionStore } from "@calcom/features/community-enterprise/authorization/KyselyPermissionStore";
@@ -89,7 +90,13 @@ type BookingsUnionQuery = SelectQueryBuilder<
 >;
 
 type GetBookingsOptions = {
-  user: { id: number; email: string; orgId?: number | null; apiKeyTeamId?: number | null };
+  user: {
+    id: number;
+    email: string;
+    orgId?: number | null;
+    apiKeyTeamId?: number | null;
+    apiClientId?: string;
+  };
   filters: TGetInputSchema["filters"];
   prisma: PrismaClient;
   kysely: Kysely<DB>;
@@ -115,7 +122,8 @@ export async function getBookings(options: GetBookingsOptions) {
     !Number.isSafeInteger(skip) ||
     skip < 0 ||
     (user.orgId != null && !validId(user.orgId)) ||
-    (user.apiKeyTeamId != null && !validId(user.apiKeyTeamId))
+    (user.apiKeyTeamId != null && !validId(user.apiKeyTeamId)) ||
+    (user.apiClientId !== undefined && (typeof user.apiClientId !== "string" || !user.apiClientId))
   ) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid booking listing bounds" });
   }
@@ -161,6 +169,19 @@ async function getBookingsInSnapshot({
   if (!actor || actor.locked) throw new TRPCError({ code: "FORBIDDEN" });
   user = { ...user, email: actor.email };
   const permissionCheckService = new PermissionPolicy(new KyselyPermissionStore(kysely));
+  const apiClientId = user.apiClientId;
+  if (apiClientId !== undefined) {
+    const client = await kysely
+      .selectFrom("PlatformOAuthClient")
+      .innerJoin("Team as ClientOrg", "ClientOrg.id", "PlatformOAuthClient.organizationId")
+      .select("PlatformOAuthClient.organizationId")
+      .where("PlatformOAuthClient.id", "=", apiClientId)
+      .where("ClientOrg.isOrganization", "=", true)
+      .where("ClientOrg.parentId", "is", null)
+      .executeTakeFirst();
+    if (!client) throw new TRPCError({ code: "FORBIDDEN" });
+    user = { ...user, orgId: client.organizationId };
+  }
   const teamIdsWithBookingPermission = await permissionCheckService.getTeamIdsWithPermission({
     userId: user.id,
     permission: "booking.readTeamBookings",
@@ -173,6 +194,17 @@ async function getBookingsInSnapshot({
   if (user.apiKeyTeamId != null) {
     if (!teamIdsWithBookingPermission.includes(user.apiKeyTeamId)) throw new TRPCError({ code: "FORBIDDEN" });
     visible = filterBookingIdentities(visible, kysely, { teamIds: [user.apiKeyTeamId] });
+  }
+  if (apiClientId !== undefined) {
+    const readableTeamIds = await permissionCheckService.getTeamIdsWithPermission({
+      userId: user.id,
+      permission: "eventType.read",
+      orgId: user.orgId ?? undefined,
+    });
+    visible = filterPlatformClientBookings(visible, kysely, {
+      clientId: apiClientId,
+      teamIds: [...new Set([...readableTeamIds, ...teamIdsWithBookingPermission])],
+    });
   }
   let queryUnion = filterBookingIdentities(visible, kysely, filters ?? {});
   queryUnion = addStatusesQueryFilters(queryUnion, bookingListingByStatus);

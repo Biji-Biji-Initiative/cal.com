@@ -640,7 +640,7 @@ export class BookingsService_2024_08_13 {
 
   async getBookings(
     queryParams: GetBookingsInput_2024_08_13,
-    user: { email: string; id: number; orgId?: number; apiKeyTeamId?: number | null },
+    user: { email: string; id: number; orgId?: number; apiKeyTeamId?: number | null; apiClientId?: string },
     userIds?: number[]
   ) {
     if (queryParams.attendeeEmail) {

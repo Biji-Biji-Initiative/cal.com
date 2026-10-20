@@ -566,3 +566,45 @@ modeling errors were corrected and all failure/final receipts remain private.
 No PostgreSQL or whole application baseline was needed for this two-line behavior
 change. Full request-body/privacy, persistent audit and complete API/runtime
 acceptance are not established. The next existing gap remains client listing.
+
+## Managed-client native listing visibility snapshot
+
+Source predecessor `350d797e4dba144edae7ebf9968a7ed23e779a22`; eight exact clear
+paths were leased after fresh original ready/inbox/live-reservation inspection.
+
+Native dispatch now retains the selected client ID through the existing service
+and shared wrapper. The retained primary read-only query resolves its current
+valid root before permission evaluation, overriding a different default profile.
+Existing PermissionPolicy supplies current read-team and event-read grants within
+that root; the existing booking identity predicate and client-associated personal
+owners constrain visibility before requested filters, rows, counts and metadata.
+The original role engine, SQL query, output contracts and default callers remain.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old native source | 120 passed, 12 failed: scope rows/count/page/search, personal/root/parent, current client changes/revocation/shape, series/rescheduler and invalid marker |
+| Final native HTTP/domain/PG | 133 passed, zero failures/skips; exit 0 and owned cleanup verified |
+| Affected retained listing PG | 40 passed, zero failures/skips; exit 0 and owned cleanup verified |
+| Affected shared authorization/inventory source | 68 passed |
+| Native strict import closure and final fixture checkJs | Both exit 0 |
+
+Actual native owner/profile lookup now runs rather than a default-profile stub.
+A real default profile in another administered organization cannot substitute
+for the selected client. Native root/child/parent and explicit personal association
+remain useful; caller search filters cannot widen scope. Current client movement
+changes the visible scope; deletion, invalid root and disabled principal receive
+the existing native TRPC filter's 403. Root revocation cannot retain team records
+through an organizer shortcut. Counts and shared-query series/rescheduler metadata
+use the same scoped visibility base and read-only transaction.
+
+The first fixed attempt passed 132 of 133: its search control used unsupported
+teamIds instead of the native teamsIds input. The response still contained only
+current-client rows. The corrected actual legacy parameter is proven by the final
+run; no production parameter was renamed. Failure/corrected receipts are private.
+
+This proves native page membership/counts and the retained query's metadata. The
+API formatter can still perform a separate predecessor lookup when hydrating
+rescheduledByEmail; other post-query fields, optional permission/cache, complete
+access-token/version and original runtime acceptance remain open. CAL-05.API and
+the full 39-node goal stay in progress. No unchanged app/SCIM/audit baseline,
+install, external credential, provider or production action was repeated.

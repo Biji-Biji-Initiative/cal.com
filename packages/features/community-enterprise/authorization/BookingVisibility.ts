@@ -109,6 +109,32 @@ export function filterBookingIdentities(
   return query;
 }
 
+export function filterPlatformClientBookings(
+  query: VisibleBookingsQuery,
+  database: Kysely<DB>,
+  scope: { clientId: string; teamIds: number[] }
+) {
+  const personalEvents = database
+    .selectFrom("EventType")
+    .leftJoin("EventType as ParentEvent", "ParentEvent.id", "EventType.parentId")
+    .select("EventType.id")
+    .where("EventType.teamId", "is", null)
+    .where("ParentEvent.teamId", "is", null)
+    .where(
+      "EventType.userId",
+      "in",
+      database.selectFrom("_PlatformOAuthClientToUser").select("B").where("A", "=", scope.clientId)
+    );
+  return query.where((eb) =>
+    eb.or([
+      scope.teamIds.length === 0
+        ? eb.val(false)
+        : eb("Booking.eventTypeId", "in", eventTypesOwnedByTeams(database, scope.teamIds)),
+      eb("Booking.eventTypeId", "in", personalEvents),
+    ])
+  );
+}
+
 function attendeeTextPredicate(
   eb: ExpressionBuilder<DB, "Attendee">,
   field: "name" | "email",

@@ -285,6 +285,7 @@ export class BookingsController_2024_08_13 {
       id: user.id,
       orgId: profile?.organizationId ?? undefined,
       apiKeyTeamId: user.apiKeyTeamId,
+      apiClientId: user.apiClientId,
     });
 
     return {

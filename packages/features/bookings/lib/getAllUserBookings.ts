@@ -13,7 +13,13 @@ export type SortOptions = {
 };
 type GetOptions = {
   ctx: {
-    user: { id: number; email: string; orgId?: number | null; apiKeyTeamId?: number | null };
+    user: {
+      id: number;
+      email: string;
+      orgId?: number | null;
+      apiKeyTeamId?: number | null;
+      apiClientId?: string;
+    };
     prisma: PrismaClient;
     kysely: Kysely<DB>;
   };
