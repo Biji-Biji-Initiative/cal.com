@@ -862,3 +862,99 @@ being prepared instead, without changing memory limits or the healthy app.
 DEV native API/Redis/scheduler configuration, Zoom credentials, mail delivery,
 full native adoption, image/security qualification and production acceptance
 remain open. The current source proposals and page proof do not close them.
+
+## 2026-10-20 continuation: native runtime restoration and capability preservation
+
+The full native Cal.com feature set remains the baseline. The reduced Cal.diy
+candidate and all five capability-dropping cleanup migrations remain held,
+including on empty fixtures. None of the source proposals below authorizes a
+build, source adoption, migration, release, scheduler or customer-visible send.
+The live DEV application remains the existing full native 6.2 derivative.
+
+Native DEV cron credentials are now present and loaded. Exactly two missing
+Infisical DEV records were created, with independently generated values held
+only in memory; both version-1 records were read back successfully. Infrastructure
+commit `58105a9369a6fe269c2e18950f76f8e354b1b09f` added only the two DEV
+ExternalSecret references and their documentation. Commit
+`cacaa8a46e49e16d2c04d2ed7b36b8f1a2c4bcc8` added only the DEV Pod annotation
+needed to load them. Stage and production renders were unchanged. The actual
+generation-43 ready Pod `calcom-6bff67c56b-2dwqr` was checked before and after
+the loaded-environment inspection: both native cron values were present,
+distinct and correctly shaped; web and proxy restart counts were zero. No
+values or value hashes were recorded. The direct read-only proof used five
+successful native operations and no extra web Node process. Its receipt is
+`value-free-native-cron-direct-ready-v2.json` in the existing cron evidence
+directory. The earlier rollout/cardinality refusal and failed direct-UID
+observer remain recorded separately. Provider-to-ESO value equality was not
+tested, and the installed cron authorization behavior remains untested. No cron
+endpoint was called and no scheduler or worker was enabled. The native source
+guard still needs the reviewed fail-closed repair before execution is considered.
+
+Two retained failed Pods were evicted during `calcom-yarn-bootstrap`, before
+either web or proxy started. Their projected native status messages identify
+ephemeral storage as the resource dimension. Neither is evidence of a web OOM.
+The currently ready Pod has no web or proxy restarts. The node's current
+Ready=True and pressure=False conditions do not prove its historical state.
+Fleet owner HazyValley was notified in Agent Mail message 147829; no node,
+network, permissions or capacity configuration was changed by this work.
+
+The real staff browser audit settled seven existing native pages: Teams,
+Availability, Bookings, App Store and Profile rendered their normal content;
+Workflows and Routing rendered native license notices. This proves navigation
+and these readiness states, rather than full business workflows. The earlier
+native staff logout, empty session, explicit Mereka sign-in, dashboard, Google
+Calendar and Meet proofs remain valid within their recorded limits. Fresh
+passkey entry, global IdP logout and revocation have not been proved. The native
+session currently reports hasValidLicense=false. The loaded license environment
+variable is absent; native Deployment-row license fallback is still under
+read-only investigation. No license bypass or activation has occurred.
+
+Zoom's authenticated native Build index contains one matching Cal.com
+Integration app in the currently inspected account. It is explicitly a
+Server-to-Server OAuth app. The native Cal connector uses a user authorization
+code flow, so this existing app cannot simply be substituted. The fresh DEV
+native App Store query reports Zoom disabled with empty client fields. This is
+not proof that another owner or the March deployment had no usable client.
+Historical lane metadata is being checked before any new client is created.
+The staging PostgreSQL StatefulSet is currently scaled to zero, so its stored
+configuration remains unknown without starting it. No credentials were revealed,
+rotated or copied between environments; no new Zoom app, provider consent,
+meeting or default conferencing assignment has been performed. A dedicated
+unpublished DEV user OAuth recovery plan is prepared using Cal's existing
+connector and maintained Zoom configuration tooling.
+
+Anonymous booking remains an open, reproduced defect: cookie-free and
+identity-free requests to `/gurpreet` on both DEV hostnames return a redirect to
+the staff IdP. Staff profile rendering is not guest proof. The actual controller
+is Traefik 3.7.15 with both native CRD and NGINX compatibility providers. A narrow
+five-file adapter change is being implemented against its pinned matcher
+behavior and the native application's routes, rewrites and 37 locales. It keeps
+private Outpost enforcement and native booking logic, rejects route/marker
+mismatches and strips forwarded identity from the anonymous path. This proposal
+is not yet deployed. Public booking, reschedule and cancellation still require
+real guest acceptance after source review and deployment.
+
+The full-native source preservation work remains scratch-only. The 3,733
+unambiguous source restorations have passed read-only patch checks, and all 123
+programme deltas have explicit review classifications. Authentication proposals
+retain native licensing, billing, organization, delegation, profile and provider
+paths while narrowing stale role and foreign-profile session hints. Their
+source fixture passed 117 cases plus two focused projection cases; six TCP OIDC
+cases were not executed. Repository, license and organization dependencies were
+explicit fixture doubles, so this is not full native compilation or database
+qualification. UBS findings remain unsuppressed with coordinate dispositions.
+
+Root's nine dependency proposals preserve the native graph and programme
+security constraints, including restoring the native routing builder dependency.
+Patch companions, lock generation, native type closure, Prisma, Node/image ABI
+and advisory scans remain open. Native schema, platform and booking repository
+proposals also remain unapplied. An executable native-capability admission guard
+is being prepared for the existing application packaging paths, because recipe
+equality alone cannot reject a reduced source tree. No CI, promoter, runner or
+lane policy is being replaced.
+
+All 39 task objects and previous graph fields are preserved. No task is closed
+by this continuation. Stored task-kind counts and native migration name/checksum
+comparison, scheduler safety, historical integrations, notification delivery,
+API/Redis readiness, Apple/CalDAV, full native source adoption, image security,
+backup/restore acceptance and production acceptance remain open.
