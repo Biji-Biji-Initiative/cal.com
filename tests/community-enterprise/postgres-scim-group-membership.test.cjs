@@ -220,3 +220,23 @@ test("pending-payment and platform child teams cannot receive a directory grant"
     assert.equal(await member(), null);
   }
 });
+
+test("an owned deactivated membership cannot report add or replay as an active grant", async () => {
+  const request = input();
+  await groups.add(request);
+  const initial = await member();
+  await db.membership.update({ where: { id: initial.id }, data: { accepted: false } });
+  const inactive = await member();
+  await db.scimMembershipGrant.updateMany({
+    data: {
+      lastManagedAccepted: false,
+      lastManagedUpdatedAt: inactive.updatedAt,
+    },
+  });
+  const provenance = await db.scimMembershipGrant.findMany();
+  await assert.rejects(groups.add(request), denied);
+  await assert.rejects(groups.add(input()), denied);
+  assert.deepEqual(await member(), inactive);
+  assert.deepEqual(await db.scimMembershipGrant.findMany(), provenance);
+  assert.equal(await db.enterpriseAuditEvent.count(), 2);
+});

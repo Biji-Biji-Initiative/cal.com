@@ -79,6 +79,8 @@ export class ScimGroupMembershipService {
           member,
           grants
         );
+        // Reactivation requires its own reviewed operation.
+        if (disposition === "owned" && member?.accepted !== true) throw refused();
         const operationHash = digest({ action, input });
         const prior = await tx.enterpriseAuditEvent.findUnique({
           where: { operationId: input.operationId },
