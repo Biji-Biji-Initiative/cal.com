@@ -457,7 +457,11 @@ test("API key strategy delegates the exact credential and prefix to its primary 
   });
   await assert.rejects(
     f.api.apiKeyStrategy("custom_key", request),
-    (error) => error.status === 401 && !error.message.includes("private authority reason")
+    (error) =>
+      error instanceof Error &&
+      "status" in error &&
+      error.status === 401 &&
+      !error.message.includes("private authority reason")
   );
 });
 
@@ -525,11 +529,12 @@ test("a primary outage does not cause another strategy to authenticate the same 
   assert.ok(!f.api.outcome.user);
 });
 test("Nest auth module registers the shared service and its authoritative database dependency", () => {
-  let definition;
+  /** @type {{ value?: { providers: unknown[], imports: unknown[] } }} */
+  const moduleState = {};
   const dependencies = {
     "@nestjs/common": {
       Module: (value) => {
-        definition = value;
+        moduleState.value = value;
         return (klass) => klass;
       },
     },
@@ -552,20 +557,27 @@ test("Nest auth module registers the shared service and its authoritative databa
   };
   for (const [modulePath, name] of Object.entries(modules)) dependencies[modulePath] = { [name]: { name } };
   load("apps/api/v2/src/modules/auth/auth.module.ts", dependencies);
-  assert.ok(definition.providers.includes(NextAuthSessionService));
-  assert.ok(definition.imports.includes(dependencies["@/modules/prisma/prisma.module"].PrismaModule));
+  assert.ok(moduleState.value);
+  assert.ok(moduleState.value.providers.includes(NextAuthSessionService));
+  assert.ok(moduleState.value.imports.includes(dependencies["@/modules/prisma/prisma.module"].PrismaModule));
 });
 test("platform library exports the exact shared validators instead of an API-local substitute", () => {
   const file = path.join(root, "packages/platform/libraries/index.ts");
   const ast = ts.createSourceFile(file, fs.readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
-  const exported = new Map(
-    ast.statements
-      .filter(ts.isExportDeclaration)
-      .filter((node) => node.moduleSpecifier && node.exportClause && ts.isNamedExports(node.exportClause))
-      .flatMap((node) =>
-        node.exportClause.elements.map((entry) => [entry.name.text, node.moduleSpecifier.text])
-      )
-  );
+  /** @type {Map<string, string>} */
+  const exported = new Map();
+  for (const node of ast.statements) {
+    if (
+      !ts.isExportDeclaration(node) ||
+      !node.exportClause ||
+      !ts.isNamedExports(node.exportClause) ||
+      !node.moduleSpecifier ||
+      !ts.isStringLiteral(node.moduleSpecifier)
+    )
+      continue;
+    for (const entry of node.exportClause.elements) exported.set(entry.name.text, node.moduleSpecifier.text);
+  }
+
   assert.equal(
     exported.get("refreshAuthentikToken"),
     "@calcom/features/community-enterprise/identity/AuthentikIdentity"
@@ -652,7 +664,7 @@ test("production OAuth branch rejects the wrong secret before selecting any owne
   };
   await assert.rejects(
     f.api.oAuthClientStrategy("fixture-client", "wrong-secret", f.request()),
-    (error) => error.status === 401
+    (error) => error instanceof Error && "status" in error && error.status === 401
   );
   assert.equal(ownerLookups, 0);
   assert.equal((await f.api.oAuthClientStrategy("fixture-client", "synthetic-secret", f.request())).id, 7);
@@ -673,7 +685,8 @@ function permissionGuardInventory() {
     const decorators = (node, name) =>
       (ts.getDecorators(node) || [])
         .map((d) => d.expression)
-        .filter((e) => ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === name);
+        .filter(ts.isCallExpression)
+        .filter((e) => ts.isIdentifier(e.expression) && e.expression.text === name);
     const guards = (node) => {
       const entries = decorators(node, "UseGuards");
       assert.ok(
@@ -697,6 +710,7 @@ function permissionGuardInventory() {
         rows.push({
           file: path.relative(root, file),
           method: method.name.getText(source),
+          permissions: permissions[0].arguments[0].elements.map((value) => value.getText(source)),
           guards: [...guards(klass), ...guards(method)],
         });
       }
@@ -705,6 +719,21 @@ function permissionGuardInventory() {
   return rows;
 }
 function assertPermissionGuardOrder(row) {
+  if (row.guards.includes("OptionalPermissionsGuard")) {
+    assert.ok(
+      row.file === "apps/api/v2/src/platform/bookings/2024-08-13/controllers/bookings.controller.ts" &&
+        ["getBooking", "getBookingBySeatUid"].includes(row.method),
+      "Optional permissions require a reviewed public booking read"
+    );
+    assert.deepEqual(row.permissions, ["BOOKING_READ"]);
+    const auth = row.guards.indexOf("OptionalApiAuthGuard"),
+      permission = row.guards.indexOf("OptionalPermissionsGuard");
+    assert.ok(
+      auth >= 0 && permission > auth,
+      `${row.file}:${row.method} must authenticate before checking selected-client permissions`
+    );
+    return;
+  }
   const auth = row.guards.indexOf("ApiAuthGuard"),
     permission = row.guards.indexOf("PermissionsGuard");
   assert.ok(
@@ -830,6 +859,7 @@ function atomScheduleFixture(options = {}) {
   const { Reflector } = apiRequire("@nestjs/core");
   const { GUARDS_METADATA } = apiRequire("@nestjs/common/constants");
   const jwt = require("jsonwebtoken");
+  /** @type {Record<string, unknown>} */
   const constants = {
     ...load("packages/platform/constants/api.ts"),
     ...load("packages/platform/constants/permissions.ts"),
@@ -853,6 +883,7 @@ function atomScheduleFixture(options = {}) {
     "@nestjs/config": {},
     jsonwebtoken: jwt,
   });
+  assert.ok(typeof constants.SCHEDULE_WRITE === "number");
   f.permissionMask = constants.SCHEDULE_WRITE;
   f.permissionReads = 0;
   f.domainCalls = [];
@@ -899,6 +930,10 @@ function atomScheduleFixture(options = {}) {
     );
 
   class PassportBoundary {
+    /** @returns {{ user?: unknown, allowedAuthMethods?: string[] }} */
+    getRequest(_context) {
+      throw new Error("The production API guard must supply getRequest");
+    }
     async canActivate(context) {
       // The production override reads actual method metadata before selection.
       const request = this.getRequest(context);
@@ -1034,3 +1069,27 @@ for (const method of atomMutations) {
     assert.equal(f.domainCalls.length, 1);
   });
 }
+
+test("optional credential permissions require reviewed read route and authentication order", () => {
+  const row = {
+    file: "apps/api/v2/src/platform/bookings/2024-08-13/controllers/bookings.controller.ts",
+    method: "getBooking",
+    permissions: ["BOOKING_READ"],
+    guards: ["BookingUidGuard", "OptionalApiAuthGuard", "OptionalPermissionsGuard"],
+  };
+  assert.doesNotThrow(() => assertPermissionGuardOrder(row));
+  assert.throws(
+    () =>
+      assertPermissionGuardOrder({ ...row, guards: ["OptionalPermissionsGuard", "OptionalApiAuthGuard"] }),
+    /authenticate before/
+  );
+  assert.throws(
+    () => assertPermissionGuardOrder({ ...row, guards: ["OptionalPermissionsGuard"] }),
+    /authenticate before/
+  );
+  assert.throws(
+    () => assertPermissionGuardOrder({ ...row, method: "rescheduleBooking" }),
+    /reviewed public booking read/
+  );
+  assert.throws(() => assertPermissionGuardOrder({ ...row, permissions: ["BOOKING_WRITE"] }));
+});

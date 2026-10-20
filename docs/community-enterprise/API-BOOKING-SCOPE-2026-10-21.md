@@ -641,3 +641,39 @@ paths/secondary lookups, optional client permission/cache, complete API versions
 and original runtime criteria remain open. CAL-05.API and the full goal stay in
 progress. No unchanged app/SCIM/audit baseline, install, external credential,
 provider or production action was repeated.
+
+## Current credential permission on optional UID and seat reads
+
+Source predecessor `b881cc46dd93cc1a482c00cc8d2eb9a602fc8b25`; six exact clear
+paths were reserved after fresh original ready/inbox/live-reservation inspection.
+
+Native UID and seat reads now declare BOOKING_READ after optional authentication.
+A thin OptionalPermissionsGuard delegates to the existing PermissionsGuard for
+every present principal; only null/undefined anonymous principals skip it. The
+existing current-client bits, secret, active owner and native credential selection
+remain authoritative. No second permission engine is introduced. Native Nest
+discovers the subclass and resolves its inherited repository dependencies.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Corrected old native source | 142 passed, 6 failed |
+| Fixed native HTTP/domain/PG | 148 passed, zero failures/skips; exit 0 and owned cleanup verified |
+| Current native negatives | Missing/read-wrong/write-only bits; permission diminution and secret rotation behind real lagged client admission; custom-role OWNER label; secondary key; deleted client |
+| Preserved positives | BOOKING_READ-only scoped owner; anonymous UID hides roster, anonymous seat retains its own attendee; all prior domain/scope controls |
+| Authentication/inventory source checks | 118 passed |
+| Native strict import closure and both changed JS fixtures | Exit 0 |
+
+The original stale/deleted-client privacy control now expects a stricter supplied
+credential 403; a separate anonymous request to that UID still returns 200 with
+no roster. Source guard-order checks accept the optional form only for these two
+reviewed read methods and BOOKING_READ, rejecting reversed/missing authentication,
+unreviewed mutations and write metadata. Existing assertions remain meaningful.
+
+An initial old-source seat control used wrong case allowed-first instead of the
+actual allowed-First fixture reference, causing native 404s; corrected old proof
+is recorded separately. The broader changed JavaScript check exposed older
+fixture narrowing/AST/interface errors, corrected without removing assertions.
+All failure/corrected receipts remain private. No whole application, SCIM/audit
+baseline, install, provider or production action ran. Other mutation/route/token
+versions, output fields and original runtime criteria remain open; CAL-05.API and
+the full original goal are not complete.

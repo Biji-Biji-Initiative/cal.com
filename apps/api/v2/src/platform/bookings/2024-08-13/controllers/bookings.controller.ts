@@ -60,6 +60,7 @@ import { Pbac } from "@/modules/auth/decorators/pbac/pbac.decorator";
 import { Permissions } from "@/modules/auth/decorators/permissions/permissions.decorator";
 import { ApiAuthGuard } from "@/modules/auth/guards/api-auth/api-auth.guard";
 import { OptionalApiAuthGuard } from "@/modules/auth/guards/optional-api-auth/optional-api-auth.guard";
+import { OptionalPermissionsGuard } from "@/modules/auth/guards/permissions/optional-permissions.guard";
 import { PermissionsGuard } from "@/modules/auth/guards/permissions/permissions.guard";
 import { ApiAuthGuardUser } from "@/modules/auth/strategies/api-auth/api-auth.strategy";
 import { UsersService } from "@/modules/users/services/users.service";
@@ -161,7 +162,8 @@ export class BookingsController_2024_08_13 {
   }
 
   @Get("/by-seat/:seatUid")
-  @UseGuards(OptionalApiAuthGuard)
+  @Permissions([BOOKING_READ])
+  @UseGuards(OptionalApiAuthGuard, OptionalPermissionsGuard)
   @ApiHeader(OPTIONAL_X_CAL_CLIENT_ID_HEADER)
   @ApiHeader(OPTIONAL_X_CAL_SECRET_KEY_HEADER)
   @ApiHeader(OPTIONAL_API_KEY_OR_ACCESS_TOKEN_HEADER)
@@ -188,7 +190,8 @@ export class BookingsController_2024_08_13 {
   }
 
   @Get("/:bookingUid")
-  @UseGuards(BookingUidGuard, OptionalApiAuthGuard)
+  @Permissions([BOOKING_READ])
+  @UseGuards(BookingUidGuard, OptionalApiAuthGuard, OptionalPermissionsGuard)
   @ApiHeader(OPTIONAL_X_CAL_CLIENT_ID_HEADER)
   @ApiHeader(OPTIONAL_X_CAL_SECRET_KEY_HEADER)
   @ApiHeader(OPTIONAL_API_KEY_OR_ACCESS_TOKEN_HEADER)

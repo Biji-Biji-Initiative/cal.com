@@ -171,13 +171,16 @@ before(async () => {
       const { OptionalApiAuthGuard } = load(
         path.join(root, api, "modules/auth/guards/optional-api-auth/optional-api-auth.guard.ts")
       );
+      const { OptionalPermissionsGuard } = load(
+        path.join(root, api, "modules/auth/guards/permissions/optional-permissions.guard.ts")
+      );
       const { GetOptionalUser } = load(
         path.join(root, api, "modules/auth/decorators/get-optional-user/get-optional-user.decorator.ts")
       );
       const Service = native(
         `${booking}services/bookings.service.ts`,
         "BookingsService_2024_08_13",
-        ["getCalendarLinks", "getBookings", "getBooking"],
+        ["getCalendarLinks", "getBookings", "getBooking", "getBookingBySeatUid"],
         {
           ...nest,
           BookingAccessService,
@@ -195,6 +198,12 @@ before(async () => {
       service.eventTypeAccessService = eventAccess.access;
       service.prismaReadService = { prisma: db };
       service.prismaWriteService = { prisma: db };
+      const NativeSeat = native(
+        `${api}modules/booking-seat/booking-seat.repository.ts`,
+        "BookingSeatRepository",
+        ["getByReferenceUidIncludeBookingWithAttendeesAndUserAndEvent"]
+      );
+      service.bookingSeatRepository = Object.assign(new NativeSeat(), { dbRead: { prisma: db } });
       service.kyselyWriteService = primarySql;
       service.kyselyReadService = {
         kysely: new Proxy(primarySql.kysely, {
@@ -249,7 +258,7 @@ before(async () => {
       const Controller = native(
         `${booking}controllers/bookings.controller.ts`,
         "BookingsController_2024_08_13",
-        ["getCalendarLinks", "getBookings", "getBooking"],
+        ["getCalendarLinks", "getBookings", "getBooking", "getBookingBySeatUid"],
         {
           ...nest,
           ...require("@nestjs/swagger"),
@@ -259,6 +268,7 @@ before(async () => {
           BookingUidGuard,
           BookingPbacGuard,
           OptionalApiAuthGuard,
+          OptionalPermissionsGuard,
           GetOptionalUser,
           OPTIONAL_X_CAL_CLIENT_ID_HEADER: {},
           OPTIONAL_X_CAL_SECRET_KEY_HEADER: {},
@@ -1731,8 +1741,11 @@ test("actual lagging native client admission cannot revive deleted resource scop
     },
     { isolationLevel: "RepeatableRead", timeout: 20000 }
   );
-  assert.equal(result.status, 200);
-  assert.deepEqual(result.body.data.attendees, []);
+  assert.equal(result.status, 403);
+  assert.equal(result.body.data, undefined);
+  const anonymous = await detail("allowed");
+  assert.equal(anonymous.status, 200);
+  assert.deepEqual(anonymous.body.data.attendees, []);
 });
 test("native managed client retains its root resource", async () => {
   const f = await managedEvents();
@@ -2077,4 +2090,110 @@ test("native list rescheduler remains bound to the real query snapshot through h
   const result = await managedList(f, "bookingUid=allowed");
   assert.equal(row(result).rescheduledByEmail, "authorized-snapshot@fixture.test");
   assert.equal(JSON.stringify(result.body).includes("foreign-after-snapshot@fixture.test"), false);
+});
+
+const optionalReadRoutes = ["/v2/bookings/allowed", "/v2/bookings/by-seat/allowed-First"];
+async function laggedClientAdmission(change, request) {
+  return db.$transaction(
+    async (lag) => {
+      await lag.platformOAuthClient.count();
+      const previous = managedClients.clients.dbRead;
+      managedClients.clients.dbRead = { prisma: lag };
+      try {
+        await change();
+        return await request();
+      } finally {
+        managedClients.clients.dbRead = previous;
+      }
+    },
+    { isolationLevel: "RepeatableRead", timeout: 20000 }
+  );
+}
+test("native optional booking reads refuse missing or write-only client read bits", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  for (const permissions of [0, 1, 8]) {
+    await db.platformOAuthClient.update({ where: { id: f.client.id }, data: { permissions } });
+    for (const route of optionalReadRoutes)
+      assert.equal((await managedRequest(route, f.headers)).status, 403);
+  }
+});
+test("native optional booking reads retain BOOKING_READ-only credential", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  await db.platformOAuthClient.update({ where: { id: f.client.id }, data: { permissions: 4 } });
+  for (const route of optionalReadRoutes) {
+    const result = await managedRequest(route, f.headers);
+    assert.equal(result.status, 200);
+    assert.equal(result.body.data.attendees.length, 2);
+  }
+});
+test("native optional client read bits stay current behind real lagging admission", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  const result = await laggedClientAdmission(
+    () => db.platformOAuthClient.update({ where: { id: f.client.id }, data: { permissions: 1 } }),
+    () => managedRequest("/v2/bookings/allowed", f.headers)
+  );
+  assert.equal(result.status, 403);
+  assert.equal(result.body.data, undefined);
+});
+test("native optional seat read refuses rotated secret behind lagging admission", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  const result = await laggedClientAdmission(
+    () =>
+      db.platformOAuthClient.update({
+        where: { id: f.client.id },
+        data: { secret: randomBytes(32).toString("hex") },
+      }),
+    () => managedRequest("/v2/bookings/by-seat/allowed-First", f.headers)
+  );
+  assert.equal(result.status, 403);
+  assert.equal(result.body.data, undefined);
+});
+test("native optional reads cannot use custom-role OWNER label as client administrator", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  await db.role.create({
+    data: {
+      id: "optional-client-reader",
+      name: "Custom reader",
+      teamId: f.org.id,
+      permissions: { create: { resource: "eventType", action: "read" } },
+    },
+  });
+  await db.membership.update({
+    where: { userId_teamId: { userId: owner.id, teamId: f.org.id } },
+    data: { customRoleId: "optional-client-reader" },
+  });
+  for (const route of optionalReadRoutes) assert.equal((await managedRequest(route, f.headers)).status, 403);
+});
+test("native optional read cannot substitute secondary key for selected client bits", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  await db.platformOAuthClient.update({ where: { id: f.client.id }, data: { permissions: 0 } });
+  for (const route of optionalReadRoutes)
+    assert.equal((await managedRequest(route, { ...f.headers, Authorization: `Bearer ${key}` })).status, 403);
+});
+test("native anonymous UID and own-seat capabilities remain without client credentials", async () => {
+  await managedEvents();
+  await seated("allowed");
+  const uid = await managedRequest(optionalReadRoutes[0], {}),
+    seat = await managedRequest(optionalReadRoutes[1], {});
+  assert.equal(uid.status, 200);
+  assert.deepEqual(uid.body.data.attendees, []);
+  assert.equal(seat.status, 200);
+  assert.equal(seat.body.data.attendees.length, 1);
+  assert.equal(seat.body.data.attendees[0].email, "first@fixture.test");
+});
+test("native optional seat read cannot revive deleted client from lagging admission", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  const result = await laggedClientAdmission(
+    () => db.platformOAuthClient.delete({ where: { id: f.client.id } }),
+    () => managedRequest("/v2/bookings/by-seat/allowed-First", f.headers)
+  );
+  assert.equal(result.status, 403);
+  assert.equal(result.body.data, undefined);
 });
