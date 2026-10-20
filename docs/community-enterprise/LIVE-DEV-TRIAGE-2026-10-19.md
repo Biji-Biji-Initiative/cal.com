@@ -679,3 +679,73 @@ restoration is authorized through the native admin flow only after exact DEV,
 staff, existing Google configuration and conflict-free target-state checks.
 Zoom still needs a compatible configuration and credential pair. No provider
 default, calendar event or customer-visible message has been created.
+
+
+## Release hold: preserve full native Cal (2026-10-20 01:15Z)
+
+The reduced e8 candidate is on hold for publication and deployment. All
+capability-removing cleanup migrations are also on hold, including against
+empty tables. The owner's requirement is to retain the existing full native
+Cal.com product and extend its actual services with necessary Mereka behavior.
+The current full-stock Cal.com DEV runtime remains the repair target. No reduced
+candidate or its cleanup migration has been deployed or run by this work.
+
+The [native preservation audit](NATIVE-CAL-PRESERVATION-AUDIT-2026-10-20.md)
+pins the full v6.2.0 tag to `1c193cca8682b33b9866c792186033f7ef886682`.
+The programme inherits a reduced MIT distribution. It removes no files relative
+to that MIT baseline, but lacks native workflow, routing-form and many
+organization/team API paths relative to full Cal. Nineteen native models are
+absent: the full schema has 119 models, the candidate has 101 including one new
+audit model. Native reassignment and routing-response paths also reach no-op
+adapters. The newer narrow administration/routing modules do not establish
+native parity. The complete report and all seventeen sealed source-evidence
+files were independently checked. Preserve all programme work and port genuine
+identity, provider, authority, booking and worker fixes onto full native services;
+do not adopt the reduced source or its lock/migrations wholesale.
+
+The Host correction is now actually ready in generation 41. Five native commands
+returned zero and checked the running source against the reviewed ConfigMap,
+with stable Pod identity, images and encryption revision. The subsequent real
+`/settings/my-account/calendars` retest still renders its generic error and Try
+Again. The Host contract repair is valid but does not close this user-facing
+bug. The installed-calendar page separately retains the working Google account
+and conflict/destination controls. A bounded native error investigation remains
+open; no reconnect, reseed or provider-default change was made.
+
+The booking username is now actually saved through the normal native inner
+Update and confirmation Save, exactly once. A full reload initializes
+`gurpreet`; full name and timezone remain. `/gurpreet` renders the expected name
+and two existing event-type links, without Not Found. No event type or booking
+was recreated. The earlier outer form progression was not username-persistence
+proof. Fresh authenticated dashboard/logout/re-entry acceptance remains open.
+
+The current read-only App/profile/startup matrix completed eleven native commands
+successfully with stable web/PostgreSQL/PVC identities. There are 104 App rows,
+78 enabled and 26 disabled; every disabled row has SQL NULL keys. Google Calendar
+has all three canonical environment-matching settings and the staff credential.
+Meet and Zoom are existing disabled rows without keys. The native admin Save
+path remains the preferred selective restoration method; Meet has not yet been
+saved. Preserve the complete redirect array when using the existing native API.
+No blanket seed or replacement configuration service is needed.
+
+All 584 installed migration directories are applied; the database records 588
+completed migrations, none incomplete or rolled back. The four additional names
+are version evidence and do not authorize applying an older migration tree.
+Database readiness is presently proven; omitted cold-start ordering remains a
+separate contract. Actual native seed/tools/imports exist. The fixed native
+`.env` and `.env.appStore` inputs are absent, and exact process-key discovery
+finds only the Google provider group complete. Running the seed cannot recover
+an absent Zoom pair from those inputs.
+
+Native mail uses its existing configured EMAIL_SERVER_HOST transport branch.
+The earlier SMTP-variable probe did not cover that native contract. No relay
+connection or delivery is claimed. DEV has no namespace CronJobs, CRON_API_KEY
+and CRON_SECRET are absent, and native API v2 plus Redis have zero desired
+replicas. These operational gaps need restoration through the existing native
+service/scheduler contracts after pending-work and no-send checks. No cron,
+queue, email, provider or migration action was executed by the audit.
+
+The exact e8 physical 776 Node / 14 OS comparison and its 105 focused source
+tests remain their limited historical evidence. All 89 detector findings remain
+unqualified and unwaived. Physical inventory does not override the native
+capability hold or establish complete image, API, worker or production acceptance.
