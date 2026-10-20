@@ -672,6 +672,9 @@ export class BookingsService_2024_08_13 {
         {
           attendees: new Map(booking.attendees.map((attendee) => [attendee.id, attendee.email])),
           seats: new Set(booking.seatsReferences.map((seat) => seat.referenceUid)),
+          rescheduledByEmail: booking.rescheduled
+            ? booking.rescheduledBy
+            : (booking.rescheduler ?? booking.rescheduledBy),
         },
       ])
     );
@@ -719,9 +722,17 @@ export class BookingsService_2024_08_13 {
       } else if (isRecurring && isSeated) {
         formattedBookings.push(this.outputService.getOutputRecurringSeatedBooking(formatted, true));
       } else if (isSeated) {
-        formattedBookings.push(await this.outputService.getOutputSeatedBooking(formatted, true));
+        formattedBookings.push(
+          await this.outputService.getOutputSeatedBooking(formatted, true, {
+            rescheduledByEmail: selected.rescheduledByEmail,
+          })
+        );
       } else {
-        formattedBookings.push(await this.outputService.getOutputBooking(formatted));
+        formattedBookings.push(
+          await this.outputService.getOutputBooking(formatted, {
+            rescheduledByEmail: selected.rescheduledByEmail,
+          })
+        );
       }
     }
 

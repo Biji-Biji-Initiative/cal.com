@@ -1999,3 +1999,82 @@ test("native managed list uses selected client instead of another default profil
   assert.deepEqual(uids(result), ["allowed", "unrelated"]);
   assert.equal(result.body.pagination.totalItems, 2);
 });
+async function predecessor(current, previous, email, currentEmail = null) {
+  await db.booking.update({ where: { uid: previous }, data: { rescheduledBy: email } });
+  await db.booking.update({
+    where: { uid: current },
+    data: { fromReschedule: previous, rescheduledBy: currentEmail },
+  });
+}
+test("native key list output cannot re-read an invisible predecessor email", async () => {
+  await predecessor("allowed", "foreign", "foreign-key-predecessor@fixture.test");
+  const result = await list("bookingUid=allowed");
+  assert.equal(row(result).rescheduledByEmail, null);
+  assert.equal(JSON.stringify(result.body).includes("foreign-key-predecessor@fixture.test"), false);
+});
+test("native managed seated list cannot overwrite scoped predecessor masking", async () => {
+  const f = await managedEvents();
+  await seated("allowed");
+  await predecessor("allowed", "foreign", "foreign-client-predecessor@fixture.test");
+  const result = await managedList(f, "bookingUid=allowed");
+  assert.equal(row(result).rescheduledByEmail, null);
+  assert.equal(row(result).attendees.length, 2);
+});
+test("native participant seat output retains own answer without predecessor disclosure", async () => {
+  const { token } = await participantSeats();
+  await predecessor("allowed", "foreign", "foreign-participant-predecessor@fixture.test");
+  const result = await list("bookingUid=allowed", token);
+  assert.equal(row(result).rescheduledByEmail, null);
+  assert.equal(row(result).attendees.length, 1);
+  assert.equal(row(result).attendees[0].bookingFieldsResponses.answer, "own-answer");
+});
+test("native list preserves authorized predecessor without late repository lookup", async (context) => {
+  await predecessor("allowed", "unrelated", "authorized-predecessor@fixture.test");
+  const repo = nativeBookings.bookingsRepository,
+    original = repo.getByUid.bind(repo);
+  let reads = 0;
+  repo.getByUid = async (...args) => {
+    reads++;
+    return original(...args);
+  };
+  context.after(() => {
+    repo.getByUid = original;
+  });
+  const result = await list("bookingUid=allowed");
+  assert.equal(row(result).rescheduledByEmail, "authorized-predecessor@fixture.test");
+  assert.equal(reads, 0);
+});
+test("native list preserves current-row fallback when predecessor is outside scope", async () => {
+  await predecessor(
+    "allowed",
+    "foreign",
+    "foreign-fallback-predecessor@fixture.test",
+    "current-fallback@fixture.test"
+  );
+  assert.equal(row(await list("bookingUid=allowed")).rescheduledByEmail, "current-fallback@fixture.test");
+});
+test("native list preserves rescheduled current-row precedence", async () => {
+  await predecessor(
+    "allowed",
+    "unrelated",
+    "older-predecessor@fixture.test",
+    "current-rescheduler@fixture.test"
+  );
+  await db.booking.update({ where: { uid: "allowed" }, data: { rescheduled: true } });
+  assert.equal(row(await list("bookingUid=allowed")).rescheduledByEmail, "current-rescheduler@fixture.test");
+});
+test("native list rescheduler remains bound to the real query snapshot through hydration", async (context) => {
+  const f = await managedEvents();
+  await predecessor("allowed", "unrelated", "authorized-snapshot@fixture.test");
+  const previous = await db.booking.findUniqueOrThrow({ where: { uid: "unrelated" } });
+  beforeHydration(context, async () => {
+    await db.eventType.update({ where: { id: previous.eventTypeId }, data: { teamId: foreign.id } });
+    await db.booking.update({
+      where: { uid: "unrelated" },
+      data: { rescheduledBy: "foreign-after-snapshot@fixture.test" },
+    });
+  });
+  const result = await managedList(f, "bookingUid=allowed");
+  assert.equal(row(result).rescheduledByEmail, "authorized-snapshot@fixture.test");
+  assert.equal(JSON.stringify(result.body).includes("foreign-after-snapshot@fixture.test"), false);
+});

@@ -608,3 +608,36 @@ rescheduledByEmail; other post-query fields, optional permission/cache, complete
 access-token/version and original runtime acceptance remain open. CAL-05.API and
 the full 39-node goal stay in progress. No unchanged app/SCIM/audit baseline,
 install, external credential, provider or production action was repeated.
+
+## Authorized rescheduler retained through native list output
+
+Source predecessor `6e47934d34896d517d95f24ed3e81b53d8452f38`; five exact clear
+paths were leased after fresh original ready/inbox/live-reservation checks.
+
+The actual native query selected a safe predecessor rescheduler, but the API
+formatter discarded it and queried the predecessor again without its scope.
+Normal and seated list output now receive an optional typed context from that
+actual selected snapshot. Explicit null prevents a fallback lookup. Current-row
+fallback and rescheduled-row precedence are computed from the selected row,
+preserving the existing native contract. Other callers can omit the context.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old native source | 134 passed, 6 failed |
+| Fixed native HTTP/domain/PG | 140 passed, zero failures/skips; exit 0 and owned cleanup verified |
+| Proven negative paths | Team key normal list, managed seated list, participant own-seat list and real query-to-hydration predecessor movement/email change |
+| Positive/fallback contracts | Authorized predecessor preserved without late getByUid; participant own answer retained; current-row fallback and rescheduled-row precedence retained |
+| Native strict source/import closure and fixture checkJs | Both exit 0 |
+
+The drift hook commits a real predecessor team/email change after the actual
+query and before unchanged native hydration. Output retains the authorized
+original snapshot email. No permission result, query row or SQL body is replaced.
+The existing policy/query provides the decision; this only preserves it through
+the existing mapper. Existing reschedule UID fields and recurring output shapes
+remain intact; no new API field or permission engine is introduced.
+
+This closes the selected list email re-read. Other hydration fields, other output
+paths/secondary lookups, optional client permission/cache, complete API versions
+and original runtime criteria remain open. CAL-05.API and the full goal stay in
+progress. No unchanged app/SCIM/audit baseline, install, external credential,
+provider or production action was repeated.
