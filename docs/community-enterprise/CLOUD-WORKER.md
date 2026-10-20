@@ -72,7 +72,21 @@ identity or idempotent delivery receipt first.
 Read current canonical leases, own inbox and `docs/community-enterprise/TASK_GRAPH.json`
 before choosing work. Reserve exact edited paths, honor owners and explicit
 handoffs, and release only your own reservations. No active lease is not itself
-a transfer of a task's ownership. NavyMaple retains graph/programme coordination.
+a transfer of a task's ownership. The operator has delegated coordination of the
+existing graph to JadeFrog (30264) in this same Cloud conversation. Preserve other
+live claims; dormant registrations and routine controller ACKs do not block
+eligible work. Publication/fonts and provider/production actions retain their
+separate owning gates.
+
+The canonical graph is Git-managed JSON; its verifier is read-only, and Mail has
+no graph-mutation API. Claim the narrow existing leaf through canonical Mail and
+exact source reservations, including an exclusive `TASK_GRAPH.json` reservation
+before editing its status/evidence. Preserve every original ID, owner role,
+dependency, acceptance criterion and historical receipt. Read/modify the current
+JSON, validate it with the native verifier, and publish through the normal person
+fast-forward route. A component proof leaves an unfinished leaf `in_progress`;
+it does not admit that leaf's dependents. Refresh Mail at checkpoints and before
+each new leaf or stall. Do not initialize a replacement Beads store.
 
 ## Dependencies and scoped service readiness
 

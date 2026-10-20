@@ -16,7 +16,7 @@ import type {
 } from "../repository/IBookingAuditRepository";
 import type { ActionSource } from "../types/actionSource";
 import { enrichActor, getActorDataRequirements } from "./ActorStrategies";
-import { BookingAuditAccessService } from "./BookingAuditAccessService";
+import { BookingAuditAccessService, BookingAuditPermissionError } from "./BookingAuditAccessService";
 import { BookingAuditActionServiceRegistry } from "./BookingAuditActionServiceRegistry";
 import { type DataRequirements, EnrichmentDataStore } from "./EnrichmentDataStore";
 
@@ -120,9 +120,10 @@ export class BookingAuditViewerService {
 
     // Check if this booking was created from a reschedule - fetch early for data requirements
     const fromRescheduleUid = await this.bookingRepository.getFromRescheduleUid(bookingUid);
-    const rescheduledLogs = fromRescheduleUid
-      ? await this.bookingAuditRepository.findRescheduledLogsOfBooking(fromRescheduleUid)
-      : [];
+    const rescheduledLogs = await this.getAuthorizedRescheduledLogs(
+      { userId, organizationId },
+      fromRescheduleUid
+    );
 
     const dataRequirements = this.collectDataRequirements([...auditLogs, ...rescheduledLogs]);
     const dbStore = await this.buildEnrichmentDataStore(dataRequirements);
@@ -158,6 +159,22 @@ export class BookingAuditViewerService {
       bookingUid: params.bookingUid,
       auditLogs: enrichedAuditLogs,
     };
+  }
+
+  private async getAuthorizedRescheduledLogs(
+    scope: { userId: number; organizationId: number | null },
+    bookingUid: string | null
+  ): Promise<BookingAuditWithActor[]> {
+    if (!bookingUid) return [];
+    // A reschedule link is context, not authority to read another booking's
+    // actors or audit data. Check before fetching or enriching that history.
+    try {
+      await this.accessService.assertPermissions({ ...scope, bookingUid });
+    } catch (error) {
+      if (error instanceof BookingAuditPermissionError) return [];
+      throw error;
+    }
+    return this.bookingAuditRepository.findRescheduledLogsOfBooking(bookingUid);
   }
 
   /**
@@ -361,9 +378,9 @@ export class BookingAuditViewerService {
    * Collect all data requirements from audit logs and action services
    */
   private collectDataRequirements(auditLogs: BookingAuditWithActor[]): DataRequirements {
-    let actorRequirements: DataRequirements[] = [];
-    let serviceRequirements: DataRequirements[] = [];
-    let contextRequirements: DataRequirements[] = [];
+    const actorRequirements: DataRequirements[] = [];
+    const serviceRequirements: DataRequirements[] = [];
+    const contextRequirements: DataRequirements[] = [];
     for (const log of auditLogs) {
       actorRequirements.push(getActorDataRequirements(log.actor));
 

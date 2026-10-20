@@ -685,6 +685,53 @@ describe("BookingAuditViewerService - Integration Tests", () => {
     describe("when handling rescheduled bookings", () => {
       beforeEach(() => {
         createMockTeamBooking("new-booking-uid", { teamId: 100 });
+        createMockTeamBooking("old-booking-uid", { teamId: 100 });
+      });
+
+      it("should not read or enrich a predecessor audit the current user cannot access", async () => {
+        createMockTeamBooking("new-booking-uid", { fromReschedule: "old-booking-uid" });
+        createMockTeamBooking("old-booking-uid", { userId: 456 });
+        createMockAuditLog("new-booking-uid", { id: "current-log" });
+        createMockAuditLog("old-booking-uid", {
+          id: "foreign-log",
+          action: "RESCHEDULED",
+          data: {
+            version: 1,
+            fields: {
+              startTime: { old: 1705315200000, new: 1705401600000 },
+              endTime: { old: 1705318800000, new: 1705405200000 },
+              rescheduledToUid: { old: null, new: "new-booking-uid" },
+            },
+          },
+        });
+        const result = await service.getAuditLogsForBooking({
+          bookingUid: "new-booking-uid",
+          userId: 123,
+          userEmail: "user@example.com",
+          userTimeZone: "UTC",
+          organizationId: 200,
+        });
+        expect(result.auditLogs.map((log) => log.id)).toEqual(["current-log"]);
+        expect(mockBookingAuditRepository.findRescheduledLogsOfBooking).not.toHaveBeenCalled();
+      });
+
+      it("should propagate predecessor authority read failures before fetching its audit", async () => {
+        createMockTeamBooking("new-booking-uid", { fromReschedule: "old-booking-uid" });
+        const read = mockBookingRepository.findByUidIncludeEventType.getMockImplementation();
+        mockBookingRepository.findByUidIncludeEventType.mockImplementation((input) => {
+          if (input.bookingUid === "old-booking-uid") throw new Error("synthetic database failure");
+          return read!(input);
+        });
+        await expect(
+          service.getAuditLogsForBooking({
+            bookingUid: "new-booking-uid",
+            userId: 123,
+            userEmail: "user@example.com",
+            userTimeZone: "UTC",
+            organizationId: 200,
+          })
+        ).rejects.toThrow("synthetic database failure");
+        expect(mockBookingAuditRepository.findRescheduledLogsOfBooking).not.toHaveBeenCalled();
       });
 
       it("should include rescheduled from log when booking was created from reschedule", async () => {

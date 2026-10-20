@@ -1469,19 +1469,27 @@
           "exit_code": 0,
           "summary": "The registered enterprise source suite passes 641 tests with zero failures, cancellations or skips after the current reminder/SCIM boundary additions. This is overlapping source evidence; it does not close runtime, deployment, retention or external-provider gates.",
           "code_revision": "aa8f7df30"
+        },
+        {
+          "file": "docs/community-enterprise/BOOKING-AUDIT-RESCHEDULE-ACCESS-2026-10-21.md",
+          "level": "source",
+          "command": "python3 -B scripts/run-community-enterprise-cloud-tasker.py --image sha256:29754c7520f4b9654cf8ff98e19ac73b88e255c3a53f6236ebe9d52249bb6df3 --node /workspace/cal-consumer-qualification/node-v20.19.5-linux-x64/bin/node --schema-engine /workspace/cal-consumer-qualification/rust-curl-revision5/schema-engine --suite booking-audit-access --receipt-dir /workspace/cal-consumer-qualification/coordinator/audit/final-pg2",
+          "exit_code": 0,
+          "summary": "JadeFrog (30264): seven actual isolated PG18 cases and 40 native viewer/access cases pass after 4 PG and 2 viewer old-source regressions. Linked predecessor audits are authorized by the same retained access service before query/enrichment; denied/deleted/ownerless history is omitted, unexpected errors propagate, rows remain intact. Owner-only policy is not enterprise PBAC; transaction/outbox/retention, native restoration and serving acceptance remain open."
         }
       ],
       "required_for_team_release": true,
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "source",
       "priority": 1,
-      "progress": "Invitation outbox component now has runtime proof on exact source39ea68b4:91 invitation DB cases,49 Tasker/crash cases, actual50-item page with7 SELECTs, fresh local built invitation/SMTP and Tasker cron journeys.604 registered source cases pass. Booking-audit boundary inventory now has five focused source assertions, while mutation wiring, transaction-bound outbox behavior, idempotency, retention/anonymization, organization/team authorization and serving-preview gates remain open.",
+      "progress": "Invitation outbox component now has runtime proof on exact source39ea68b4:91 invitation DB cases,49 Tasker/crash cases, actual50-item page with7 SELECTs, fresh local built invitation/SMTP and Tasker cron journeys.604 registered source cases pass. Booking-audit boundary inventory now has five focused source assertions, while mutation wiring, transaction-bound outbox behavior, idempotency, retention/anonymization, organization/team authorization and serving-preview gates remain open. 2026-10-21: JadeFrog (30264) completed the eligible, unowned linked-predecessor audit authorization source slice under canonical Mail claim 150914 and exclusive graph/source leases. Seven real PG18 cases, 40 affected native viewer/access cases and strict native import-closure checks pass. The whole leaf remains in_progress; current owner-only authorization, organization/PBAC, transactional mutation/queue, retention and serving gates remain open.",
       "progress_reference": "docs/community-enterprise/BOOKING-AUDIT-BOUNDARY-2026-10-17.md",
-      "progress_summary": "Invitation delivery and Tasker behavior are runtime-proven at the recorded local fixture scope. Booking-audit source inspection makes the remaining transactional, wiring, retention and organization-scope gaps explicit; source evidence does not close runtime acceptance.",
+      "progress_summary": "Invitation delivery and Tasker behavior are runtime-proven at the recorded local fixture scope. Booking-audit source inspection makes the remaining transactional, wiring, retention and organization-scope gaps explicit; source evidence does not close runtime acceptance. 2026-10-21: JadeFrog (30264) completed the eligible, unowned linked-predecessor audit authorization source slice under canonical Mail claim 150914 and exclusive graph/source leases. Seven real PG18 cases, 40 affected native viewer/access cases and strict native import-closure checks pass. The whole leaf remains in_progress; current owner-only authorization, organization/PBAC, transactional mutation/queue, retention and serving gates remain open.",
       "progress_references": [
         "docs/community-enterprise/INVITATION-OUTBOX-2026-10-17.md",
         "docs/community-enterprise/INVITATION-OUTBOX-RECEIPT-2026-10-17.json",
-        "docs/community-enterprise/BOOKING-AUDIT-BOUNDARY-2026-10-17.md"
+        "docs/community-enterprise/BOOKING-AUDIT-BOUNDARY-2026-10-17.md",
+        "docs/community-enterprise/BOOKING-AUDIT-RESCHEDULE-ACCESS-2026-10-21.md"
       ],
       "pending_native_validation": {
         "status": "passed_at_recorded_local_fixture_scope",
