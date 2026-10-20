@@ -537,3 +537,32 @@ Client listing still loses selected scope; optional-route permission/cache,
 complete access-token resource coverage, other API versions and original runtime
 criteria remain open. CAL-05.API and the original 39-node programme are not closed.
 No install, unchanged app/SCIM/audit baseline, provider or production action ran.
+
+## Native error-header credential redaction
+
+Source predecessor `4e769154e655bcf478bd7c05e54ba32da7ee2fd8`; four exact clear
+paths were leased after fresh original ready/inbox/live-reservation inspection.
+While wiring the next native listing error controls, source inspection found that
+filterReqHeaders copied raw Authorization and the native TRPC exception filter
+logged that object. This disjoint credential-exposure correction precedes listing.
+
+Present Authorization values now become [REDACTED], including title/lowercase,
+multiple and empty values. Absent headers remain absent. The input is unchanged,
+selected diagnostic context remains, and existing cookie/client-secret omission
+is retained. No real credential was supplied or copied into any test or receipt.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Old native source | 1 passed, 7 failed |
+| Fixed focused source tests | 8 passed, zero failures/skips |
+| Actual native TRPC filter logger sink | Synthetic bearer absent; redaction marker present; native 403 response contract retained |
+| Production helper and final fixture types | Both exit 0 |
+
+The exact focused command is `node --test --test-reporter=spec
+tests/community-enterprise/api-request-logging.test.cjs` using the qualified Node20.
+The production helper is typed directly with noEmit, skipLibCheck, ES2022, CommonJS
+and Node types; the fixture uses the existing checkJs recipe. Initial fixture type
+modeling errors were corrected and all failure/final receipts remain private.
+No PostgreSQL or whole application baseline was needed for this two-line behavior
+change. Full request-body/privacy, persistent audit and complete API/runtime
+acceptance are not established. The next existing gap remains client listing.
