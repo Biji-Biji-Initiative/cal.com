@@ -2445,6 +2445,35 @@
       "production_changed": false,
       "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
       "notes": "Full native prior Cal.com baseline retained; reduced artifact and five dropping migrations remain frozen. Native Zoom Save/Install/Allow each ran once; personal Zoom credential1 invalidfalse and settled installed DOM verified, no meeting/default/send. Exact1 desired manifest8fed remains local with native bounded push gate in progress at checkpoint. Infra6abac706 exact5 published/loadedDEVgen46 Ready,18native0;36anonymous checks across37GETs retained cookie-observer failure, onlyinvalid management capabilities. NativeWeb UID guard remains scratch12PASS/old5RED and /api/cancel staysprotected; producer-owned full-nativecontext request148527 sent, no image/CI actions. Native Nodemailer7.0.12 verify returnedtrue once with exactnative transport source,5native0/18.726s/sameReadyidentity, no SMTPmessage/config/DB/secretGET; emptySMTPauthnotconnectionfailure. Message delivery, queues and native mail error propagation remain open. Native onboarding101PASS/all82hashes33blobpins verified; provider40PASS; nativeavailability/timezone66PASS+2existingSKIP andprocesszone4PASS, no sourceapply/fullnative types/build/runtime claim. Tasknotification17scratchpreparation preservesnative20kinds/scans/webhookDI; no duplicateoutbox/invitation/Redisimplementation. Nativebookingplan preservesatomicrouting/payment/workflows/audit/PBAC and7queries, usesnativeauthoritiesfortransaction safeguards. All39tasks/priorfields unchanged; goalactive, fullbusiness/stageprod/entitlement/restoreacceptance gaps remainopen; restoredresourceretention10:49:08Z,no deletion."
+    },
+    {
+      "checkpoint_utc": "2026-10-20T10:02:05.715776+00:00",
+      "kind": "native-baseline-restoration-source-progress",
+      "all_39_task_objects_unchanged": true,
+      "overall_goal": "active",
+      "zoom_source_commit": "114ea3e00b60ebf9813063180269cad62c70ec9d",
+      "task_candidate_tests": {
+        "pass": 49,
+        "fail": 0,
+        "skipped": 0,
+        "runtime_acceptance": false
+      },
+      "native01_observer_failure_retained": true,
+      "task_scanners_clean": false,
+      "task_actual_slot_released": "2026-10-20T09:28:40.523945241Z",
+      "core25_api10_pbac13_ui7": "scratch-source-candidates-not-applied",
+      "manager34": {
+        "pass": 33,
+        "fail": 1,
+        "skipped": 0,
+        "failure": "MERGE-09 fixture error wording before final no-delete assertion",
+        "native_run_exit": 1,
+        "product_defect_inferred": false,
+        "real_slot_released": "2026-10-20T09:59:55.348993716Z"
+      },
+      "native_full_build_and_business_acceptance": "open",
+      "restored_resource_retention_until": "2026-10-20T10:49:08Z",
+      "restore_resource_deletion_performed": false
     }
   ]
 }
