@@ -615,3 +615,67 @@ Source review/publication and actual image comparison remain pending.
 All 89 secret-detector occurrences remain semantically unqualified and unwaived;
 70 coordinates are mapped, with 19 blocked by exact replay-format limits. No
 image or production acceptance follows from these partial results.
+
+
+## Native Cal baseline and resumed live checks (2026-10-20 00:50Z)
+
+The owner explicitly requires Cal.com's existing product and previously available
+capabilities as the baseline. Preserve and integrate native booking,
+availability, calendars, conferencing, App Store, profiles, teams, workflows,
+notifications, webhooks, APIs and embeds. Add Mereka-specific behavior around
+those services. Before adding a replacement, establish the native capability
+and the actual gap. The review now includes disabled, bypassed, removed and
+duplicated native paths, rather than startup omissions alone.
+
+The App Store implementation is present. Its configuration initialization was
+bypassed by the recovery command. The exact upstream v6.2 startup order is URL
+replacement, database wait, Prisma migration deployment, App Store seed, then
+web startup. Recovery retains URL replacement and web startup. Database
+readiness, migration state, native startup-tool availability and the effects of
+the missing app initialization still require runtime qualification. The native
+admin App Store already validates provider keys and enables a disabled app in
+one save; this is the preferred restoration path. No general replacement
+reconciler or blanket seed has been introduced.
+
+The owner confirmed the Mac is awake and connected, and SSH access recovered.
+The three reviewed source files remained intact, although old private temporary
+helpers and identity selections were absent. Helpers are recreated from public
+source and runtime selections are refreshed. A newly owned Safari window with a
+stable identity and one Cal tab passes expected staff-session validation.
+Native event types render, and a fresh installed-calendar observation confirms
+the expected Google account, conflict and destination controls, fourteen
+switches and one checked calendar. No second consent or reconnect occurred.
+
+Clarification of the previous profile observation: the outer setup form saves
+name and timezone. Username uses a separate native Update and confirmation Save.
+Earlier progression did not prove the booking username persisted. The owner has
+chosen `gurpreet`; the correct native save and fresh profile/public-page readback
+are pending. No database-loss inference follows from the empty setup field or
+the earlier public Not Found response.
+
+The DEV Host correction is personally published as
+`c28e7a2dfcabd27b988dc7881154104483be01e8`. All three remote blobs match the
+reviewed bytes. The normalized render has 33 objects and changes only proxy code
+and the DEV rollout carrier; images, arguments, environment and encryption
+revision remain identical. GitOps generation 41 has adopted the carrier, with
+the new Pod still awaiting readiness. Calendar-settings retest and actual staff
+logout/re-entry remain open.
+
+The physical inventory collector correction is published as
+`2999be9b5b762c62f9d6e462050f2bb7580005d7`. One actual v5 comparison exits zero:
+all 776 Node path/name/version occurrences and all fourteen full OS tuples match
+the native report. All seven input identities remain unchanged. The actual
+unit, process, cgroup and temporary-home absence precede slot release at
+00:28:40Z. This qualifies physical inventory only. The earlier failed inventory
+attempts and whole-file test timeout remain retained; the 105 focused source
+tests passed. All 89 secret-detector findings remain unqualified and unwaived,
+and no image admission, publication, deployment or production acceptance follows.
+
+Historical March31 source already declares Google provider settings and a
+production startup override. Its lack of direct Zoom/Microsoft variable names
+does not establish absent stored App settings or deleted connections. Current
+App/provider and native background-service audits remain open. Google Meet
+restoration is authorized through the native admin flow only after exact DEV,
+staff, existing Google configuration and conflict-free target-state checks.
+Zoom still needs a compatible configuration and credential pair. No provider
+default, calendar event or customer-visible message has been created.

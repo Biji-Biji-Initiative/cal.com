@@ -32,7 +32,7 @@
     ],
     "rule": "One build/integration owner; other work is disjoint. Do not claim workers are dispatched without actual registration and evidence.",
     "ready_command": "node scripts/verify-community-enterprise-task-graph.cjs --ready",
-    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task\u2019s own required level.",
+    "completion_rule": "Source proof is complete only for source-level tasks. Runtime-level tasks remain unfinished until runtime_proven; readiness uses the prerequisite task’s own required level.",
     "lane_note": "Lanes describe scopes, not spawned agents. Product/scheduling share an engineer; coordination belongs to the commander. Maximum four live agents remains unchanged.",
     "focus_order": [
       "CAL-05.CORE",
@@ -506,7 +506,7 @@
       "definition_of_done": "All listed acceptance checks pass at the stated scope; source_proven is not runtime acceptance.",
       "completion_evidence_level": "runtime",
       "priority": 0,
-      "progress": "Qualified e3a79afb HTTPS image and matched 113\u219256 HIGH scan are published as evidence, not a registry upload. The missing empty-preview first-account path now has an explicit reviewed operator CLI with real 59-case database acceptance; live client/subject/database admission, approved publishing, native entrypoint/routing and serving journey remain unfinished.",
+      "progress": "Qualified e3a79afb HTTPS image and matched 113→56 HIGH scan are published as evidence, not a registry upload. The missing empty-preview first-account path now has an explicit reviewed operator CLI with real 59-case database acceptance; live client/subject/database admission, approved publishing, native entrypoint/routing and serving journey remain unfinished.",
       "progress_reference": "docs/community-enterprise/PREVIEW-OPERATOR-2026-10-16.md",
       "blockers": [
         "Live cal.mereka.dev is the restored legacy v6.2.0 image, not the enterprise candidate.",
@@ -1205,7 +1205,7 @@
         "docs/community-enterprise/API-PERMISSION-RECEIPT-2026-10-17.json",
         "docs/community-enterprise/API-THIRD-PARTY-SCHEDULE-BOUNDARY-2026-10-19.md"
       ],
-      "progress": "Managed client permissions now follow Passport\u2019s selected method and current primary token/client authority. Nine controller guard placements repaired; 54 direct permission-decorated methods in 14 controllers have correct order. Real HTTP/PostgreSQL75, key-controller36, native Jest27 and focused source154 pass. Full resource/transaction scopes, dynamic route reachability and deployed proof remain unfinished; no old image is relabeled. 2026-10-19: the three Atoms schedule mutations explicitly exclude read-only third-party OAuth tokens through existing method authentication policy; 116 focused source cases pass. Other credential types and current permission checks remain intact. This bounded source evidence does not close full API scope/resource or runtime acceptance.",
+      "progress": "Managed client permissions now follow Passport’s selected method and current primary token/client authority. Nine controller guard placements repaired; 54 direct permission-decorated methods in 14 controllers have correct order. Real HTTP/PostgreSQL75, key-controller36, native Jest27 and focused source154 pass. Full resource/transaction scopes, dynamic route reachability and deployed proof remain unfinished; no old image is relabeled. 2026-10-19: the three Atoms schedule mutations explicitly exclude read-only third-party OAuth tokens through existing method authentication policy; 116 focused source cases pass. Other credential types and current permission checks remain intact. This bounded source evidence does not close full API scope/resource or runtime acceptance.",
       "progress_reference": "docs/community-enterprise/API-ROUTE-INVENTORY-2026-10-17.md",
       "progress_summary": "API route and permission inventory is source-proven; full principal/scope/resource runtime intersection remains open."
     },
@@ -1357,7 +1357,7 @@
           "level": "runtime",
           "command": "python3 scripts/run-community-enterprise-postgres.py --suite handoff-journey --pg-bin /usr/lib/postgresql/18/bin --scratch-root /data/tmp",
           "exit_code": 0,
-          "summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
+          "summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers.",
           "application_source": "094ae76b06e8834f227768d0b5d1d829acacdd88"
         },
         {
@@ -1375,7 +1375,7 @@
       "priority": 1,
       "progress": "Packaged native OIDC through a TLS fixture, Chromium team administration, directed/same-host/rerouted bookings and collective availability are locally proven with PostgreSQL and non-relaying SMTP. Not deployed Authentik, connected external calendars or shared preview admission.",
       "progress_reference": "docs/community-enterprise/MULTI-HOST-2026-10-12.md",
-      "progress_summary": "Six current local browser journeys pass, including handoff\u2192planned removal\u2192new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
+      "progress_summary": "Six current local browser journeys pass, including handoff→planned removal→new guest booking/cancellation; local test issuer/provider data and SMTP sink, not live external providers."
     },
     {
       "id": "CAL-07.AUDIT",
@@ -2382,6 +2382,15 @@
       "production_changed": false,
       "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
       "notes": "Actual expected staff session and one Google consent completed; native Cal shows discovered calendars and destination/conflict controls. User explicitly chose /gurpreet; availability200 available/nonpremium and one profile submit succeeded, preserving name/timezone. No availability submit or event/message sends. Zoom/more integrations reported missing. DEV recovery startup intentionally skips stock app seeding, the env-to-database App configuration bridge; Google Meet shares the existing Google authorization and needs selective live-row qualification. Direct Cal secret folders contain Google keys only; no absence inference outside selected folders. Exact existing Cal.com Integration Zoom app is unpublished with136 account/admin/master scopes, but no target credentials or usable manifest returned; no provider change/new app/rotation. DEV Host correction is source-reviewed with4 new controls and121 existing passes/1skip, Gitleaks0 and documented inherited UBS; publication and native render comparison await Mac access. Later mutable Safari index guard failures do not prove session loss. Mac SSH/Commander became unresponsive; user asked to keep it awake. Image inventory v4 fails only missing first-party web manifest (775sharedexact, OS14exact); 105 focused collector controls pass with required checks after the preserved whole-suite timeout; UBS remains unsuppressed, exact cleanup/slot release00:14:28Z verified; source review/publication and actual image comparison pending. All89 semantic secret findings remain unqualified/unwaived. All39 task objects and previous graph fields unchanged."
+    },
+    {
+      "date": "2026-10-20",
+      "application_source": "e8e8df8ff779e643a7b1fd34a1283e994223ec6d",
+      "closed_source_task": null,
+      "partial_runtime_task": "CAL-04.SESSION",
+      "production_changed": false,
+      "evidence": "docs/community-enterprise/LIVE-DEV-TRIAGE-2026-10-19.md",
+      "notes": "Owner explicitly sets the complete existing Cal.com product and past capabilities as baseline; preserve native services and audit disabled/bypassed/removed/duplicated paths before replacement. Exact v6.2 startup includes database wait, migration deploy and app seed omitted by recovery; runtime accounting of those steps and native background/API dependencies remains open. Existing native admin App Store is preferred for provider restoration; no new general reconciler/blanketseed. Mac access recovered and stable owned Safari window validates staff and retained Google Calendar controls; no reconnect. Earlier outer profile progression saved name/timezone only and did not prove username persistence; separate native Update/Save and fresh readback pending for authorized gurpreet. Host correction c28e7a2 personally published with3exactremote blobs/33-object intended render diff; gen41 carrier adopted/newPod readiness pending. Reader2999be9b published; actual v5 inventory native0,776/776Node and14/14OS exact,7inputs unchanged, real cleanup then slotrelease00:28:40Z. Prior failed runs/full-filetimeout remain;105focused source tests pass. All89secretfindings remain unqualified/unwaived and image/production acceptance open. Marchsource metadata does not prove historical App/connection loss. All39 tasks and previous graph fields unchanged."
     }
   ]
 }
