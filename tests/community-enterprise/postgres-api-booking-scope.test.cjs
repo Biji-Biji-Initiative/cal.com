@@ -24,7 +24,8 @@ let db,
   listing,
   primarySql,
   staleSqlReads,
-  eventAccess;
+  eventAccess,
+  nativeBookings;
 const api = "apps/api/v2/src/";
 const booking = `${api}platform/bookings/2024-08-13/`;
 
@@ -157,6 +158,7 @@ before(async () => {
         }
       );
       const service = new Service();
+      nativeBookings = service;
       service.eventTypeAccessService = eventAccess.access;
       service.prismaReadService = { prisma: db };
       service.kyselyWriteService = primarySql;
@@ -821,4 +823,126 @@ test("explicit current custom-role delete grant retains owner-only mutation", as
   const unrelated = await eventToDelete(team.id, other.id);
   assert.equal((await removeEvent(unrelated.id, personal)).status, 403);
   assert.equal(await db.eventType.count({ where: { id: unrelated.id } }), 1);
+});
+
+async function participantSeats() {
+  await seated();
+  const actorSeat = await db.attendee.findFirstOrThrow({ where: { email: "first@fixture.test" } });
+  await db.attendee.update({ where: { id: actorSeat.id }, data: { email: other.email } });
+  await db.bookingSeat.update({
+    where: { attendeeId: actorSeat.id },
+    data: { data: { responses: { name: "Participant", email: other.email, answer: "own-answer" } } },
+  });
+  const privateSeat = await db.attendee.findFirstOrThrow({ where: { email: "private@fixture.test" } });
+  await db.bookingSeat.update({
+    where: { attendeeId: privateSeat.id },
+    data: { data: { responses: { name: "Private", email: privateSeat.email, answer: "private-answer" } } },
+  });
+  return { token: await lifecycle.createApiKey(db, other.id, {}), actorSeat };
+}
+function row(result) {
+  assert.equal(result.status, 200);
+  assert.equal(result.body.pagination.totalItems, 1);
+  return result.body.data[0];
+}
+test("native participant list retains authoritative own-seat masking and answer", async () => {
+  const { token } = await participantSeats();
+  const result = await list("bookingUid=allowed", token);
+  assert.deepEqual(
+    row(result).attendees.map((attendee) => attendee.email),
+    [other.email]
+  );
+  assert.equal(row(result).attendees[0].bookingFieldsResponses.answer, "own-answer");
+  assert.equal(JSON.stringify(result.body).includes("private-answer"), false);
+});
+test("recurring native participant list retains the same seat masking", async () => {
+  const { token } = await participantSeats();
+  await db.booking.update({ where: { uid: "allowed" }, data: { recurringEventId: "synthetic-seat-series" } });
+  const result = await list("bookingUid=allowed", token);
+  assert.deepEqual(
+    row(result).attendees.map((attendee) => attendee.email),
+    [other.email]
+  );
+  assert.equal(JSON.stringify(result.body).includes("private-answer"), false);
+});
+function beforeHydration(context, callback) {
+  const repo = nativeBookings.bookingsRepository;
+  const original = repo.getByIdsWithAttendeesWithBookingSeatAndUserAndEvent;
+  repo.getByIdsWithAttendeesWithBookingSeatAndUserAndEvent = async (ids) => {
+    await callback();
+    return original.call(repo, ids);
+  };
+  context.after(() => {
+    repo.getByIdsWithAttendeesWithBookingSeatAndUserAndEvent = original;
+  });
+}
+test("native hydration cannot add a seat outside selected attendee snapshot", async (context) => {
+  const { token } = await participantSeats();
+  beforeHydration(context, async () => {
+    const booking = await db.booking.findUniqueOrThrow({ where: { uid: "allowed" } });
+    const attendee = await db.attendee.create({
+      data: { bookingId: booking.id, name: "Later", email: "later@fixture.test", timeZone: "UTC" },
+    });
+    await db.bookingSeat.create({
+      data: {
+        bookingId: booking.id,
+        attendeeId: attendee.id,
+        referenceUid: "later-seat",
+        data: { responses: { name: "Later", email: attendee.email, answer: "later-private-answer" } },
+      },
+    });
+  });
+  const result = await list("bookingUid=allowed", token);
+  assert.deepEqual(
+    row(result).attendees.map((attendee) => attendee.email),
+    [other.email]
+  );
+  assert.equal(JSON.stringify(result.body).includes("later-private-answer"), false);
+});
+test("native hydration refuses a selected attendee rebound to another email", async (context) => {
+  const { token, actorSeat } = await participantSeats();
+  beforeHydration(context, async () => {
+    await db.attendee.update({ where: { id: actorSeat.id }, data: { email: "replacement@fixture.test" } });
+    await db.bookingSeat.update({
+      where: { attendeeId: actorSeat.id },
+      data: {
+        data: {
+          responses: {
+            name: "Replacement",
+            email: "replacement@fixture.test",
+            answer: "replacement-private-answer",
+          },
+        },
+      },
+    });
+  });
+  const result = await list("bookingUid=allowed", token);
+  assert.deepEqual(row(result).attendees, []);
+  assert.equal(JSON.stringify(result.body).includes("replacement-private-answer"), false);
+});
+test("native hydrated seat data must belong to selected booking references", async () => {
+  const { token, actorSeat } = await participantSeats();
+  const foreignBooking = await db.booking.findUniqueOrThrow({ where: { uid: "foreign" } });
+  await db.bookingSeat.update({
+    where: { attendeeId: actorSeat.id },
+    data: {
+      bookingId: foreignBooking.id,
+      data: { responses: { name: "Foreign seat", email: other.email, answer: "foreign-seat-answer" } },
+    },
+  });
+  const result = await list("bookingUid=allowed", token);
+  assert.equal(row(result).attendees.length, 1);
+  assert.equal(row(result).attendees[0].seatUid, undefined);
+  assert.equal(JSON.stringify(result.body).includes("foreign-seat-answer"), false);
+});
+test("native list preserves owner roster selected by retained query", async () => {
+  await participantSeats();
+  const result = await list("bookingUid=allowed");
+  assert.equal(row(result).attendees.length, 2);
+});
+test("native list preserves explicitly public attendee setting", async () => {
+  const { token } = await participantSeats();
+  await db.eventType.updateMany({ where: { slug: "allowed" }, data: { seatsShowAttendees: true } });
+  const result = await list("bookingUid=allowed", token);
+  assert.equal(row(result).attendees.length, 2);
 });

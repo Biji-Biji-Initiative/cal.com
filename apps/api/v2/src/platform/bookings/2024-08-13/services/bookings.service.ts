@@ -647,7 +647,7 @@ export class BookingsService_2024_08_13 {
     const skip = Math.abs(queryParams?.skip ?? 0);
     const take = Math.abs(queryParams?.take ?? 100);
 
-    const fetchedBookings: { bookings: { id: number }[]; totalCount: number } = await getAllUserBookings({
+    const fetchedBookings = await getAllUserBookings({
       bookingListingByStatus: queryParams.status || [],
       skip,
       take,
@@ -662,8 +662,16 @@ export class BookingsService_2024_08_13 {
       },
       sort: this.inputService.transformGetBookingsSort(queryParams),
     });
-    // note(Lauris): fetchedBookings don't have attendees information and responses and i don't want to add them to the handler query,
-    // because its used elsewhere in code that does not need that information, so i get ids, fetch bookings and then return them formatted in same order as ids.
+    // Keep the listing snapshot's privacy decisions when hydrating native seat data.
+    const visibility = new Map(
+      fetchedBookings.bookings.map((booking) => [
+        booking.id,
+        {
+          attendees: new Map(booking.attendees.map((attendee) => [attendee.id, attendee.email])),
+          seats: new Set(booking.seatsReferences.map((seat) => seat.referenceUid)),
+        },
+      ])
+    );
     const ids = fetchedBookings.bookings.map((booking) => booking.id);
     const bookings = await this.bookingsRepository.getByIdsWithAttendeesWithBookingSeatAndUserAndEvent(ids);
 
@@ -680,9 +688,20 @@ export class BookingsService_2024_08_13 {
       if (!booking) {
         continue;
       }
+      const selected = visibility.get(booking.id);
+      if (!selected) continue;
 
       const formatted = {
         ...booking,
+        attendees: booking.attendees
+          .filter((attendee) => selected.attendees.get(attendee.id) === attendee.email)
+          .map((attendee) => ({
+            ...attendee,
+            bookingSeat:
+              attendee.bookingSeat && selected.seats.has(attendee.bookingSeat.referenceUid)
+                ? attendee.bookingSeat
+                : null,
+          })),
         eventType: booking.eventType,
         eventTypeId: booking.eventTypeId,
         startTime: new Date(booking.startTime),

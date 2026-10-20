@@ -220,3 +220,41 @@ The complete API leaf remains open. Post-list hydration, legacy/other mutation
 routes, managed-client resource binding and primary freshness of every remaining
 native relation require separate proof. Deployment, external revocation/identity,
 full native restoration and whole CI acceptance remain separate original gates.
+
+## Retained attendee masking through native API hydration
+
+Source predecessor `ecd8050744e881bb5742d54b47e1ad8986df448a`; four exact paths were
+freshly clear and leased. Original CAL-05.API remains the active source leaf.
+
+The shared native listing query already selected a participant's permitted seated
+attendee/seat identities. The API service narrowed that result's type to booking
+IDs, reloaded complete attendee/seat data, and formatted it as visible. Five
+actual old-source failures exposed another participant's private answer in normal
+and recurring lists, a newly added seat, an attendee rebound to another email and
+seat data attached to another booking.
+
+The service now retains the actual inferred query result and preserves its
+attendee ID/email pairs and selected seat reference IDs when hydrating native
+output data. Unselected/rebound attendees are omitted; a seat reference outside
+the selected booking snapshot supplies no seat data. The retained query, policy,
+SQL, native repository and output transformation remain the same. This applies
+its existing privacy decision rather than introducing another permission engine.
+
+| Continuation check | Actual result |
+| --- | --- |
+| Expanded old source | 53 passed, 5 failed, all five discriminate real native hydration privacy failures |
+| Fixed native HTTP/domain/output/PG suite | 58 passed, zero failures/skips; runner exit 0 and owned database container removal verified |
+| New controls | Normal/recurring participant own answer; real DB additions/rebinding between query and native hydration; foreign-booking seat data; legitimate owner roster and explicit public-attendee setting |
+| Native strict source/import-closure types | Exit 0 with the actual inferred shared query result |
+| Expanded fixture checkJs | Exit 0 |
+
+The controlled hydration seam only sequences real database changes before the
+unchanged native repository query; it never substitutes a permission result or
+query rows. Source/query-selected identities, actual SQL, native output and row
+counts are asserted through HTTP. No app/SCIM/audit baseline, install, schema,
+provider or production action was repeated.
+
+This closes the selected attendee/seat masking loss. Other post-snapshot booking
+fields, native relation freshness, other mutation/version families, managed-client
+resource binding and external/runtime programme gates remain open. The complete
+API leaf and original 39-node goal are not complete.
